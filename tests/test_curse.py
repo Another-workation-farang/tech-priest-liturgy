@@ -1,3 +1,4 @@
+import importlib
 import io
 import json
 import linecache
@@ -364,3 +365,260 @@ def test_modified_source_still_shows_the_executed_line_on_a_warm_pycache(
     assert out.returncode == 0, out.stderr
     assert "render tome / 0" in out.stdout
     assert "render 999999" not in out.stdout
+
+
+# --- I5: SyntaxError location ----------------------------------------------
+
+SYNTAX_CASES = {
+    "unclosed": ('intone("a")\nintone(1 +\n', "never closed", 2),
+    "indent": ("rite f():\nabide\n", "expected an indented block", 2),
+}
+
+
+@pytest.mark.parametrize("case", sorted(SYNTAX_CASES))
+def test_chant_renders_a_syntax_error_with_line_source_and_caret(
+    tmp_path, case
+):
+    # Before: no .lit frame, no source line, no caret -- and, with nothing to
+    # anchor to, the full launcher plumbing came back. Strictly worse than
+    # the plain Python traceback for the commonest class of error there is.
+    src, fragment, lineno = SYNTAX_CASES[case]
+    script = tmp_path / f"{case}.lit"
+    script.write_text(src)
+
+    try:
+        loader.chant(str(script), [])
+    except SyntaxError:
+        out = capture(sys.exc_info())
+
+    assert f"{case}.lit, line {lineno}" in out
+    assert fragment in out
+    assert "^" in out
+    assert "loader.py" not in out
+    assert "exec(" not in out
+
+
+@pytest.mark.parametrize("case", sorted(SYNTAX_CASES))
+def test_import_renders_a_syntax_error_with_line_source_and_caret(
+    tmp_path, monkeypatch, case
+):
+    src, fragment, lineno = SYNTAX_CASES[case]
+    (tmp_path / f"imp{case}.lit").write_text(src)
+    monkeypatch.syspath_prepend(str(tmp_path))
+    loader.install()
+
+    try:
+        importlib.import_module(f"imp{case}")
+    except SyntaxError:
+        out = capture(sys.exc_info())
+
+    assert f"imp{case}.lit, line {lineno}" in out
+    assert fragment in out
+    assert "importlib" not in out
+
+
+def test_syntax_error_quotes_the_liturgy_line_not_the_generated_python(
+    tmp_path,
+):
+    script = tmp_path / "shown.lit"
+    script.write_text("rite f():\nabide\n")
+
+    try:
+        loader.chant(str(script), [])
+    except SyntaxError:
+        out = capture(sys.exc_info())
+
+    assert "abide" in out
+    assert "pass" not in out
+
+
+def test_syntax_error_caret_is_mapped_back_to_liturgy_columns(tmp_path):
+    # "intone(" is one column wider than "print(", so an unmapped caret would
+    # sit under the "1", not under the bracket that was never closed.
+    script = tmp_path / "caret.lit"
+    script.write_text("intone(1 +\n")
+
+    try:
+        loader.chant(str(script), [])
+    except SyntaxError:
+        out = capture(sys.exc_info())
+
+    lines = out.splitlines()
+    i = next(n for n, line in enumerate(lines) if line.strip() == "intone(1 +")
+    assert lines[i + 1] == "       " + " " * 6 + "^"
+
+
+def test_a_mistyped_relic_has_no_launcher_frames(tmp_path):
+    # Same fall-through: nothing anchored the frame-dropping, so the console
+    # script wrapper, cli.main and chant's own open() all showed up.
+    try:
+        loader.chant(str(tmp_path / "nosuch.lit"), [])
+    except FileNotFoundError:
+        out = capture(sys.exc_info())
+
+    assert "RelicNotFound" in out
+    assert "loader.py" not in out
+    assert "test_curse.py" not in out
+
+
+def test_the_repl_reports_a_dedent_mismatch_with_a_location():
+    out = subprocess.run(
+        [sys.executable, "-m", "liturgy", "commune"],
+        input="should Sanctioned:\n  x=1\n y=2\n",
+        capture_output=True, text=True,
+    )
+    assert "IndentationError" in out.stdout + out.stderr
+
+
+# --- I7: exception chains ---------------------------------------------------
+
+def test_the_root_cause_of_a_raise_from_is_rendered(tmp_path):
+    script = tmp_path / "chained.lit"
+    script.write_text(
+        "attempt:\n"
+        "    intone(1/0)\n"
+        "curse DivisionByTheVoid styled e:\n"
+        '    proclaim MotiveFailure("rite failed") within e\n'
+    )
+
+    try:
+        loader.chant(str(script), [])
+    except RuntimeError:
+        out = capture(sys.exc_info())
+
+    assert "DivisionByTheVoid: division by zero" in out
+    assert "MotiveFailure: rite failed" in out
+    assert "intone(1/0)" in out
+    assert curse.CAUSE_SEPARATOR in out
+    assert out.index("DivisionByTheVoid") < out.index("MotiveFailure")
+
+
+def test_an_implicit_context_is_rendered_with_its_own_separator(tmp_path):
+    script = tmp_path / "ctx.lit"
+    script.write_text(
+        "attempt:\n"
+        "    intone(1/0)\n"
+        "curse DivisionByTheVoid:\n"
+        '    proclaim MotiveFailure("secondary")\n'
+    )
+
+    try:
+        loader.chant(str(script), [])
+    except RuntimeError:
+        out = capture(sys.exc_info())
+
+    assert curse.CONTEXT_SEPARATOR in out
+    assert "DivisionByTheVoid" in out
+
+
+def test_a_suppressed_context_stays_suppressed(tmp_path):
+    script = tmp_path / "supp.lit"
+    script.write_text(
+        "attempt:\n"
+        "    intone(1/0)\n"
+        "curse DivisionByTheVoid:\n"
+        '    proclaim MotiveFailure("only me") within Void\n'
+    )
+
+    try:
+        loader.chant(str(script), [])
+    except RuntimeError:
+        out = capture(sys.exc_info())
+
+    assert "DivisionByTheVoid" not in out
+    assert curse.CONTEXT_SEPARATOR not in out
+
+
+def test_exception_group_members_are_rendered():
+    try:
+        raise ExceptionGroup(
+            "several", [ValueError("first"), KeyError("second")]
+        )
+    except ExceptionGroup:
+        out = capture(sys.exc_info())
+
+    assert "ImpureOffering: first" in out
+    assert "LostPattern: 'second'" in out
+
+
+def test_a_self_referential_chain_terminates():
+    a = ValueError("a")
+    b = KeyError("b")
+    a.__cause__ = b
+    b.__cause__ = a
+    try:
+        raise a
+    except ValueError:
+        out = capture(sys.exc_info())
+    assert "ImpureOffering: a" in out
+
+
+def test_one_banner_per_curse_however_long_the_chain(tmp_path):
+    script = tmp_path / "banner.lit"
+    script.write_text(
+        "attempt:\n"
+        "    intone(1/0)\n"
+        "curse DivisionByTheVoid styled e:\n"
+        '    proclaim MotiveFailure("x") within e\n'
+    )
+    try:
+        loader.chant(str(script), [])
+    except RuntimeError:
+        out = capture(sys.exc_info())
+
+    assert out.count(curse.BANNER_OPEN) == 1
+    assert out.count(curse.BANNER_CLOSE) == 1
+
+
+# --- Minors -----------------------------------------------------------------
+
+def test_module_not_found_is_themed_through_its_ancestor():
+    # An exact __name__ lookup left the commonest import failure there is
+    # rendering un-themed inside a themed curse.
+    assert curse.curse_name(ModuleNotFoundError) == "ForbiddenLore"
+
+
+def test_the_mro_walk_stops_short_of_the_catch_all_roots():
+    # MachineCurse is the name of Exception itself, not of everything under
+    # it; renaming IndentationError to MachineCurse loses more than it gains.
+    assert curse.curse_name(IndentationError) == "IndentationError"
+    assert curse.curse_name(PermissionError) == "PermissionError"
+    assert curse.curse_name(Exception) == "MachineCurse"
+
+
+def test_a_library_exception_keeps_its_own_name():
+    # json.JSONDecodeError is a ValueError, but calling it ImpureOffering
+    # would hide the informative half of the name.
+    assert curse.curse_name(json.JSONDecodeError) == "JSONDecodeError"
+
+
+def test_a_multiline_expression_still_gets_a_caret(tmp_path):
+    # end_colno belongs to end_lineno, not to lineno. When the expression
+    # ends further left than it began -- an indented call whose closing
+    # bracket sits at column 0 -- the guard compared columns from two
+    # different lines, decided end < start, and dropped the caret.
+    script = tmp_path / "spread.lit"
+    script.write_text(
+        "rite boom(a, b):\n"
+        "    render a / b\n"
+        "\n"
+        "\n"
+        "rite outer():\n"
+        "    x = boom(\n"
+        "1,\n"
+        "0,\n"
+        ")\n"
+        "    render x\n"
+        "\n"
+        "\n"
+        "outer()\n"
+    )
+
+    try:
+        loader.chant(str(script), [])
+    except ZeroDivisionError:
+        out = capture(sys.exc_info())
+
+    lines = out.splitlines()
+    i = next(n for n, ln in enumerate(lines) if ln.strip() == "x = boom(")
+    assert lines[i + 1].strip().startswith("^"), out
