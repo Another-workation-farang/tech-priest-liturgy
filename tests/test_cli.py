@@ -90,3 +90,15 @@ def test_profane_env_var_also_gives_a_plain_traceback(tmp_path):
 def test_reserved_verbs_are_declared():
     # Spec III owns these; Core must not hand the names to anything else.
     assert {"augur", "prove", "sanctify", "transcribe"} <= cli.RESERVED_VERBS
+
+
+def test_an_unknown_verb_is_rejected(prayer):
+    # RESERVED_VERBS reserves nothing mechanically; argparse does the work.
+    out = run_cli(["augur", str(prayer)])
+    assert out.returncode != 0
+    assert "invalid choice" in out.stderr
+
+
+def test_the_global_flags_say_where_they_must_go():
+    out = run_cli(["--help"])
+    assert "must come before the verb" in out.stdout

@@ -11,7 +11,9 @@ from .loader import chant as _chant
 
 HERETICAL: dict[str, str] = {"run": "chant", "repl": "commune"}
 
-# Owned by Spec III. Declared here so Core never reuses the names.
+# Owned by Spec III. Declared here so Core never reuses the names. This
+# reserves nothing mechanically -- nothing consults the set at parse time --
+# and nothing needs to: argparse rejects any verb it has no subparser for.
 RESERVED_VERBS = frozenset(
     {
         "augur",
@@ -31,12 +33,18 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--absolved",
         action="store_true",
-        help="suppress rebukes for mundane verb names",
+        help=(
+            "suppress rebukes for mundane verb names "
+            "(must come before the verb)"
+        ),
     )
     parser.add_argument(
         "--profane",
         action="store_true",
-        help="render plain Python tracebacks instead of machine curses",
+        help=(
+            "render plain Python tracebacks instead of machine curses "
+            "(must come before the verb)"
+        ),
     )
     verbs = parser.add_subparsers(dest="verb", required=True)
 
@@ -72,11 +80,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.verb == "chant":
         return _chant(args.file, args.args)
-    if args.verb == "commune":
-        from .commune import commune
 
-        return commune()
-    return 2
+    # The only other verb: the subparser is required, so argparse has already
+    # rejected anything else.
+    from .commune import commune
+
+    return commune()
 
 
 if __name__ == "__main__":

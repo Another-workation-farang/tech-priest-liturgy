@@ -81,3 +81,15 @@ def test_corrupted_state_file_still_rebukes(tmp_path, corrupted_state):
     # Ensure no other rebuke level is shown
     assert "permanent record" not in out
     assert "Inquisition" not in out
+
+
+def test_a_truncated_state_file_still_rebukes(tmp_path):
+    # The corruption class json.JSONDecodeError covers -- it is a ValueError,
+    # which is why it needs no entry of its own in the except tuple.
+    state_file = tmp_path / "liturgy" / "heresies.json"
+    state_file.parent.mkdir(parents=True, exist_ok=True)
+    state_file.write_text('{"run": 2')
+
+    out = emit()
+    assert "TECH-HERESY DETECTED" in out
+    assert "noted" in out

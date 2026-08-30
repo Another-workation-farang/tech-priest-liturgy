@@ -44,7 +44,8 @@ def _bump(alias: str) -> int:
         except (TypeError, ValueError):
             current = 0
         count = current + 1
-    except (OSError, json.JSONDecodeError, TypeError, ValueError, AttributeError):
+    # JSONDecodeError is a ValueError, so it needs no entry of its own.
+    except (OSError, TypeError, ValueError, AttributeError):
         # Corruption or I/O error; start fresh.
         data = {}
         count = 1
