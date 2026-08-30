@@ -66,3 +66,40 @@ def test_commune_starts_and_exits_cleanly():
         text=True,
     )
     assert "9" in out.stdout
+
+
+def test_dedent_mismatch_is_reported_not_buffered(capsys):
+    # tokenize never raises IndentationError for genuinely incomplete
+    # input -- an open block tokenizes cleanly, and incompleteness is only
+    # decided later by compile() returning None. A dedent that doesn't
+    # match any outer indentation level is therefore a complete,
+    # unrecoverable error, not "keep reading".
+    flags, _ = feed(["should Sanctioned:", "  x=1", " y=2"])
+    assert flags[-1] is False
+    assert "IndentationError" in capsys.readouterr().err
+
+
+def test_input_after_dedent_mismatch_still_executes():
+    # The property that actually matters: a reported error must not leave
+    # the console wedged, silently swallowing every line that follows.
+    flags, console = feed(
+        ["should Sanctioned:", "  x=1", " y=2", "intone(999)"]
+    )
+    assert flags[-1] is False
+
+
+def test_repl_recovers_after_dedent_mismatch_over_stdin():
+    out = subprocess.run(
+        [sys.executable, "-m", "liturgy", "commune"],
+        input=(
+            "should Sanctioned:\n"
+            "  x=1\n"
+            " y=2\n"
+            "intone(999)\n"
+            "intone(111)\n"
+        ),
+        capture_output=True,
+        text=True,
+    )
+    assert "999" in out.stdout
+    assert "111" in out.stdout

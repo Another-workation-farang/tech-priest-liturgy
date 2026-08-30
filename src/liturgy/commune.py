@@ -22,9 +22,14 @@ class LiturgyConsole(code.InteractiveConsole):
         except tokenize.TokenError:
             # Unterminated bracket or string: not an error, just unfinished.
             return True
-        except IndentationError:
-            return True
         except SyntaxError:
+            # tokenize never raises this for genuinely incomplete input --
+            # an open block tokenizes cleanly, and incompleteness is only
+            # decided afterwards by compile() returning None below. Any
+            # SyntaxError here (including IndentationError/TabError, e.g. a
+            # dedent that doesn't match an outer indentation level) is a
+            # complete, unrecoverable error and must be reported, not
+            # buffered.
             self.showsyntaxerror(filename)
             return False
 
