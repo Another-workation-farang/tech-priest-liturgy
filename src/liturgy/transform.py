@@ -59,6 +59,10 @@ def alias_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
                 depth += 1
             elif tok.string in _CLOSERS:
                 depth -= 1
+            elif tok.string == ";":
+                # A new statement starts after the semicolon; a preceding
+                # import's scope does not carry over to it.
+                in_import = False
             continue
 
         if tok.type != tokmod.NAME:
@@ -77,18 +81,34 @@ def alias_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
         prev = significant[i - 1] if i else None
         nxt = significant[i + 1] if i + 1 < len(significant) else None
 
+        # Import-statement keywords always translate, even directly after a
+        # relative-import dot (`from . import x`) which would otherwise look
+        # like attribute access to Rule 1 below.
+        if in_import and py in _IMPORT_SAFE:
+            subs.append(Substitution(tok.start[0], tok.start[1], tok.end[1], py))
+            continue
+
         # Rule 1: attribute access. obj.render must not become obj.return.
         if prev is not None and prev.type == tokmod.OP and prev.string == ".":
             continue
 
-        # Rule 2: keyword-argument name inside a call.
+        # Rule 2: keyword-argument name inside a call. Guard against PEP 701
+        # f-string debug (`{measure=}`) and format-spec (`{measure=:>10}`)
+        # syntax, which also tokenizes a bare `=` but is not a kwarg.
         if (
             depth > 0
             and nxt is not None
             and nxt.type == tokmod.OP
             and nxt.string == "="
         ):
-            continue
+            after_eq = significant[i + 2] if i + 2 < len(significant) else None
+            is_fstring_debug = (
+                after_eq is not None
+                and after_eq.type == tokmod.OP
+                and after_eq.string in ("}", ":", "!")
+            )
+            if not is_fstring_debug:
+                continue
 
         # Rule 3: import statements — only the statement keywords translate.
         if in_import and py not in _IMPORT_SAFE:
