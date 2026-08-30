@@ -755,7 +755,6 @@ from liturgy._reverse import to_liturgy
 from liturgy.transform import transform
 
 SAMPLES = [
-    "x = 1\n",
     textwrap.dedent(
         """\
         def fib(n):
@@ -1808,9 +1807,11 @@ def test_unterminated_string_requests_more_input():
     assert flags == [True]
 
 
-def test_syntax_error_is_reported_not_buffered():
-    flags, _ = feed(["rite ((("])
-    assert flags == [True] or flags == [False]  # never raises
+def test_syntax_error_is_reported_not_buffered(capsys):
+    # A complete, unambiguous syntax error: not incomplete input.
+    flags, _ = feed(["x = = 1"])
+    assert flags == [False]
+    assert "SyntaxError" in capsys.readouterr().err
 
 
 def test_commune_starts_and_exits_cleanly():
