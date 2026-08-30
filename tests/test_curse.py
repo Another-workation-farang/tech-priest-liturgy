@@ -1,9 +1,12 @@
 import io
+import json
 import linecache
 import os
+import subprocess
 import sys
 import textwrap
 import threading
+from pathlib import Path
 
 import pytest
 
@@ -162,7 +165,9 @@ def test_modified_source_after_import_shows_the_line_that_actually_ran(
 def test_own_plumbing_frames_are_suppressed(tmp_path):
     # loader.chant()'s own exec(compile(...)) frame is Liturgy's internal
     # machinery, not user code -- it would otherwise appear above the
-    # user's frames on every single failure run through chant().
+    # user's frames on every single failure run through chant(). This is
+    # the specific case that motivated the general "drop every frame above
+    # the first .lit frame" rule below; it must still be caught by it.
     script = tmp_path / "boomchant.lit"
     script.write_text("rite boom():\n    render 1 / 0\n\n\nboom()\n")
 
@@ -174,6 +179,83 @@ def test_own_plumbing_frames_are_suppressed(tmp_path):
     assert "loader.py" not in out
     assert "exec(" not in out
     assert "boomchant.lit" in out
+
+
+def test_module_invocation_has_no_runpy_frames(tmp_path):
+    # `python -m liturgy chant ...` runs the script through runpy, whose
+    # `_run_module_as_main`/`_run_code` frames sit above every .lit frame on
+    # every single failure. They must be dropped along with everything else
+    # above the user's first Liturgy frame.
+    bad = tmp_path / "bad.lit"
+    bad.write_text("intone(1 / 0)\n")
+
+    result = subprocess.run(
+        [sys.executable, "-m", "liturgy", "chant", str(bad)],
+        capture_output=True,
+        text=True,
+    )
+
+    assert "<frozen runpy>" not in result.stderr
+    assert "++ MACHINE CURSE ++" in result.stderr
+    assert "bad.lit" in result.stderr
+
+
+def test_console_script_has_no_launcher_frame(tmp_path):
+    # The ordinary invocation (`liturgy chant ...`, the installed console
+    # script) has its own one-frame wrapper (`sys.exit(main())`) sitting
+    # above every .lit frame. Run the real installed script rather than a
+    # synthesised frame -- it's cheap, and it's what users actually run.
+    console_script = Path(sys.executable).with_name("liturgy")
+    assert console_script.exists(), "console script not found next to venv's python"
+    bad = tmp_path / "bad.lit"
+    bad.write_text("intone(1 / 0)\n")
+
+    result = subprocess.run(
+        [str(console_script), "chant", str(bad)],
+        capture_output=True,
+        text=True,
+    )
+
+    assert "bin/liturgy" not in result.stderr
+    assert "sys.exit(main())" not in result.stderr
+    assert "++ MACHINE CURSE ++" in result.stderr
+    assert "bad.lit" in result.stderr
+
+
+def test_stdlib_frames_after_a_lit_frame_still_render_in_full(tmp_path, monkeypatch):
+    # The converse of frame-dropping: a .lit file calling into stdlib code
+    # (here json.loads on bad input) has those library frames *after* its
+    # own first .lit frame, and they must be left untouched.
+    path = tmp_path / "jsonbad.lit"
+    path.write_text("invoke json\njson.loads('not json')\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    loader.install()
+
+    try:
+        import jsonbad  # noqa: F401
+    except json.JSONDecodeError:
+        out = capture(sys.exc_info())
+
+    assert "jsonbad.lit" in out
+    assert "json/decoder.py" in out or "json\\decoder.py" in out
+    assert "raise JSONDecodeError" in out
+    assert "Expecting value" in out
+
+
+def test_no_lit_frame_renders_every_frame(tmp_path):
+    # If the exception never reached any Liturgy code (e.g. raised directly
+    # from a REPL or a plain Python caller), there is no launcher to hide
+    # relative to a .lit frame that doesn't exist. Rather than guess and
+    # potentially discard the only information available, render
+    # everything, exactly like an ordinary Python traceback would.
+    try:
+        json.loads("not json")
+    except json.JSONDecodeError:
+        out = capture(sys.exc_info())
+
+    assert __file__.split("/")[-1] in out or "test_curse.py" in out
+    assert "json/decoder.py" in out or "json\\decoder.py" in out
+    assert "Expecting value" in out
 
 
 def test_module_level_frame_does_not_claim_to_be_a_rite(tmp_path):

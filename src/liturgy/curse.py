@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import linecache
-import os
 import sys
 import threading
 import traceback
@@ -15,13 +14,6 @@ from .transform import transform
 
 BANNER_OPEN = "++ MACHINE CURSE ++"
 BANNER_CLOSE = "++ the machine spirit is displeased ++"
-
-# The directory this package lives in. Frames whose filename falls inside it
-# are Liturgy's own plumbing (loader.py's exec/compile, chant, ...) and are
-# suppressed from the rendered curse -- they are noise on every failure, not
-# information. Frames from genuine third-party code live elsewhere and still
-# render normally.
-_PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 _map_cache: dict[str, SourceMap | None] = {}
 
@@ -93,12 +85,30 @@ def _line_for(path: str, lineno: int) -> str:
     return linecache.getline(path, lineno).rstrip("\n")
 
 
-def _is_own_plumbing(frame: traceback.FrameSummary) -> bool:
-    try:
-        filename = os.path.abspath(frame.filename)
-    except Exception:
-        return False
-    return filename == _PACKAGE_DIR or filename.startswith(_PACKAGE_DIR + os.sep)
+def _drop_launcher_frames(
+    frames: list[traceback.FrameSummary],
+) -> list[traceback.FrameSummary]:
+    """Drop every frame above the first .lit frame.
+
+    Everything before the user's first Liturgy frame is launcher plumbing by
+    definition -- runpy's module-as-main machinery, the console-script
+    wrapper, our own loader's exec/compile, and anything a future entry
+    point adds. Package-scoped suppression (checking whether a frame's file
+    lives inside `liturgy`) only ever caught the frames we happened to know
+    about; this subsumes it, since every launcher sits above the first .lit
+    frame regardless of where its own file lives.
+
+    Frames *after* the first .lit frame -- e.g. stdlib or third-party code a
+    .lit file calls into -- are left untouched.
+
+    If there is no .lit frame at all, there is no launcher to hide relative
+    to: the exception never reached Liturgy code, so all frames are kept
+    rather than silently discarding the only information available.
+    """
+    for i, frame in enumerate(frames):
+        if frame.filename.endswith(".lit"):
+            return frames[i:]
+    return frames
 
 
 def _render_lit_frame(frame: traceback.FrameSummary, out: list[str]) -> None:
@@ -133,7 +143,7 @@ def _render(
     tb: types.TracebackType | None,
     file,
 ) -> None:
-    frames = [f for f in traceback.extract_tb(tb) if not _is_own_plumbing(f)]
+    frames = _drop_launcher_frames(traceback.extract_tb(tb))
     out = [BANNER_OPEN]
     for frame in frames:
         if frame.filename.endswith(".lit"):
