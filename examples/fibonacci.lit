@@ -1,0 +1,16 @@
+## The Rite of Recurrent Numeration
+## Chanted before the cogitator, that it may recall the sacred sequence.
+
+rite fibonacci(n):
+    should n < 2:
+        render n
+    render fibonacci(n - 1) + fibonacci(n - 2)
+
+
+rite litany_of_numeration(count):
+    foreach i among span(count):
+        intone(f"++ the {i}th number is {fibonacci(i)} ++")
+
+
+should __name__ == "__main__":
+    litany_of_numeration(11)
