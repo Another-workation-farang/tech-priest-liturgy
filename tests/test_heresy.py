@@ -51,3 +51,24 @@ def test_unwritable_state_file_does_not_raise(monkeypatch):
         heresy, "state_path", lambda: (_ for _ in ()).throw(OSError())
     )
     assert "TECH-HERESY DETECTED" in emit()
+
+
+@pytest.mark.parametrize(
+    "corrupted_state",
+    [
+        '{"run": "not-a-number"}',  # value not coercible to int
+        '{"run": null}',  # null value
+        "[1,2,3]",  # JSON array instead of object
+        '"hello"',  # JSON string instead of object
+    ],
+)
+def test_corrupted_state_file_still_rebukes(tmp_path, corrupted_state):
+    """Verify that partially-corrupted state (from concurrent writes or manual
+    edits) does not crash _bump(); the rebuke still emits and the count resets."""
+    state_file = tmp_path / "liturgy" / "heresies.json"
+    state_file.parent.mkdir(parents=True, exist_ok=True)
+    state_file.write_text(corrupted_state)
+
+    out = emit()
+    assert "TECH-HERESY DETECTED" in out
+    assert "noted" in out
