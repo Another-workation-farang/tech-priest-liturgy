@@ -1,4 +1,7 @@
+import builtins
 import keyword
+
+import pytest
 
 from liturgy import lexicon
 
@@ -32,3 +35,28 @@ def test_no_liturgy_word_is_also_a_python_keyword():
     # A Liturgy word that is itself a Python keyword would be substituted
     # into something else and break plain-Python compatibility.
     assert not (set(lexicon.LEXICON) & set(keyword.kwlist))
+
+
+# I8 — nothing validated that a target actually exists. A typo'd
+# `"unseal": "openn"` or `"MotiveFailure": "RuntimError"` passed the suite.
+@pytest.mark.parametrize(
+    "lit,target", sorted(lexicon.KEYWORDS.items()), ids=sorted(lexicon.KEYWORDS)
+)
+def test_every_keyword_target_is_a_real_python_keyword(lit, target):
+    assert target in set(keyword.kwlist) | set(keyword.softkwlist)
+
+
+@pytest.mark.parametrize(
+    "lit,target", sorted(lexicon.SOFTWORDS.items()), ids=sorted(lexicon.SOFTWORDS)
+)
+def test_every_softword_target_is_a_real_builtin(lit, target):
+    assert hasattr(builtins, target)
+
+
+@pytest.mark.parametrize(
+    "lit,target", sorted(lexicon.CURSES.items()), ids=sorted(lexicon.CURSES)
+)
+def test_every_curse_target_is_a_real_exception_class(lit, target):
+    cls = getattr(builtins, target, None)
+    assert isinstance(cls, type), f"{target!r} is not a builtin"
+    assert issubclass(cls, BaseException)

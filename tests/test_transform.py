@@ -2,6 +2,7 @@ import ast
 
 import pytest
 
+from liturgy.lexicon import LEXICON
 from liturgy.transform import (
     Substitution,
     UnfinishedLitany,
@@ -157,3 +158,20 @@ def test_the_default_filename_is_used_when_none_is_given():
     with pytest.raises(UnfinishedLitany) as info:
         transform("x = [\n")
     assert info.value.filename == "<litany>"
+
+
+# I8 — the spec requires transform tests "table-driven across every lexicon
+# entry". Without this, 25 of the 58 entries appeared in no test at all, and
+# a typo'd target ("unseal": "openn") passed the whole suite.
+@pytest.mark.parametrize(
+    "lit,target", sorted(LEXICON.items()), ids=sorted(LEXICON)
+)
+def test_every_lexicon_entry_substitutes(lit, target):
+    assert py(f"x = {lit}\n") == f"x = {target}\n"
+
+
+@pytest.mark.parametrize(
+    "lit,target", sorted(LEXICON.items()), ids=sorted(LEXICON)
+)
+def test_no_lexicon_entry_substitutes_in_attribute_position(lit, target):
+    assert py(f"x = obj.{lit}\n") == f"x = obj.{lit}\n"
