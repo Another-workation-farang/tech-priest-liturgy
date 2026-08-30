@@ -303,3 +303,64 @@ def test_form_feed_does_not_shift_the_reported_source_line(tmp_path):
     assert "line 4" in out
     assert "render 1 / 0" in out
     assert "boom()" in out
+
+
+DRIFT_DRIVER = textwrap.dedent(
+    """\
+    import io, linecache, os, sys
+    sys.path.insert(0, sys.argv[1])
+    from liturgy import curse, loader
+    loader.install()
+    import drifting
+    path = os.path.join(sys.argv[1], "drifting.lit")
+    with open(path, "w") as fh:
+        fh.write("rite invoke_spirit(tome):\\n    render 999999\\n")
+    later = os.path.getmtime(path) + 5
+    os.utime(path, (later, later))
+    linecache.checkcache(path)
+    try:
+        drifting.invoke_spirit(1)
+    except ZeroDivisionError:
+        buf = io.StringIO()
+        curse.render_curse(*sys.exc_info(), file=buf)
+        sys.stdout.write(buf.getvalue())
+    """
+)
+
+ORIGINAL_DRIFT = "rite invoke_spirit(tome):\n    render tome / 0\n"
+
+
+def test_modified_source_still_shows_the_executed_line_on_a_warm_pycache(
+    tmp_path,
+):
+    # Regression: I1. record_source used to be called only from
+    # source_to_code, which the import system skips entirely when a valid
+    # .pyc exists -- so from the second run of a program onwards nothing was
+    # recorded and the whole stale-source guarantee was inert. tmp_path is
+    # always cold, which is why the in-process test above passed against the
+    # broken implementation too. Two real processes; the first warms the
+    # .pyc.
+    path = tmp_path / "drifting.lit"
+    path.write_text(ORIGINAL_DRIFT)
+    driver = tmp_path / "driver.py"
+    driver.write_text(DRIFT_DRIVER)
+
+    warm = subprocess.run(
+        [sys.executable, "-c", f"import sys; sys.path.insert(0, {str(tmp_path)!r});"
+         " from liturgy import loader; loader.install(); import drifting"],
+        capture_output=True, text=True,
+    )
+    assert warm.returncode == 0, warm.stderr
+    assert list(tmp_path.glob("__pycache__/drifting.*.pyc")), "no .pyc was written"
+
+    # Deliberately do NOT touch the file here: rewriting it, even with
+    # identical bytes, bumps the mtime and invalidates the .pyc, which would
+    # send the second run back down the compile path and hide the bug. The
+    # driver does the edit *after* importing, which is the real scenario.
+    out = subprocess.run(
+        [sys.executable, str(driver), str(tmp_path)],
+        capture_output=True, text=True,
+    )
+    assert out.returncode == 0, out.stderr
+    assert "render tome / 0" in out.stdout
+    assert "render 999999" not in out.stdout

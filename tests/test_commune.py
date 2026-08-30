@@ -1,5 +1,6 @@
 import subprocess
 import sys
+from pathlib import Path
 
 from liturgy.commune import LiturgyConsole
 
@@ -103,3 +104,32 @@ def test_repl_recovers_after_dedent_mismatch_over_stdin():
     )
     assert "999" in out.stdout
     assert "111" in out.stdout
+
+
+def test_repl_can_import_a_lit_module(tmp_path):
+    # Regression: I4 — loader.install() was only ever called from chant(), so
+    # the REPL could not import .lit modules at all. It is the natural place
+    # to poke at a module you have just written.
+    (tmp_path / "shrine.lit").write_text('GREETING = "ave"\n')
+    out = subprocess.run(
+        [sys.executable, "-m", "liturgy", "commune"],
+        input="within shrine invoke GREETING\nintone(GREETING)\n",
+        cwd=str(tmp_path), capture_output=True, text=True,
+    )
+    assert "ModuleNotFoundError" not in out.stdout + out.stderr
+    assert "ave" in out.stdout
+
+
+def test_console_script_repl_can_import_from_the_working_directory(tmp_path):
+    # The installed console script's sys.path[0] is its own bin directory,
+    # not the cwd, so `liturgy commune` could not import anything the user
+    # was standing next to -- the plain `python` REPL prepends the cwd.
+    console_script = Path(sys.executable).with_name("liturgy")
+    assert console_script.exists(), "console script not found next to venv's python"
+    (tmp_path / "shrine.lit").write_text('GREETING = "ave"\n')
+    out = subprocess.run(
+        [str(console_script), "commune"],
+        input="within shrine invoke GREETING\nintone(GREETING)\n",
+        cwd=str(tmp_path), capture_output=True, text=True,
+    )
+    assert "ave" in out.stdout

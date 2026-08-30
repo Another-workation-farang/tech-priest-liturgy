@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-import importlib.machinery
 import importlib.util
 import linecache
 import os
@@ -45,6 +44,25 @@ class LiturgyLoader(SourceFileLoader):
             py, path, "exec", dont_inherit=True, optimize=_optimize
         )
 
+    def exec_module(self, module):  # noqa: D102
+        # Recording in source_to_code alone is not enough: the import system
+        # skips compilation entirely when a valid .pyc exists, so from the
+        # second run of any program onwards nothing would be recorded and the
+        # stale-source guarantee would be silently inert. Executing, unlike
+        # compiling, always happens.
+        #
+        # A cache hit means the .pyc was validated against the file's current
+        # mtime and size, so what get_source reads here *is* what was
+        # compiled. On a cache miss source_to_code records again, from the
+        # bytes it actually compiled, which correctly wins.
+        try:
+            src = self.get_source(module.__name__)
+        except (OSError, ImportError, ValueError):
+            src = None  # unreadable or undecodable: skip, never break import
+        if src is not None:
+            record_source(self.path, src)
+        super().exec_module(module)
+
 
 _installed = False
 
@@ -74,8 +92,12 @@ def chant(path: str, argv: list[str]) -> int:
     """Execute a .lit file with __main__ semantics."""
     install()
     path = os.path.abspath(path)
-    with open(path, encoding="utf-8") as fh:
-        src = fh.read()
+    # decode_source, not open(encoding="utf-8"): it honours a UTF-8 BOM and a
+    # PEP 263 `coding:` cookie, which is what the import path does. Reading
+    # the same file two different ways gave two different answers -- a BOM'd
+    # or latin-1 .lit imported fine and refused to chant.
+    with open(path, "rb") as fh:
+        src = importlib.util.decode_source(fh.read())
 
     record_source(path, src)
     py, _smap = transform(src)
@@ -94,13 +116,26 @@ def chant(path: str, argv: list[str]) -> int:
     module.__loader__ = None
     module.__package__ = None
 
+    # `python file.py` prepends the script's directory to sys.path, and the
+    # README promises chant executes a litany the same way. Without this a
+    # multi-file Liturgy program is unrunnable via the console script; it only
+    # appeared to work when the containing directory happened to be the cwd.
+    script_dir = os.path.dirname(path)
+
     old_main = sys.modules.get("__main__")
     old_argv = sys.argv
     sys.modules["__main__"] = module
     sys.argv = [path, *argv]
+    sys.path.insert(0, script_dir)
     try:
         exec(compile(py, path, "exec", dont_inherit=True), module.__dict__)
     finally:
+        # Remove one occurrence, not every one: the directory may legitimately
+        # have been on sys.path already, or the litany may have added it.
+        try:
+            sys.path.remove(script_dir)
+        except ValueError:
+            pass
         sys.argv = old_argv
         if old_main is None:
             del sys.modules["__main__"]
