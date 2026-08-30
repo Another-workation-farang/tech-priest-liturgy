@@ -260,7 +260,9 @@ This is not an arbitrary floor. Liturgy substitutes keywords at the token
 level, and starting with Python 3.12 (PEP 701) the tokenizer emits real
 `NAME` tokens for the interpolated parts of an f-string, so
 `f"{measure(x)}"` substitutes correctly — `measure` genuinely is code there,
-and the surrounding literal text is a separate, untouched token. Before 3.12,
+and the surrounding literal text is a separate, untouched token. (The closing
+line of `examples/fibonacci.lit` does exactly this, with `measure` counting
+the numbers recited.) Before 3.12,
 the tokenizer treats an entire f-string as one opaque `STRING` token, so the
 same substitution silently does nothing. Supporting both Python versions
 would mean the same piece of source means two different things depending on

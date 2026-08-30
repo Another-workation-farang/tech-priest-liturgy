@@ -8,8 +8,12 @@ rite fibonacci(n):
 
 
 rite litany_of_numeration(count):
+    recited = []
     foreach i among span(count):
-        intone(f"++ the {i}th number is {fibonacci(i)} ++")
+        value = fibonacci(i)
+        recited.append(value)
+        intone(f"++ fibonacci({i}) is {value} ++")
+    intone(f"++ {measure(recited)} numbers recited ++")
 
 
 should __name__ == "__main__":
