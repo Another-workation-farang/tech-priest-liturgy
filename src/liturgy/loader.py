@@ -39,7 +39,7 @@ class LiturgyLoader(SourceFileLoader):
         # source is known for certain -- record it so a later curse render
         # is correct even if the .lit file is edited on disk afterwards.
         record_source(path, src)
-        py, _smap = transform(src)
+        py, _smap = transform(src, filename=path)
         return compile(
             py, path, "exec", dont_inherit=True, optimize=_optimize
         )
@@ -100,7 +100,7 @@ def chant(path: str, argv: list[str]) -> int:
         src = importlib.util.decode_source(fh.read())
 
     record_source(path, src)
-    py, _smap = transform(src)
+    py, _smap = transform(src, filename=path)
 
     # No loader is involved here, so seed linecache by hand or the traceback
     # will have no source lines to show.

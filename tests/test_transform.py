@@ -2,7 +2,12 @@ import ast
 
 import pytest
 
-from liturgy.transform import Substitution, split_lines, transform
+from liturgy.transform import (
+    Substitution,
+    UnfinishedLitany,
+    split_lines,
+    transform,
+)
 
 
 def py(src):
@@ -107,3 +112,48 @@ def test_a_pass_that_adds_a_line_is_rejected_loudly():
 
     with pytest.raises(ValueError, match="would add a line"):
         transform("x = 1\n", passes=(bad_pass,))
+
+
+# Regression: I6 — transform's failure contract. tokenize.TokenError is not
+# a SyntaxError and carries no filename, so an unclosed bracket -- the
+# commonest typo -- escaped chant raw.
+def test_unclosed_bracket_raises_a_located_syntax_error():
+    with pytest.raises(UnfinishedLitany) as info:
+        transform('intone("a")\nintone(1 +\n', filename="synerr.lit")
+    err = info.value
+    assert isinstance(err, SyntaxError)
+    assert err.filename == "synerr.lit"
+    assert err.lineno == 2
+    assert "never closed" in err.msg
+    assert err.offset == 6  # the "(" in the generated `print(1 +`
+
+
+def test_unterminated_string_raises_a_located_syntax_error():
+    with pytest.raises(UnfinishedLitany) as info:
+        transform('x = """abc\n', filename="strerr.lit")
+    assert "unterminated" in info.value.msg
+    assert info.value.filename == "strerr.lit"
+
+
+def test_unfinished_litany_carries_a_usable_column_map():
+    # The map for everything that did tokenise, so the curse can still put a
+    # caret on the failure. "intone" -> "print" shifts columns by one.
+    with pytest.raises(UnfinishedLitany) as info:
+        transform("intone(1 +\n", filename="c.lit")
+    assert info.value.sourcemap is not None
+    assert info.value.sourcemap.to_lit(1, 5) == 6
+
+
+def test_a_real_tokenizer_syntax_error_keeps_its_type_and_gains_a_filename():
+    # A dedent matching no outer level is complete and unrecoverable, not
+    # unfinished: it must not be reported as an UnfinishedLitany.
+    with pytest.raises(IndentationError) as info:
+        transform("should Sanctioned:\n  x=1\n y=2\n", filename="dedent.lit")
+    assert not isinstance(info.value, UnfinishedLitany)
+    assert info.value.filename == "dedent.lit"
+
+
+def test_the_default_filename_is_used_when_none_is_given():
+    with pytest.raises(UnfinishedLitany) as info:
+        transform("x = [\n")
+    assert info.value.filename == "<litany>"

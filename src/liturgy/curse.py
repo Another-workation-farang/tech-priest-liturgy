@@ -10,7 +10,7 @@ import types
 
 from .lexicon import INVERSE
 from .sourcemap import SourceMap
-from .transform import split_lines, transform
+from .transform import UnfinishedLitany, split_lines, transform
 
 BANNER_OPEN = "++ MACHINE CURSE ++"
 BANNER_CLOSE = "++ the machine spirit is displeased ++"
@@ -64,6 +64,11 @@ def _map_for(path: str) -> SourceMap | None:
     if path not in _map_cache:
         try:
             _map_cache[path] = transform(_read_source(path))[1]
+        except UnfinishedLitany as err:
+            # Source that never finishes tokenising still has a usable map
+            # for everything before the failure -- which is where the caret
+            # for that very failure belongs.
+            _map_cache[path] = err.sourcemap
         except Exception:
             _map_cache[path] = None
     return _map_cache[path]

@@ -171,3 +171,27 @@ def test_chant_restores_sys_path(tmp_path):
     loader.chant(str(script), [])
 
     assert sys.path == before
+
+
+# Regression: I6 — an unclosed bracket must reach both callers as a located
+# SyntaxError, not as a raw tokenize.TokenError with no filename.
+def test_chant_reports_an_unclosed_bracket_as_a_located_syntax_error(tmp_path):
+    script = tmp_path / "synerr.lit"
+    script.write_text('intone("a")\nintone(1 +\n')
+    with pytest.raises(SyntaxError) as info:
+        loader.chant(str(script), [])
+    assert info.value.filename == str(script)
+    assert info.value.lineno == 2
+    assert "never closed" in info.value.msg
+
+
+def test_import_reports_an_unclosed_bracket_as_a_located_syntax_error(
+    tmp_path, monkeypatch
+):
+    (tmp_path / "synerrimp.lit").write_text("x = [1,\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    loader.install()
+    with pytest.raises(SyntaxError) as info:
+        import synerrimp  # noqa: F401
+    assert info.value.filename.endswith("synerrimp.lit")
+    assert "never closed" in info.value.msg

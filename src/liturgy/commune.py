@@ -5,10 +5,9 @@ from __future__ import annotations
 import code
 import os
 import sys
-import tokenize
 
 from .loader import install as install_hook
-from .transform import transform
+from .transform import UnfinishedLitany, transform
 
 BANNER = (
     "++ COMMUNION ESTABLISHED ++\n"
@@ -21,8 +20,10 @@ class LiturgyConsole(code.InteractiveConsole):
     def runsource(self, source, filename="<commune>", symbol="single"):
         try:
             py, _smap = transform(source)
-        except tokenize.TokenError:
+        except UnfinishedLitany:
             # Unterminated bracket or string: not an error, just unfinished.
+            # transform() reports this as a SyntaxError subclass so file
+            # callers need no special case; only a prompt can ask for more.
             return True
         except SyntaxError:
             # tokenize never raises this for genuinely incomplete input --

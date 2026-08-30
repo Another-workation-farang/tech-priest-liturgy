@@ -185,12 +185,121 @@ def alias_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
 DEFAULT_PASSES: tuple[TokenPass, ...] = (alias_pass,)
 
 
+class UnfinishedLitany(SyntaxError):
+    """The litany ends inside an unclosed bracket or string literal.
+
+    A `SyntaxError` subclass on purpose. For a file that is simply what it
+    is -- a syntax error -- so the loader and `chant` need no special case
+    and the curse renders it like any other. `commune` catches this exact
+    type, because at a prompt an unclosed bracket is not an error but a
+    request for the next line.
+
+    `sourcemap` carries the column map for the part that did tokenise, so a
+    curse can still place its caret; rebuilding it by calling `transform`
+    again would only fail the same way.
+    """
+
+    sourcemap: SourceMap | None = None
+
+
 def transform(
-    src: str, passes: Sequence[TokenPass] = DEFAULT_PASSES
+    src: str,
+    passes: Sequence[TokenPass] = DEFAULT_PASSES,
+    *,
+    filename: str = "<litany>",
 ) -> tuple[str, SourceMap]:
-    toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
+    """Translate Liturgy source into Python, preserving lines exactly.
+
+    Returns the generated Python and the column map from it back to `src`.
+
+    Raises:
+        UnfinishedLitany: the source ends mid-bracket or mid-string.
+        SyntaxError: (including `IndentationError`/`TabError`) a complete,
+            unrecoverable tokenisation error, e.g. a dedent matching no
+            outer indentation level. `filename` replaces the "<string>"
+            the tokenizer invents.
+        ValueError: a pass returned a substitution containing a newline,
+            which would break the line invariant (see `_splice`).
+
+    Every location raised is in **generated-Python** column coordinates --
+    the same coordinates `compile()` reports for the same file -- so one
+    mapping through the SourceMap serves both sources of error.
+    """
+    toks, unfinished = _tokenize(src, filename)
     subs = [s for p in passes for s in p(toks)]
-    return _splice(src, subs)
+    py, smap = _splice(src, subs)
+    if unfinished is not None:
+        raise _unfinished_litany(unfinished, py, smap, filename)
+    return py, smap
+
+
+def _tokenize(
+    src: str, filename: str
+) -> tuple[list[tokenize.TokenInfo], tokenize.TokenError | None]:
+    """Tokenise, returning the tokens gathered before any unfinished input.
+
+    A `TokenError` means only "the source ran out" -- an unclosed bracket or
+    string. Everything up to that point tokenised fine and is worth keeping.
+    A `SyntaxError` from the tokenizer is a real, complete error and is
+    re-raised, with the filename the tokenizer cannot know filled in.
+    """
+    toks: list[tokenize.TokenInfo] = []
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(src).readline):
+            toks.append(tok)
+    except tokenize.TokenError as err:
+        return toks, err
+    except SyntaxError as err:
+        # The tokenizer works from a readline callable and has no idea what
+        # file this is; it labels everything "<string>".
+        err.filename = filename
+        raise
+    return toks, None
+
+
+def _unfinished_litany(
+    err: tokenize.TokenError, py: str, smap: SourceMap, filename: str
+) -> UnfinishedLitany:
+    """Turn a `TokenError` into a located `SyntaxError`.
+
+    `TokenError` is not a `SyntaxError`, carries no filename, and reports the
+    position of EOF -- so it escaped `chant` raw as
+    `TokenError: ('unexpected EOF in multi-line statement', (4, 0))` where
+    Python would have said `'(' was never closed` with a file and a caret.
+
+    Compiling the partially spliced Python recovers exactly that message and
+    the opener's position. It is safe: `compile` only parses, and the source
+    is one we just generated. If it somehow parses, or fails some other way,
+    the tokenizer's own message and position still stand.
+    """
+    msg = str(err.args[0]) if err.args else "unexpected end of litany"
+    pos = err.args[1] if len(err.args) > 1 else None
+    lineno, offset = (pos[0], pos[1] + 1) if pos else (1, 1)
+    text: str | None = None
+    end_lineno: int | None = None
+    end_offset: int | None = None
+
+    try:
+        compile(py, filename, "exec", dont_inherit=True)
+    except SyntaxError as better:
+        msg = better.msg or msg
+        lineno = better.lineno or lineno
+        offset = better.offset or offset
+        text = better.text
+        end_lineno, end_offset = better.end_lineno, better.end_offset
+    except ValueError:
+        pass  # e.g. a null byte in the source; keep the tokenizer's account
+
+    if text is None:
+        lines = split_lines(py)
+        if 1 <= lineno <= len(lines):
+            text = lines[lineno - 1]
+
+    exc = UnfinishedLitany(
+        msg, (filename, lineno, offset, text, end_lineno, end_offset)
+    )
+    exc.sourcemap = smap
+    return exc
 
 
 def _splice(src: str, subs: list[Substitution]) -> tuple[str, SourceMap]:
