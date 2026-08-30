@@ -50,3 +50,10 @@ def test_mapping_is_monotonic_within_a_line():
     m = build(Span(0, 2, 0, 6), Span(3, 8, 7, 13))
     cols = [m.to_lit(1, c) for c in range(0, 20)]
     assert cols == sorted(cols)
+
+
+def test_columns_before_first_span_are_identity():
+    # Span starts at py[3], so columns 0-2 are before any substitution
+    m = build(Span(3, 8, 7, 13))
+    assert m.to_lit(1, 0) == 0
+    assert m.to_lit(1, 2) == 2
