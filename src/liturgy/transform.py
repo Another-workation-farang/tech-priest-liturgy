@@ -112,17 +112,31 @@ def _walk_tokens(
             continue
 
         target = lookup.get(tok.string)
+        prev = significant[i - 1] if i else None
+        nxt = significant[i + 1] if i + 1 < len(significant) else None
 
         # Track import statements. Do this before the substitution decision
         # so the keyword itself is still translated.
-        if is_import_start(tok, target):
+        #
+        # Only a NAME in *statement position* can begin one. Without that
+        # gate, `button.invoke()` (standard Tkinter, and the shape of
+        # ctx.invoke / CliRunner.invoke / chain.invoke) sets in_import and
+        # the bypass below then rewrites the attribute to `button.import()`
+        # before Rule 1 can protect it -- the exact failure the named
+        # `template.render()` regression exists to prevent. The knock-on is
+        # worse: a spuriously-set in_import makes Rule 3 suppress every
+        # Liturgy word for the rest of the line, so some shapes fail
+        # silently rather than loudly.
+        at_stmt_start = (
+            prev is None
+            or prev.type == tokmod.NEWLINE
+            or (prev.type == tokmod.OP and prev.string in (";", ":"))
+        )
+        if at_stmt_start and is_import_start(tok, target):
             in_import = True
 
         if target is None:
             continue
-
-        prev = significant[i - 1] if i else None
-        nxt = significant[i + 1] if i + 1 < len(significant) else None
 
         # Import-statement keywords always translate, even directly after a
         # relative-import dot (`from . import x`) which would otherwise look

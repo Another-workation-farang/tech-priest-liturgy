@@ -1,3 +1,5 @@
+import pytest
+
 from liturgy.transform import transform
 
 
@@ -120,3 +122,50 @@ def test_real_kwarg_inside_fstring_expression_stays_protected():
 def test_keyword_argument_value_is_still_substituted_after_fstring_fix():
     # Existing Rule 2 behaviour must be unaffected by the f-string guard.
     assert py("f(mode=Sanctioned)\n") == "f(mode=True)\n"
+
+
+# Regression: C2 — an import keyword in *attribute* position must not open
+# import scope. `is_import_start` used to fire on any NAME whose target was
+# import/from, and the import-safe bypass then rewrote it before Rule 1 could
+# protect it. `button.invoke()` is standard Tkinter (idlelib uses it); so are
+# Click's `ctx.invoke()`, `CliRunner.invoke()` and every LangChain
+# `chain.invoke()`.
+@pytest.mark.parametrize(
+    "src",
+    [
+        "button.invoke()\n",
+        "obj.within\n",
+        "chain.invoke(x)\n",
+        "ctx.invoke(cmd, arg)\n",
+    ],
+)
+def test_import_words_in_attribute_position_are_untouched(src):
+    assert py(src) == src
+
+
+def test_attribute_invoke_does_not_suppress_the_rest_of_the_line():
+    # The silent half of C2: a spuriously-opened import scope made Rule 3
+    # suppress every Liturgy word after it.
+    assert py("intone(w.invoke(), Sanctioned)\n") == "print(w.invoke(), True)\n"
+
+
+def test_comprehension_after_an_attribute_invoke_still_translates():
+    assert py("x = [w.invoke() foreach w among ws should Sanctioned]\n") == (
+        "x = [w.invoke() for w in ws if True]\n"
+    )
+
+
+def test_yield_from_does_not_open_import_scope():
+    # `within` after `emanate` is not a statement-position import keyword,
+    # so the words after it must still translate.
+    assert py("emanate within measure(x)\n") == "yield from len(x)\n"
+
+
+def test_raise_from_does_not_open_import_scope():
+    assert py("proclaim MotiveFailure(measure(x)) within exc\n") == (
+        "raise RuntimeError(len(x)) from exc\n"
+    )
+
+
+def test_import_after_a_colon_on_one_line_still_opens_import_scope():
+    assert py("should Sanctioned: invoke span\n") == "if True: import span\n"
