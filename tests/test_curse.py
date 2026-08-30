@@ -414,6 +414,65 @@ def test_import_renders_a_syntax_error_with_line_source_and_caret(
 
     assert f"imp{case}.lit, line {lineno}" in out
     assert fragment in out
+    # No "importlib not in out" assertion here: this test imports from a .py
+    # test module, so the traceback has no .lit frame and the `anchored`
+    # branch wipes every frame regardless. Asserting the absence of import
+    # machinery here would pass whatever the suppression rule did. The case
+    # that genuinely exercises it is the next test, where a .lit does the
+    # importing and there IS a .lit frame for the plumbing to hide behind.
+
+
+def test_a_litany_invoking_an_uncompilable_litany_hides_the_import_machinery(
+    tmp_path,
+):
+    # CPython shows exactly two frames for the equivalent .py case: the
+    # importing line and the fault. Everything between is import machinery it
+    # hides, and so do we -- including our own loader and transform frames,
+    # which sit between two .lit frames where the launcher rule cannot reach.
+    # Distinct module name: `broken` is already in sys.modules from the
+    # `broken` fixture above, and a cached module never re-compiles, so the
+    # name would silently stop testing anything when the full suite runs.
+    (tmp_path / "uncompilable.lit").write_text("x = (1, 2\n")
+    outer = tmp_path / "outer.lit"
+    outer.write_text('invoke uncompilable\nintone("never")\n')
+
+    try:
+        loader.chant(str(outer), [])
+    except SyntaxError:
+        out = capture(sys.exc_info())
+
+    # Both ends of the story survive: what invoked, and what would not compile.
+    assert "outer.lit, line 1" in out
+    assert "invoke uncompilable" in out
+    assert "uncompilable.lit, line 1" in out
+    assert "x = (1, 2" in out
+    assert "UnfinishedLitany" in out
+
+    # Everything in between is gone.
+    assert "importlib" not in out
+    assert "loader.py" not in out
+    assert "transform.py" not in out
+    assert "exec_module" not in out
+
+
+def test_hiding_import_machinery_spares_libraries_a_litany_calls_into(
+    tmp_path,
+):
+    # The plumbing filter must not become a blanket "drop anything that is not
+    # a .lit frame" -- stdlib and third-party frames below the litany are the
+    # user's answer, not noise.
+    script = tmp_path / "usesjson.lit"
+    script.write_text(
+        'invoke json\nrite parse():\n    render json.loads("{bad}")\nparse()\n'
+    )
+
+    try:
+        loader.chant(str(script), [])
+    except Exception:
+        out = capture(sys.exc_info())
+
+    assert "usesjson.lit, line 3" in out
+    assert out.count("json/decoder.py") >= 1
     assert "importlib" not in out
 
 
