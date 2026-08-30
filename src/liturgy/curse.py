@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import builtins
 import linecache
+import os
 import sys
 import threading
 import traceback
@@ -24,6 +25,9 @@ CONTEXT_SEPARATOR = (
 )
 
 SUFFIX = ".lit"
+
+# Our own compile path, for the plumbing filter below.
+_PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # MachineCurse and PrimalCurse are the names of `Exception` and
 # `BaseException` themselves, not of everything descended from them. An MRO
@@ -147,18 +151,26 @@ def _drop_launcher_frames(
     *,
     anchored: bool = False,
 ) -> list[traceback.FrameSummary]:
-    """Drop every frame above the first .lit frame.
+    """Drop launcher frames above the first .lit frame, and plumbing anywhere.
 
-    Everything before the user's first Liturgy frame is launcher plumbing by
-    definition -- runpy's module-as-main machinery, the console-script
-    wrapper, our own loader's exec/compile, and anything a future entry
-    point adds. Package-scoped suppression (checking whether a frame's file
-    lives inside `liturgy`) only ever caught the frames we happened to know
-    about; this subsumes it, since every launcher sits above the first .lit
-    frame regardless of where its own file lives.
+    Two rules, because neither covers the other:
 
-    Frames *after* the first .lit frame -- e.g. stdlib or third-party code a
-    .lit file calls into -- are left untouched.
+    *Positionally*, everything before the user's first Liturgy frame is
+    launcher plumbing by definition -- runpy's module-as-main machinery, the
+    console-script wrapper, and anything a future entry point adds. Those sit
+    above the first .lit frame wherever their own files live, so no
+    package-scoped check would catch them all.
+
+    *By origin*, the import system and our own compile path can also appear
+    strictly between two .lit frames, which the positional rule cannot reach:
+    when one litany invokes another that will not compile, the frames for
+    `_find_and_load`, `exec_module` and `transform` land between the invoking
+    line and the fault. CPython hides its equivalents for the same .py case,
+    and so do we.
+
+    Frames after the first .lit frame that belong to neither category -- the
+    stdlib or third-party code a litany calls into -- are left untouched, and
+    a .lit frame is never dropped.
 
     If there is no .lit frame at all, there is no launcher to hide relative
     to: the exception never reached Liturgy code, so all frames are kept
@@ -169,8 +181,21 @@ def _drop_launcher_frames(
     """
     for i, frame in enumerate(frames):
         if frame.filename.endswith(SUFFIX):
-            return frames[i:]
+            return [f for f in frames[i:] if not _is_plumbing(f)]
     return [] if anchored else frames
+
+
+def _is_plumbing(frame: traceback.FrameSummary) -> bool:
+    """Is this frame the import system, or our own compile path?
+
+    A .lit frame is never plumbing, however it got there -- a litany that
+    somehow lives inside the package directory is still the user's code.
+    """
+    if frame.filename.endswith(SUFFIX):
+        return False
+    if frame.filename.startswith("<frozen importlib."):
+        return True
+    return os.path.abspath(frame.filename).startswith(_PACKAGE_DIR + os.sep)
 
 
 def _render_caret(
