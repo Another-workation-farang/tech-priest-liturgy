@@ -60,15 +60,24 @@ def test_unwritable_state_file_does_not_raise(monkeypatch):
         '{"run": null}',  # null value
         "[1,2,3]",  # JSON array instead of object
         '"hello"',  # JSON string instead of object
+        '{"run": -1}',  # small negative count
+        '{"run": -2}',  # small negative count
+        '{"run": -5}',  # large negative count
+        '{"run": -100}',  # very large negative count
     ],
 )
 def test_corrupted_state_file_still_rebukes(tmp_path, corrupted_state):
     """Verify that partially-corrupted state (from concurrent writes or manual
-    edits) does not crash _bump(); the rebuke still emits and the count resets."""
+    edits) does not crash _bump(); the rebuke still emits and the count resets.
+    Includes negative counts which must not cause IndexError or show wrong rebuke."""
     state_file = tmp_path / "liturgy" / "heresies.json"
     state_file.parent.mkdir(parents=True, exist_ok=True)
     state_file.write_text(corrupted_state)
 
     out = emit()
     assert "TECH-HERESY DETECTED" in out
+    # All corruptions should reset to first rebuke ("noted"), not crash or show wrong rebuke
     assert "noted" in out
+    # Ensure no other rebuke level is shown
+    assert "permanent record" not in out
+    assert "Inquisition" not in out

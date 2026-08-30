@@ -36,9 +36,11 @@ def _bump(alias: str) -> int:
         # Verify data is a dict and can be processed safely.
         if not isinstance(data, dict):
             data = {}
-        # Coerce the value safely; treat anything non-numeric as absent.
+        # Coerce the value safely; treat anything non-numeric or negative as absent.
         try:
             current = int(data.get(alias, 0))
+            if current < 0:
+                current = 0
         except (TypeError, ValueError):
             current = 0
         count = current + 1
@@ -78,6 +80,8 @@ def rebuke(alias: str, proper: str, *, stream=None) -> None:
         return
     stream = stream if stream is not None else sys.stderr
     count = _bump(alias)
-    message = REBUKES[min(count, len(REBUKES)) - 1].format(proper=proper.upper())
+    # Clamp the index to the valid range [0, len(REBUKES)-1], ensuring no out-of-range lookup.
+    rebuke_index = max(0, min(count, len(REBUKES)) - 1)
+    message = REBUKES[rebuke_index].format(proper=proper.upper())
     print("++ TECH-HERESY DETECTED ++", file=stream)
     print(f"++ {message} ++", file=stream)
