@@ -1,5 +1,9 @@
 """Python -> Liturgy, for test fixtures only.
 
+Lives in `tests/`, not in the package: it is test support and has no
+business inside the installed wheel. Its one dependency on the package is
+`transform._walk_tokens`, already a deliberate two-module contract.
+
 Not the Spec III `transcribe` verb: this exists so the round-trip property
 test can generate Liturgy from real Python and assert we get the Python back.
 
@@ -26,8 +30,8 @@ from __future__ import annotations
 
 import tokenize
 
-from . import transform as _t
-from .lexicon import INVERSE
+from liturgy import transform as _t
+from liturgy.lexicon import INVERSE
 
 # The Liturgy spellings of import/from/as: the destination-language
 # equivalent of transform._IMPORT_SAFE for this direction.

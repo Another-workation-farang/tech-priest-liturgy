@@ -1,9 +1,16 @@
+import io
+import math
+import pathlib
 import re
+import sysconfig
 import textwrap
+import tokenize
 
 import pytest
 
-from liturgy._reverse import to_liturgy
+from _reverse import to_liturgy
+
+from liturgy.lexicon import LEXICON
 from liturgy.transform import transform
 
 
@@ -156,3 +163,106 @@ def test_python_to_liturgy_and_back_is_identity(src, required):
     for word in required:
         assert _has_word(lit, word), f"expected {word!r} in reverse output: {lit!r}"
     assert transform(lit)[0] == src
+
+
+# --- I9: the same property over real Python files ---------------------------
+#
+# The spec asks for "real Python files", mechanically reverse-aliased into
+# Liturgy and transformed back. The hand-written samples above stay -- they
+# carry the required-word assertions, which a corpus sweep cannot -- but they
+# are not real files, and a real corpus finds things they cannot. Running
+# this against the pre-C2 transform fails on nine files, all of them
+# `button.invoke()`.
+
+TRIVIAL = frozenset(
+    {tokenize.COMMENT, tokenize.NL, tokenize.INDENT, tokenize.DEDENT}
+)
+
+# Bound the sweep: stride the discovered corpus down to about this many
+# files, deterministically and spread across the whole tree, so the runtime
+# stays roughly constant whatever stdlib happens to be installed.
+CORPUS_TARGET = 700
+CORPUS_FLOOR = 200  # below this, something is wrong with discovery itself
+
+
+def _liturgy_word_as_identifier(toks) -> bool:
+    """Does this source use a Liturgy word where the forward pass would act?
+
+    That is the documented caveat, not a bug: a Python file with its own
+    `def render(...)` cannot survive the round trip, because `render` is how
+    Liturgy spells `return`.
+
+    A Liturgy word in *attribute* position is explicitly not covered by the
+    caveat -- Rule 1 exists to protect `button.invoke()` and
+    `template.render()`, which are attributes on objects the author does not
+    own. Those files stay in the corpus; they are the point.
+    """
+    prev = None
+    for tok in toks:
+        if tok.type in TRIVIAL:
+            continue
+        after_dot = (
+            prev is not None
+            and prev.type == tokenize.OP
+            and prev.string == "."
+        )
+        if tok.type == tokenize.NAME and tok.string in LEXICON and not after_dot:
+            return True
+        prev = tok
+    return False
+
+
+def _corpus() -> list[pathlib.Path]:
+    root = pathlib.Path(sysconfig.get_paths()["stdlib"])
+    files = sorted(
+        p
+        for p in root.rglob("*.py")
+        if not {"site-packages", "__pycache__"} & set(p.relative_to(root).parts)
+    )
+    stride = max(1, math.ceil(len(files) / CORPUS_TARGET))
+    return files[::stride]
+
+
+def test_real_python_files_round_trip_through_liturgy(capsys):
+    swept = skipped_word = skipped_unreadable = 0
+    failures: list[str] = []
+
+    for path in _corpus():
+        try:
+            with tokenize.open(str(path)) as fh:
+                src = fh.read()
+            toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
+        except Exception:
+            # Deliberately broken fixtures, exotic encodings, syntax from a
+            # future or past release. Not our corpus.
+            skipped_unreadable += 1
+            continue
+
+        if _liturgy_word_as_identifier(toks):
+            skipped_word += 1
+            continue
+
+        swept += 1
+        try:
+            back = transform(to_liturgy(src))[0]
+        except Exception as exc:  # noqa: BLE001 - report, do not mask
+            failures.append(f"{path}: {type(exc).__name__}: {exc}")
+            continue
+        if back != src:
+            failures.append(str(path))
+
+    with capsys.disabled():
+        print(
+            f"\nround-trip sweep: {swept} swept, {skipped_word} skipped "
+            f"(Liturgy word as identifier), {skipped_unreadable} unreadable"
+        )
+
+    assert swept >= CORPUS_FLOOR, (
+        f"only {swept} files swept (skipped {skipped_word} for a Liturgy "
+        f"word, {skipped_unreadable} unreadable) -- a silent near-zero sweep "
+        "proves nothing"
+    )
+    assert not failures, (
+        f"{len(failures)} of {swept} real Python files did not round-trip:\n"
+        + "\n".join(failures[:20])
+    )
