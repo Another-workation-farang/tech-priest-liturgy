@@ -1,0 +1,21 @@
+src/liturgy/transform.py
+  s_d162ead593e4de::t_fe615c80a0be9a 115-116,120-135
+tests/test_context_rules.py
+  s_d162ead593e4de::t_cd8cb5322c2bf0 1-2,125-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "4769527c5dd2dd5d3ad0befadc8e4a3e20806c32",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
