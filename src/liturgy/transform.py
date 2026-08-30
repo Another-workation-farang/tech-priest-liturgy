@@ -25,15 +25,77 @@ class TokenPass(Protocol):
     ) -> list[Substitution]: ...
 
 
+# Tokens that carry no syntactic weight when looking backwards.
+_INSIGNIFICANT = frozenset(
+    {
+        tokmod.COMMENT,
+        tokmod.NL,
+        tokmod.INDENT,
+        tokmod.DEDENT,
+    }
+)
+
+# Inside an import statement, only these targets may still be substituted.
+_IMPORT_SAFE = frozenset({"import", "from", "as"})
+
+_OPENERS = frozenset("([{")
+_CLOSERS = frozenset(")]}")
+
+
 def alias_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
     subs: list[Substitution] = []
-    for tok in toks:
+    significant = [t for t in toks if t.type not in _INSIGNIFICANT]
+
+    depth = 0
+    in_import = False
+
+    for i, tok in enumerate(significant):
+        if tok.type == tokmod.NEWLINE:
+            in_import = False
+            continue
+
+        if tok.type == tokmod.OP:
+            if tok.string in _OPENERS:
+                depth += 1
+            elif tok.string in _CLOSERS:
+                depth -= 1
+            continue
+
         if tok.type != tokmod.NAME:
             continue
+
         py = LEXICON.get(tok.string)
+
+        # Track import statements in either spelling. Do this before the
+        # substitution decision so the keyword itself is still translated.
+        if tok.string in ("import", "from") or py in ("import", "from"):
+            in_import = True
+
         if py is None:
             continue
+
+        prev = significant[i - 1] if i else None
+        nxt = significant[i + 1] if i + 1 < len(significant) else None
+
+        # Rule 1: attribute access. obj.render must not become obj.return.
+        if prev is not None and prev.type == tokmod.OP and prev.string == ".":
+            continue
+
+        # Rule 2: keyword-argument name inside a call.
+        if (
+            depth > 0
+            and nxt is not None
+            and nxt.type == tokmod.OP
+            and nxt.string == "="
+        ):
+            continue
+
+        # Rule 3: import statements — only the statement keywords translate.
+        if in_import and py not in _IMPORT_SAFE:
+            continue
+
         subs.append(Substitution(tok.start[0], tok.start[1], tok.end[1], py))
+
     return subs
 
 
