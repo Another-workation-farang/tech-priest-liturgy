@@ -308,28 +308,47 @@ def _render_chain(
     a real regression against plain Python, which is the bar this project
     set itself.
     """
-    if exc is not None:
-        if id(exc) in seen:
-            return
-        seen.add(id(exc))
-        cause = exc.__cause__
-        context = None if exc.__suppress_context__ else exc.__context__
-        if cause is not None:
-            _render_chain(type(cause), cause, cause.__traceback__, out, seen)
-            out.append(CAUSE_SEPARATOR)
-        elif context is not None:
-            _render_chain(
-                type(context), context, context.__traceback__, out, seen
+    # Collect the chain outermost-first, iteratively: it can be arbitrarily
+    # long, and recursing down it would trade a rendered curse for a
+    # RecursionError. Each link carries the separator that introduces it,
+    # which is exactly the link's relationship to the one beneath it.
+    links: list[
+        tuple[type, BaseException | None, types.TracebackType | None, str | None]
+    ] = []
+    while True:
+        if exc is not None:
+            if id(exc) in seen:
+                break
+            seen.add(id(exc))
+        cause = getattr(exc, "__cause__", None)
+        context = (
+            None
+            if exc is None or exc.__suppress_context__
+            else exc.__context__
+        )
+        beneath = cause if cause is not None else context
+        separator = None
+        if beneath is not None:
+            separator = (
+                CAUSE_SEPARATOR if cause is not None else CONTEXT_SEPARATOR
             )
-            out.append(CONTEXT_SEPARATOR)
+        links.append((exc_type, exc, tb, separator))
+        if beneath is None:
+            break
+        exc_type, exc, tb = type(beneath), beneath, beneath.__traceback__
 
-    _render_one(exc_type, exc, tb, out)
-
-    if isinstance(exc, BaseExceptionGroup):
-        total = len(exc.exceptions)
-        for i, sub in enumerate(exc.exceptions, 1):
-            out.append(f"   ++ curse {i} of {total} bound within the above ++")
-            _render_chain(type(sub), sub, sub.__traceback__, out, seen)
+    for exc_type, exc, tb, separator in reversed(links):
+        if separator is not None:
+            out.append(separator)
+        _render_one(exc_type, exc, tb, out)
+        if isinstance(exc, BaseExceptionGroup):
+            # Groups nest by containment, not by chaining, and shallowly.
+            total = len(exc.exceptions)
+            for i, sub in enumerate(exc.exceptions, 1):
+                out.append(
+                    f"   ++ curse {i} of {total} bound within the above ++"
+                )
+                _render_chain(type(sub), sub, sub.__traceback__, out, seen)
 
 
 def _render(

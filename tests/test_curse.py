@@ -622,3 +622,19 @@ def test_a_multiline_expression_still_gets_a_caret(tmp_path):
     lines = out.splitlines()
     i = next(n for n, ln in enumerate(lines) if ln.strip() == "x = boom(")
     assert lines[i + 1].strip().startswith("^"), out
+
+
+def test_a_very_long_chain_is_rendered_without_recursing():
+    # Recursing down the chain would trade a rendered curse for a
+    # RecursionError and the fallback plain traceback.
+    outermost = ValueError("0")
+    for i in range(1, 3000):
+        nxt = ValueError(str(i))
+        nxt.__cause__ = outermost
+        outermost = nxt
+    buf = io.StringIO()
+    curse.render_curse(ValueError, outermost, None, file=buf)
+    lines = buf.getvalue().splitlines()
+
+    assert lines[1].strip() == "ImpureOffering: 0"  # the root, rendered first
+    assert lines[-2].strip() == "ImpureOffering: 2999"
