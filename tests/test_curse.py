@@ -285,3 +285,21 @@ def test_install_is_idempotent_about_repeated_calls():
     curse.install()
     assert sys.excepthook is curse.render_curse
     assert threading.excepthook is curse._thread_hook
+
+
+def test_form_feed_does_not_shift_the_reported_source_line(tmp_path):
+    # Regression: C1, at the render end. A form feed is a conventional page
+    # separator in older Python and legal anywhere; str.splitlines() breaks
+    # on it and the tokenizer does not, so the recorded source must be split
+    # the tokenizer's way or the curse quotes the wrong line.
+    script = tmp_path / "pagebreak.lit"
+    script.write_text('intone("one")\n\x0c\nrite boom():\n    render 1 / 0\n\n\nboom()\n')
+
+    try:
+        loader.chant(str(script), [])
+    except ZeroDivisionError:
+        out = capture(sys.exc_info())
+
+    assert "line 4" in out
+    assert "render 1 / 0" in out
+    assert "boom()" in out

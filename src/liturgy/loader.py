@@ -21,7 +21,7 @@ from importlib.machinery import (
 )
 
 from .curse import record_source
-from .transform import transform
+from .transform import split_lines, transform
 
 SUFFIX = ".lit"
 
@@ -85,7 +85,7 @@ def chant(path: str, argv: list[str]) -> int:
     linecache.cache[path] = (
         len(src),
         None,
-        src.splitlines(keepends=True),
+        split_lines(src),
         path,
     )
 

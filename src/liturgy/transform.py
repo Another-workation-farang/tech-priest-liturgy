@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import re
 import token as tokmod
 import tokenize
 from collections.abc import Callable, Sequence
@@ -10,6 +11,22 @@ from typing import NamedTuple, Protocol
 
 from .lexicon import LEXICON
 from .sourcemap import SourceMap, Span
+
+# str.splitlines() also breaks on \x0b \x0c \x1c \x1d \x1e \x85    .
+# CPython's tokenizer breaks only on \n, so anything that splits source into
+# "lines" alongside token rows must do the same or the two silently
+# desynchronise -- and a form feed (a conventional page separator) or any of
+# the others *inside a string literal* is perfectly legal Python.
+_LINE = re.compile(r"[^\n]*\n|[^\n]+")
+
+
+def split_lines(src: str) -> list[str]:
+    """Split into newline-terminated lines exactly as the tokenizer does.
+
+    `"".join(split_lines(s)) == s` for every `s`, and element N-1 is the
+    text the tokenizer reports as row N.
+    """
+    return _LINE.findall(src)
 
 
 class Substitution(NamedTuple):
@@ -163,11 +180,19 @@ def transform(
 
 
 def _splice(src: str, subs: list[Substitution]) -> tuple[str, SourceMap]:
-    lines = src.splitlines(keepends=True)
+    lines = split_lines(src)
     smap = SourceMap()
 
     by_line: dict[int, list[Substitution]] = {}
     for s in subs:
+        # The line invariant is the foundation everything downstream rests
+        # on. No shipped pass can emit a newline today, but Spec II's
+        # CarrierPass is precisely the pass that will, and the resulting
+        # desynchronisation would be silent. Refuse loudly instead.
+        if "\n" in s.text:
+            raise ValueError(
+                f"substitution would add a line: {s.text!r} at row {s.row}"
+            )
         by_line.setdefault(s.row, []).append(s)
 
     for row, row_subs in by_line.items():

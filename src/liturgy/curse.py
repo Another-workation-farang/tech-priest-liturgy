@@ -10,7 +10,7 @@ import types
 
 from .lexicon import INVERSE
 from .sourcemap import SourceMap
-from .transform import transform
+from .transform import split_lines, transform
 
 BANNER_OPEN = "++ MACHINE CURSE ++"
 BANNER_CLOSE = "++ the machine spirit is displeased ++"
@@ -78,9 +78,9 @@ def _line_for(path: str, lineno: int) -> str:
     """
     src = _source_cache.get(path)
     if src is not None:
-        lines = src.splitlines()
+        lines = split_lines(src)
         if 1 <= lineno <= len(lines):
-            return lines[lineno - 1]
+            return lines[lineno - 1].rstrip("\n")
         return ""
     return linecache.getline(path, lineno).rstrip("\n")
 
