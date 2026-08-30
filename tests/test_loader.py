@@ -75,3 +75,32 @@ def test_chant_passes_argv(tmp_path):
         capture_output=True, text=True, check=True,
     )
     assert out.stdout.strip() == "omnissiah"
+
+
+def test_chant_restores_main_module_and_argv_on_success(tmp_path):
+    # In-process (unlike the subprocess tests above), so it actually
+    # exercises whether chant leaves process-global state clean afterwards.
+    script = tmp_path / "quiet.lit"
+    script.write_text("VALUE = 1\n")
+    before_main = sys.modules.get("__main__")
+    before_argv = list(sys.argv)
+
+    loader.chant(str(script), ["ignored"])
+
+    assert sys.modules.get("__main__") is before_main
+    assert sys.argv == before_argv
+
+
+def test_chant_restores_main_module_and_argv_after_exception(tmp_path):
+    # Same as above, but confirms the cleanup also happens when the prayer
+    # raises, and that the exception is not swallowed along the way.
+    script = tmp_path / "boom.lit"
+    script.write_text("raise ValueError('boom')\n")
+    before_main = sys.modules.get("__main__")
+    before_argv = list(sys.argv)
+
+    with pytest.raises(ValueError):
+        loader.chant(str(script), [])
+
+    assert sys.modules.get("__main__") is before_main
+    assert sys.argv == before_argv

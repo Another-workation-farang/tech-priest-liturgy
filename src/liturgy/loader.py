@@ -87,12 +87,17 @@ def chant(path: str, argv: list[str]) -> int:
     module.__file__ = path
     module.__loader__ = None
     module.__package__ = None
-    sys.modules["__main__"] = module
 
+    old_main = sys.modules.get("__main__")
     old_argv = sys.argv
+    sys.modules["__main__"] = module
     sys.argv = [path, *argv]
     try:
         exec(compile(py, path, "exec", dont_inherit=True), module.__dict__)
     finally:
         sys.argv = old_argv
+        if old_main is None:
+            del sys.modules["__main__"]
+        else:
+            sys.modules["__main__"] = old_main
     return 0
