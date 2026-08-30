@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import token as tokmod
 import tokenize
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import NamedTuple, Protocol
 
 from .lexicon import LEXICON
@@ -42,7 +42,33 @@ _OPENERS = frozenset("([{")
 _CLOSERS = frozenset(")]}")
 
 
-def alias_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
+# Given the current token and its translation (None if untranslated), does
+# this token start an import statement? Direction-sensitive: Liturgy source
+# may spell the keyword either way (it is a superset of Python), so the
+# forward direction must check both spellings. Python source is unambiguous,
+# so the reverse pass (see `_reverse.py`) only needs to check the raw token.
+IsImportStart = Callable[[tokenize.TokenInfo, str | None], bool]
+
+
+def _lexicon_is_import_start(tok: tokenize.TokenInfo, target: str | None) -> bool:
+    return tok.string in ("import", "from") or target in ("import", "from")
+
+
+def _walk_tokens(
+    toks: list[tokenize.TokenInfo],
+    lookup: dict[str, str],
+    is_import_start: IsImportStart,
+    import_safe: frozenset[str],
+) -> list[Substitution]:
+    """Shared traversal for both translation directions.
+
+    `lookup` maps a source-language word to its destination-language word
+    (`LEXICON` for Liturgy -> Python, `INVERSE` for the reverse pass).
+    `import_safe` holds the *destination*-language spellings of the
+    import/from/as keywords, since that is the set actually compared against
+    `target` below — it differs per direction because the two languages
+    spell those keywords differently.
+    """
     subs: list[Substitution] = []
     significant = [t for t in toks if t.type not in _INSIGNIFICANT]
 
@@ -68,14 +94,14 @@ def alias_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
         if tok.type != tokmod.NAME:
             continue
 
-        py = LEXICON.get(tok.string)
+        target = lookup.get(tok.string)
 
-        # Track import statements in either spelling. Do this before the
-        # substitution decision so the keyword itself is still translated.
-        if tok.string in ("import", "from") or py in ("import", "from"):
+        # Track import statements. Do this before the substitution decision
+        # so the keyword itself is still translated.
+        if is_import_start(tok, target):
             in_import = True
 
-        if py is None:
+        if target is None:
             continue
 
         prev = significant[i - 1] if i else None
@@ -84,8 +110,10 @@ def alias_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
         # Import-statement keywords always translate, even directly after a
         # relative-import dot (`from . import x`) which would otherwise look
         # like attribute access to Rule 1 below.
-        if in_import and py in _IMPORT_SAFE:
-            subs.append(Substitution(tok.start[0], tok.start[1], tok.end[1], py))
+        if in_import and target in import_safe:
+            subs.append(
+                Substitution(tok.start[0], tok.start[1], tok.end[1], target)
+            )
             continue
 
         # Rule 1: attribute access. obj.render must not become obj.return.
@@ -111,12 +139,16 @@ def alias_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
                 continue
 
         # Rule 3: import statements — only the statement keywords translate.
-        if in_import and py not in _IMPORT_SAFE:
+        if in_import and target not in import_safe:
             continue
 
-        subs.append(Substitution(tok.start[0], tok.start[1], tok.end[1], py))
+        subs.append(Substitution(tok.start[0], tok.start[1], tok.end[1], target))
 
     return subs
+
+
+def alias_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
+    return _walk_tokens(toks, LEXICON, _lexicon_is_import_start, _IMPORT_SAFE)
 
 
 DEFAULT_PASSES: tuple[TokenPass, ...] = (alias_pass,)
