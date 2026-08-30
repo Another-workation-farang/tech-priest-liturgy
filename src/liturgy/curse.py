@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import linecache
+import os
 import sys
 import threading
 import traceback
@@ -15,33 +16,103 @@ from .transform import transform
 BANNER_OPEN = "++ MACHINE CURSE ++"
 BANNER_CLOSE = "++ the machine spirit is displeased ++"
 
+# The directory this package lives in. Frames whose filename falls inside it
+# are Liturgy's own plumbing (loader.py's exec/compile, chant, ...) and are
+# suppressed from the rendered curse -- they are noise on every failure, not
+# information. Frames from genuine third-party code live elsewhere and still
+# render normally.
+_PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 _map_cache: dict[str, SourceMap | None] = {}
+
+# The exact source compiled for a given path, recorded at the moment of
+# compilation by the loader and by chant(). This is the only place the truly
+# executed source is known for certain -- linecache re-reads the file lazily
+# and will happily show whatever currently sits on disk, which drifts the
+# instant a persistent process's .lit file is edited after import. Preferring
+# the recorded source keeps that drift out of the correctness path; linecache
+# and the filesystem remain only as a fallback for paths nothing recorded.
+_source_cache: dict[str, str] = {}
+
+
+def record_source(path: str, src: str) -> None:
+    """Record the exact source compiled for `path`.
+
+    Call this at the moment of compilation -- from `LiturgyLoader.
+    source_to_code` and from `chant()` -- so a later curse render reflects
+    what actually ran, not whatever the file currently contains on disk.
+    """
+    _source_cache[path] = src
+    _map_cache.pop(path, None)
 
 
 def curse_name(exc_type: type) -> str:
     return INVERSE.get(exc_type.__name__, exc_type.__name__)
 
 
+def _read_source(path: str) -> str:
+    """The best available source text for `path`.
+
+    Prefers the exact source recorded at compile time; falls back to
+    linecache (which may already be stale) and then a direct read, for
+    paths nothing ever recorded.
+    """
+    src = _source_cache.get(path)
+    if src is not None:
+        return src
+    src = "".join(linecache.getlines(path))
+    if src:
+        return src
+    with open(path, encoding="utf-8") as fh:
+        return fh.read()
+
+
 def _map_for(path: str) -> SourceMap | None:
     """Lazily build the column map. Only needed when rendering a curse."""
     if path not in _map_cache:
         try:
-            src = "".join(linecache.getlines(path))
-            if not src:
-                with open(path, encoding="utf-8") as fh:
-                    src = fh.read()
-            _map_cache[path] = transform(src)[1]
+            _map_cache[path] = transform(_read_source(path))[1]
         except Exception:
             _map_cache[path] = None
     return _map_cache[path]
 
 
+def _line_for(path: str, lineno: int) -> str:
+    """The source line actually executed, without its trailing newline.
+
+    Prefers the recorded source over linecache for the same staleness
+    reason as `_map_for`. Returns "" if the line is unavailable by any
+    means, which callers treat as "render nothing further for this frame".
+    """
+    src = _source_cache.get(path)
+    if src is not None:
+        lines = src.splitlines()
+        if 1 <= lineno <= len(lines):
+            return lines[lineno - 1]
+        return ""
+    return linecache.getline(path, lineno).rstrip("\n")
+
+
+def _is_own_plumbing(frame: traceback.FrameSummary) -> bool:
+    try:
+        filename = os.path.abspath(frame.filename)
+    except Exception:
+        return False
+    return filename == _PACKAGE_DIR or filename.startswith(_PACKAGE_DIR + os.sep)
+
+
 def _render_lit_frame(frame: traceback.FrameSummary, out: list[str]) -> None:
-    out.append(
-        f"   the rite was broken at {frame.filename}, "
-        f"line {frame.lineno}, in rite {frame.name}"
-    )
-    line = linecache.getline(frame.filename, frame.lineno).rstrip("\n")
+    if frame.name == "<module>":
+        out.append(
+            f"   the rite was broken at the threshold of {frame.filename}, "
+            f"line {frame.lineno}"
+        )
+    else:
+        out.append(
+            f"   the rite was broken at {frame.filename}, "
+            f"line {frame.lineno}, in rite {frame.name}"
+        )
+    line = _line_for(frame.filename, frame.lineno)
     if not line:
         return
     out.append(f"       {line.strip()}")
@@ -62,7 +133,7 @@ def _render(
     tb: types.TracebackType | None,
     file,
 ) -> None:
-    frames = traceback.extract_tb(tb)
+    frames = [f for f in traceback.extract_tb(tb) if not _is_own_plumbing(f)]
     out = [BANNER_OPEN]
     for frame in frames:
         if frame.filename.endswith(".lit"):

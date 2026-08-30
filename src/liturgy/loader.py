@@ -20,6 +20,7 @@ from importlib.machinery import (
     SourcelessFileLoader,
 )
 
+from .curse import record_source
 from .transform import transform
 
 SUFFIX = ".lit"
@@ -35,6 +36,10 @@ class LiturgyLoader(SourceFileLoader):
 
     def source_to_code(self, data, path, *, _optimize=-1):  # noqa: D102
         src = importlib.util.decode_source(data)
+        # The moment of compilation is the only point the exact executed
+        # source is known for certain -- record it so a later curse render
+        # is correct even if the .lit file is edited on disk afterwards.
+        record_source(path, src)
         py, _smap = transform(src)
         return compile(
             py, path, "exec", dont_inherit=True, optimize=_optimize
@@ -72,6 +77,7 @@ def chant(path: str, argv: list[str]) -> int:
     with open(path, encoding="utf-8") as fh:
         src = fh.read()
 
+    record_source(path, src)
     py, _smap = transform(src)
 
     # No loader is involved here, so seed linecache by hand or the traceback
