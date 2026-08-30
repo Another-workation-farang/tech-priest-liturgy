@@ -1,0 +1,5 @@
+intone(1 / 0)
+
+## The Rite of Deliberate Failure.
+## Exists to demonstrate the machine curse -- not a bug. If this ever
+## finishes without a MachineCurse, something else is broken.
