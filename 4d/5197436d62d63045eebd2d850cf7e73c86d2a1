@@ -1,0 +1,22 @@
+tests/_reverse.py
+  s_d162ead593e4de::t_399badaec37805 1-51
+tests/test_roundtrip.py
+  s_d162ead593e4de::t_a13e5d3663a6bb 1-3,5,7,13,166-268
+  s_d162ead593e4de::t_399badaec37805 11-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "4d5197436d62d63045eebd2d850cf7e73c86d2a1",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
