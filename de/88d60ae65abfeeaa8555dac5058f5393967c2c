@@ -1,0 +1,26 @@
+tests/test_sourcemap.py
+  s_d162ead593e4de::t_ff1037c00eb44d 2
+  s_d162ead593e4de::t_100fbfdd006e8d 60-89
+src/liturgy/rewrite.py
+  s_d162ead593e4de::t_a1f95ac846a868 26-37,40-42
+src/liturgy/curse.py
+  s_d162ead593e4de::t_a1f95ac846a868 14,38-40,106-114,117-118,122-125,127,131-140,256-262,272-274
+tests/test_curse.py
+  s_d162ead593e4de::t_77ec199d97736d 700-789
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "de88d60ae65abfeeaa8555dac5058f5393967c2c",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
