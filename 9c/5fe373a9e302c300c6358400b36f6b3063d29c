@@ -1,0 +1,20 @@
+docs/liber-liturgiae.html
+  s_d162ead593e4de::t_e4d9e59e548eab 451-452
+  s_d162ead593e4de::t_1742005911ac9b 855
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "9c5fe373a9e302c300c6358400b36f6b3063d29c",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
