@@ -428,6 +428,103 @@ NAME — <span class="lower amber">chant</span> OR <span class="lower amber">com
 REBUKE.</p>
 </section>
 
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[VII] THE READING OF OMENS — TOOLING VERBS</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<p class="desc">THREE VERBS OF THE THIRD SPEC ARE BUILT. NONE OF THEM CHANTS.
+<span class="lower amber">augur</span> READS A LITANY, <span class="lower amber">transcribe</span> WRITES
+ONE, AND <span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND. FIVE NAMES —
+<span class="lower amber">prove</span>, <span class="lower amber">sanctify</span>,
+<span class="lower amber">forge</span>, <span class="lower amber">consecrate</span>,
+<span class="lower amber">anoint</span> — REMAIN RESERVED AND UNBUILT.</p>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy augur PATH... [--plain]</span>
+
+   <span class="ok">READS .LIT AND .PY FILES FOR FAULTS WITHOUT CHANTING THEM. A DIRECTORY IS
+   WALKED. EXACTLY TWO CHECKS, AND NO THIRD: BINDINGS WHOSE NAME IS RESERVED,
+   AND — FOR A .LIT FILE — THAT IT COMPILES, SO augur AND chant CANNOT
+   DISAGREE. IT IS NOT A GENERAL LINTER AND WILL NOT BECOME ONE.</span>
+
+   <span class="field">:param <b>PATH</b>:</span> FILES OR DIRECTORIES TO BE READ.
+   <span class="field">:option <b>--plain</b>:</span> ONE file:line:col: LINE PER FINDING, FOR EDITORS AND CI.
+   <span class="field">:returns:</span> 0 IF NOTHING WAS REPORTED, 1 IF ANYTHING WAS.
+   <span class="field">:silently:</span> <span class="alert">A FINDING SO MARKED SUBSTITUTES TO A NAME, NOT A KEYWORD —
+              THE FILE COMPILES AND THE HARM IS DEFERRED.</span>
+   <span class="field">:unscanned:</span> A DIRECTORY REACHED BY SYMLINK IS NAMED, NOT PASSED OVER.</pre>
+</div>
+
+<pre>
+<span class="dim">$</span> liturgy augur --plain quiet.lit
+quiet.lit:1:1: span is reserved; it becomes range -- silently
+<span class="dim">$</span> liturgy augur --plain imp.lit
+imp.lit:1:1: render is reserved; it becomes return
+</pre>
+
+<p class="desc">THE SECOND IS THE SUBTLE ONE. THE THIRD PROHIBITION LEAVES AN INVOCATION'S
+TARGETS UNSUBSTITUTED, SO <span class="lower amber">within json invoke loads styled render</span>
+GENUINELY BINDS THE NAME <span class="lower amber">render</span>, AND EVERY LATER MENTION OF IT
+BECOMES <span class="lower amber">return</span>. THE EXEMPTIONS GOVERN WHAT IS SUBSTITUTED. THEY
+SAY NOTHING ABOUT WHAT IS SAFE TO BE BOUND TO.</p>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy transcribe SOURCE [-o DEST]</span>
+
+   <span class="ok">RENDERS A PYTHON FILE INTO LITURGY. PRINTS TO STDOUT UNLESS -o IS GIVEN.
+   LINE ENDINGS AND THE SOURCE'S DECLARED ENCODING ARE CARRIED THROUGH; THE
+   OUTPUT DIFFERS FROM ITS SOURCE IN ITS WORDS AND IN NOTHING ELSE.</span>
+
+   <span class="field">:self-check:</span> THE OUTPUT IS TRANSFORMED BACK TO PYTHON AND COMPARED AGAINST
+               THE SOURCE BEFORE ANYTHING IS WRITTEN. A DESTINATION FILE GETS
+               A SECOND, BYTE-LEVEL CHECK IN ITS OWN DECLARED ENCODING.
+   <span class="alert">:refuses:</span> A SOURCE THAT WILL NOT PARSE, ONE THAT CANNOT BE DECODED, ONE
+             BINDING A RESERVED NAME, AND ITS OWN OUTPUT IF IT DOES NOT
+             ROUND-TRIP. THE COLLISION RULE IS augur'S, FROM THE SAME CODE.
+   <span class="field">:returns:</span> 0 IF WRITTEN, 1 IF REFUSED.</pre>
+</div>
+
+<pre>
+<span class="dim">$</span> liturgy transcribe greet.py -o greet.lit
+++ 8 lines transcribed ++
+<span class="dim">$</span> liturgy transcribe shadow.py
+<span class="alert">++ CANNOT TRANSCRIBE: 1 COLLISION ++</span>
+  shadow.py:1  span         -&gt; reserved (range)
+rename these, then chant again
+</pre>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy purge [--heresies]</span>
+
+   <span class="ok">REMOVES EVERY __pycache__ BENEATH THE WORKING DIRECTORY. SYMLINKED
+   DIRECTORIES ARE NEVER ENTERED. EACH REMOVAL IS NAMED ONLY AFTER THE DELETE
+   BENEATH IT HAS SUCCEEDED, SO THE REPORT NEVER CLAIMS A DELETION THAT DID
+   NOT HAPPEN.</span>
+
+   <span class="field">:option <b>--heresies</b>:</span> ALSO CLEAR THE HERESY RECORD OF SECTION [VI].
+   <span class="alert">:guard:</span> THE ONLY DESTRUCTIVE VERB. IT REFUSES OUTRIGHT UNLESS THE TREE
+           HOLDS AT LEAST ONE .LIT FILE — A RECURSIVE DELETE LAUNCHED FROM
+           THE WRONG DIRECTORY IS A BAD AFTERNOON.
+   <span class="field">:on failure:</span> A RELIC THAT WILL NOT GO IS REPORTED AND STEPPED OVER, NOT
+                RAISED. ONE UNREADABLE CACHE MUST NOT STRAND THE REST.
+   <span class="field">:returns:</span> 0 IF ALL WENT, 1 IF THE GUARD REFUSED OR ANY REMOVAL FAILED.</pre>
+</div>
+
+<pre>
+<span class="dim">$</span> liturgy purge
+++ 0 relics purged ++
+</pre>
+
+<p class="desc">EACH REMOVAL PRINTS AS <span class="lower amber">   purged &lt;ABSOLUTE PATH&gt;</span> ON ITS
+OWN LINE, AND THE RUN ENDS WITH THE COUNT ABOVE. FROM A TREE HOLDING NO LITANY,
+THE GUARD SPEAKS INSTEAD AND NOTHING IS TOUCHED:</p>
+
+<pre>
+<span class="alert">   no .lit file found; refusing to delete anything</span>
+</pre>
+</section>
+
 <pre class="rule">================================================================================</pre>
 <pre>[EOF] LOG DATA FEED CLOSED // NOETIC TETHER UNLINKED // COMMUNION TERMINATED<span class="cursor" aria-hidden="true"></span></pre>
 <pre class="rule">================================================================================</pre>

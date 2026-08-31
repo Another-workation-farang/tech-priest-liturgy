@@ -72,6 +72,21 @@
   .dim { color: var(--text-secondary); }
   .amber { color: var(--highlight-color); }
   .alert { color: var(--alert-color); }
+
+  /* AM-COG-UI-844.M41 warning idiom: the one red-bordered box on the page,
+     so it reads as an interrupt rather than as another section. */
+  .warning {
+    color: var(--alert-color);
+    border: 2px solid var(--alert-color);
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 12px 15px;
+    margin: 16px 0;
+    max-width: 78ch;
+    text-shadow: 0 0 6px rgba(255, 30, 39, 0.3);
+    overflow-x: auto;
+  }
+  .warning p { margin: 0; max-width: none; }
+  .warning b { color: var(--alert-color); }
   .ok { color: var(--text-primary); }
   .lower { text-transform: none; }
 
@@ -105,9 +120,20 @@
 
 <pre>
 <span class="dim">:status:</span>     <span class="ok">SPEC I (CORE) AND SPEC II (CONSTRUCTS) OPERATIONAL</span>
+             <span class="ok">SPEC III (TOOLING) — THREE VERBS OF EIGHT</span>
 <span class="dim">:requires:</span>   <span class="amber">PYTHON &gt;= 3.12 (PEP 701 — SANCTIFIED F-STRING TOKENIZATION)</span>
 <span class="dim">:canonical:</span>  docs/LIBER-LITURGIAE.md — THE AUTHORITY
 </pre>
+
+<div class="warning">
+<pre><b>++ DO NOT USE THIS IN PRODUCTION ++</b></pre>
+<p>LITURGY IS A TOY, BUILT FOR FUN AND FOR THE EXCUSE IT GAVE TO GO RUMMAGING
+AROUND IN CPYTHON'S IMPORT MACHINERY. IT IS NOT A SERIOUS LANGUAGE AND IT IS
+NOT MAINTAINED AS ONE. IT IS INCOMPLETE — FIVE OF THE THIRD SPEC'S EIGHT VERBS
+ARE NOTHING BUT RESERVED NAMES. IT IS BREAKABLE, IN WAYS PART DOCUMENTED AND
+PART NOT: WRITTEN IN A FEW DAYS BY ONE PERSON AND REVIEWED BY NOBODY WHO HAS
+TO LIVE WITH IT. RUN IT ON PRAYERS YOU WOULD NOT MIND LOSING.</p>
+</div>
 
 <section>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
@@ -132,6 +158,16 @@ ACTUALLY LOADS AND RUNS SOURCE.</p>
 <span class="dim">$</span> liturgy chant hello.lit
 Ave Omnissiah
 </pre>
+
+<p>THE SHARP EDGE IS THAT LITURGY RESERVES MORE WORDS THAN PYTHON DOES, AND SIX
+OF THEM SHADOW SILENTLY RATHER THAN FAILING LOUDLY. <span class="lower amber">liturgy
+augur</span> EXISTS TO FIND THEM — IT READS A LITANY FOR THAT FAULT WITHOUT
+CHANTING IT, AND EXITS NONZERO WHEN IT FINDS ONE.</p>
+
+<pre>
+<span class="dim">$</span> liturgy augur --plain quiet.lit
+quiet.lit:1:1: span is reserved; it becomes range -- silently
+</pre>
 </section>
 
 <section>
@@ -147,7 +183,7 @@ Ave Omnissiah
 <span class="dim">$</span> pip install -e .
 </pre>
 
-<p>TWO VERBS. <span class="lower amber">chant</span> EXECUTES A LITANY WITH
+<p>TWO VERBS RUN LITANIES. <span class="lower amber">chant</span> EXECUTES A LITANY WITH
 <span class="lower amber">__main__</span> SEMANTICS; <span class="lower amber">commune</span>
 OPENS AN INTERACTIVE SESSION THAT KNOWS THE DIFFERENCE BETWEEN A LITANY YOU HAVE
 NOT FINISHED TYPING AND ONE YOU HAVE TYPED WRONGLY.</p>
@@ -218,8 +254,12 @@ WIDTH. THE SOURCE SHOWN IS WHAT ACTUALLY RAN, NOT WHATEVER THE FILE CONTAINS NOW
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <pre>
-<a href="liber-liturgiae.html">LIBER LITURGIAE</a>      <span class="dim">THE FULL LANGUAGE REFERENCE — TEN CHAPTERS AND A
+<a href="liber-liturgiae.html">LIBER LITURGIAE</a>      <span class="dim">THE FULL LANGUAGE REFERENCE — ELEVEN CHAPTERS AND A
                      CONCORDANCE OF ALL SIXTY-THREE RESERVED WORDS.</span>
+
+<a href="liber-liturgiae.html#ch11">THE READING OF OMENS</a> <span class="dim">CHAPTER XI — THE THREE TOOLING VERBS. augur READS A
+                     LITANY FOR FAULTS, transcribe RENDERS PYTHON INTO
+                     LITURGY, purge CLEARS THE RELICS OF CHANTING.</span>
 
 <a href="liturgy-data-slate.html">DATA-SLATE</a>           <span class="dim">THE SHORT OVERVIEW, IN THE FORM OF A COGITATOR
                      MANUAL PAGE.</span>
