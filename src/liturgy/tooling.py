@@ -5,11 +5,13 @@ from __future__ import annotations
 import importlib.util
 import io
 import pathlib
+import shutil
 import sys
 import tokenize
 
 from .collisions import find_collisions
 from .compiler import compile_litany
+from .heresy import state_path
 from .reverse import to_liturgy
 from .transform import UnfinishedLitany, split_lines, transform
 
@@ -276,3 +278,57 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
         return 1
     print(f"++ {len(split_lines(litany))} lines transcribed ++", file=out)
     return 0
+
+
+def purge(*, heresies: bool = False, root: str | None = None, out=None) -> int:
+    """Clear generated caches. 0 done, 1 refused.
+
+    The only destructive verb, so it is guarded: it refuses unless the tree
+    holds at least one .lit file, because a recursive delete in the wrong
+    directory is a bad afternoon. Symlinked directories are never entered --
+    `rglob` does not follow them, and each candidate is checked anyway.
+
+    A candidate that cannot be removed (permissions, or the directory
+    vanishing between `rglob` and the delete) is reported and skipped
+    rather than left to raise -- one unreadable directory must not strand
+    the rest, and this is an `-> int` contract, not a traceback. Each
+    `purged` line is printed only once the delete underneath it has
+    actually succeeded, so the report never claims a deletion that didn't
+    happen.
+    """
+    out = out if out is not None else sys.stdout
+    base = pathlib.Path(root) if root is not None else pathlib.Path.cwd()
+
+    if not any(base.rglob("*.lit")):
+        print(f"++ {base} does not look like a Liturgy forge ++", file=out)
+        print("   no .lit file found; refusing to delete anything", file=out)
+        return 1
+
+    removed = 0
+    failed = False
+    for cache in sorted(base.rglob("__pycache__")):
+        if cache.is_symlink() or not cache.is_dir():
+            continue
+        try:
+            shutil.rmtree(cache)
+        except OSError as err:
+            failed = True
+            print(f"++ CANNOT PURGE: {cache} {err.strerror} ++", file=out)
+            continue
+        print(f"   purged {cache}", file=out)
+        removed += 1
+
+    if heresies:
+        state = state_path()
+        if state.exists():
+            try:
+                state.unlink()
+            except OSError as err:
+                failed = True
+                print(f"++ CANNOT PURGE: {state} {err.strerror} ++", file=out)
+            else:
+                print(f"   purged {state}", file=out)
+                removed += 1
+
+    print(f"++ {removed} relic{'' if removed == 1 else 's'} purged ++", file=out)
+    return 1 if failed else 0

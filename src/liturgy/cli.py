@@ -20,7 +20,6 @@ RESERVED_VERBS = frozenset(
         "sanctify",
         "forge",
         "consecrate",
-        "purge",
         "anoint",
     }
 )
@@ -62,6 +61,11 @@ def _build_parser() -> argparse.ArgumentParser:
     p_trans = verbs.add_parser("transcribe", help="render Python into Liturgy")
     p_trans.add_argument("source")
     p_trans.add_argument("-o", "--out", dest="dest", default=None)
+
+    p_purge = verbs.add_parser("purge", help="clear generated caches")
+    p_purge.add_argument(
+        "--heresies", action="store_true", help="also clear the heresy record"
+    )
     return parser
 
 
@@ -99,6 +103,11 @@ def main(argv: list[str] | None = None) -> int:
         from .tooling import transcribe
 
         return transcribe(args.source, args.dest)
+
+    if args.verb == "purge":
+        from .tooling import purge
+
+        return purge(heresies=args.heresies)
 
     # The only other verb: the subparser is required, so argparse has already
     # rejected anything else.
