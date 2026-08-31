@@ -9,17 +9,7 @@ from __future__ import annotations
 import ast
 
 from .constructs import heresy
-
-
-def _char_offset(line: str, byte_offset: int) -> int:
-    """Convert a UTF-8 byte offset (as `ast` reports) to a character offset.
-
-    `ast.col_offset`/`end_col_offset` count UTF-8 bytes; everything else
-    here -- `tokenize`, string slicing, the SourceMap -- counts characters.
-    A multi-byte character earlier on the line would otherwise skew every
-    later column.
-    """
-    return len(line.encode("utf-8")[:byte_offset].decode("utf-8"))
+from .sourcemap import char_offset
 
 
 class ConstructPass(ast.NodeTransformer):
@@ -50,7 +40,7 @@ class ConstructPass(ast.NodeTransformer):
         they come from `tokenize`, which counts characters. Byte offsets are
         converted to character offsets against the **generated Python**
         line -- the offsets are into that text, not the Liturgy line -- via
-        `_char_offset`, before the SourceMap is consulted.
+        `char_offset`, before the SourceMap is consulted.
 
         Second, a condition can be a parenthesised expression spanning
         several physical lines. Lines are identical in *number* between
@@ -73,10 +63,10 @@ class ConstructPass(ast.NodeTransformer):
                     else len(py_line.encode("utf-8"))
                 )
                 start = self.smap.to_lit(
-                    lineno, _char_offset(py_line, byte_start)
+                    lineno, char_offset(py_line, byte_start)
                 )
                 end = self.smap.to_lit(
-                    lineno, _char_offset(py_line, byte_end)
+                    lineno, char_offset(py_line, byte_end)
                 )
                 parts.append(lit_line[start:end].strip())
             text = " ".join(p for p in parts if p)
@@ -88,6 +78,14 @@ class ConstructPass(ast.NodeTransformer):
 
     # -- scopes ------------------------------------------------------
     def visit_Module(self, node):
+        return self._scope(node)
+
+    def visit_Interactive(self, node):
+        # `commune` compiles with mode="single", which parses to Interactive,
+        # not Module. Without this the prompt got no scope visit at all: no
+        # rebinding check, and -- worse -- no consecrated carrier ever
+        # desugared, so on 3.12/3.13 the eagerly-evaluated annotation made
+        # every `consecrated` at the prompt a NameError.
         return self._scope(node)
 
     def visit_FunctionDef(self, node):
@@ -176,45 +174,97 @@ class ConstructPass(ast.NodeTransformer):
 
 _LOOPS = (ast.For, ast.AsyncFor, ast.While)
 _SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+_MODULES = (ast.Module, ast.Interactive)
+
+
+def _in_scope(nodes, stop=()):
+    """Yield `nodes` and every descendant of them in the same scope.
+
+    Recursion is by `ast.iter_child_nodes`, and halts *below* any node that
+    opens a nested scope (or is listed in `stop`): the boundary node itself
+    is yielded, so a caller can inspect it, but its children are not.
+
+    This is the one traversal in this module, and `ast.walk` is deliberately
+    not used anywhere in it. `ast.walk` flattens the tree, and every rule
+    here turns on exactly the distinction that flattening destroys -- which
+    scope a binding, a `universal`, a `cease` or an augury belongs to. Five
+    separate defects on this branch have been one `ast.walk` or another.
+    """
+    for node in nodes:
+        yield node
+        if not isinstance(node, _SCOPES + stop):
+            yield from _in_scope(ast.iter_child_nodes(node), stop)
+
+
+def _repeats(node) -> bool:
+    """Does this node run its body more than once?
+
+    An unconsumed `__litany__` carrier counts. `visit_With` has not turned it
+    into a `for` yet -- `_scope` runs its checks before `generic_visit`
+    descends -- but it is one, and a `consecrated` inside it would rebind on
+    every attempt while looking like a single declaration: precisely what the
+    rule against `consecrated` in a `foreach` exists to forbid.
+    """
+    return isinstance(node, _LOOPS) or (
+        isinstance(node, ast.With) and _carrier_call(node, "__litany__") is not None
+    )
 
 
 def _collect_consecrated(scope, mkerr) -> dict[str, ast.AST]:
-    """Find `NAME: __consecrated__ = v` directly in this scope's body.
+    """Find every `NAME: __consecrated__ = v` belonging to this scope.
 
     Rewrites each into a plain assignment as it goes, and records the
     *replacement* node -- the rebinding check compares against these by
     identity, so recording the original would make every declaration look
     like a rebinding of itself. Nested function and class scopes are left
     for their own visit.
+
+    Recursion is by child node, like every other walker here. It used to
+    recurse only into fields that were a list whose first element was an
+    `ast.stmt`, which silently skipped `Try.handlers` (a list of
+    `ExceptHandler`) and `Match.cases` (a list of `match_case`) -- neither
+    element type is a statement, so a `consecrated` in a `curse` or a
+    `wherein` block was never desugared at all. The carrier survived into the
+    compiled tree, enforcement was off, and on Python 3.12/3.13 -- where a
+    module-scope annotation is still evaluated eagerly -- the module died
+    with `NameError: __consecrated__`.
     """
     found: dict[str, ast.AST] = {}
 
-    def walk(body, in_loop):
-        for index, stmt in enumerate(body):
-            if isinstance(stmt, _SCOPES):
-                continue
-            if _is_consecrated(stmt):
-                name = stmt.target.id
-                if in_loop:
-                    raise mkerr(stmt, f"{name} is consecrated inside a loop")
-                if name in found:
-                    raise mkerr(stmt, f"{name} is already consecrated")
-                stmt.target.ctx = ast.Store()
-                plain = ast.Assign(targets=[stmt.target], value=stmt.value)
-                ast.copy_location(plain, stmt)
-                ast.fix_missing_locations(plain)
-                body[index] = plain
-                found[name] = plain
-                continue
-            for _field, value in ast.iter_fields(stmt):
-                if (
-                    isinstance(value, list)
-                    and value
-                    and isinstance(value[0], ast.stmt)
-                ):
-                    walk(value, in_loop or isinstance(stmt, _LOOPS))
+    def declare(stmt, body, index, in_loop):
+        name = stmt.target.id
+        if in_loop:
+            raise mkerr(stmt, f"{name} is consecrated inside a loop")
+        if name in found:
+            raise mkerr(stmt, f"{name} is already consecrated")
+        stmt.target.ctx = ast.Store()
+        plain = ast.Assign(targets=[stmt.target], value=stmt.value)
+        ast.copy_location(plain, stmt)
+        ast.fix_missing_locations(plain)
+        body[index] = plain
+        found[name] = plain
 
-    walk(scope.body, False)
+    def descend(node, in_loop):
+        """Visit `node`'s children. Statement lists are handled by index,
+        because a declaration has to be *replaced* in the list holding it."""
+        for _field, value in ast.iter_fields(node):
+            if isinstance(value, list):
+                for index, item in enumerate(value):
+                    if not isinstance(item, ast.AST):
+                        continue
+                    if _is_consecrated(item):
+                        declare(item, value, index, in_loop)
+                    else:
+                        visit(item, in_loop)
+            elif isinstance(value, ast.AST):
+                visit(value, in_loop)
+
+    def visit(node, in_loop):
+        if isinstance(node, _SCOPES):
+            return  # its own visit will collect its own declarations
+        descend(node, in_loop or _repeats(node))
+
+    descend(scope, False)
     return found
 
 
@@ -228,54 +278,107 @@ def _is_consecrated(stmt) -> bool:
     )
 
 
+def _reaching_declaration(scope):
+    """The declaration a nested scope needs to rebind a name bound here.
+
+    `universal` (`global`) names the module's binding; `adjacent`
+    (`nonlocal`) the nearest enclosing rite's. They are not interchangeable,
+    and conflating them is what made this check reject correct programs. A
+    class body's names are reachable by neither -- a class scope takes no
+    part in closure lookup and is not the module -- so nothing nested can
+    rebind a `consecrated` declared in one.
+    """
+    if isinstance(scope, _MODULES):
+        return ast.Global
+    if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        return ast.Nonlocal
+    return None
+
+
 def _reject_rebindings(scope, consecrated, mkerr) -> None:
     """Reject every rebinding the compiler can see.
 
     Descends through this scope's own blocks but NOT into nested function
     or class scopes: a function assigning the same name is making its own
-    local binding, not rebinding ours. `ast.walk` is deliberately not used
-    for that reason -- it would flatten the tree and reject legitimate
-    shadowing.
+    local binding, not rebinding ours.
 
-    A nested scope counts only when it declares the name `global` or
-    `nonlocal` and then assigns to it, which is a real rebinding and is
-    visible. What is not visible -- setattr, globals(), assignment through
-    the module object, exec -- is not enforced, and the documentation says
-    so.
+    A nested scope counts only when it declares the name with the keyword
+    that actually reaches this scope and then assigns to it, which is a real
+    rebinding and is visible. What is not visible -- setattr, globals(),
+    assignment through the module object, exec -- is not enforced, and the
+    documentation says so.
     """
     declarations = set(consecrated)
     declaring = {id(node) for node in consecrated.values()}
+    reaching = _reaching_declaration(scope)
 
-    def check(node):
+    for node in _in_scope(scope.body):
+        # A nested scope still binds its own *name* in our scope, so check
+        # the node itself before handing its interior to _check_nested.
         for name, at in _stored_names(node):
             if name in declarations and id(at) not in declaring:
                 raise mkerr(at, f"{name} is consecrated and may not be rebound")
-
-    def walk(node):
-        if isinstance(node, _SCOPES) and node is not scope:
-            _check_nested(node, declarations, mkerr)
-            return
-        check(node)
-        for child in ast.iter_child_nodes(node):
-            walk(child)
-
-    for stmt in scope.body:
-        walk(stmt)
+        if isinstance(node, _SCOPES) and reaching is not None:
+            _check_nested(node, declarations, reaching, mkerr)
 
 
-def _check_nested(fn, declarations, mkerr) -> None:
-    """A nested scope rebinds ours only via `universal`/`adjacent`."""
-    declared: set[str] = set()
-    for node in ast.walk(fn):
-        if isinstance(node, (ast.Global, ast.Nonlocal)):
-            declared.update(node.names)
-    reaching = declarations & declared
-    if not reaching:
-        return
-    for node in ast.walk(fn):
-        for name, at in _stored_names(node):
-            if name in reaching:
-                raise mkerr(at, f"{name} is consecrated and may not be rebound")
+def _check_nested(fn, declarations, reaching, mkerr) -> None:
+    """A nested scope rebinds ours only by declaring the name and storing it.
+
+    `reaching` is `ast.Global` when the `consecrated` is at module scope and
+    `ast.Nonlocal` when it is in a rite. Only that keyword reaches; the other
+    one names some other binding entirely, and rejecting on it rejects
+    correct programs.
+
+    Declarations are attributed to the scope that makes them, not harvested
+    from the whole subtree, so a `universal` in a doubly-nested rite no
+    longer condemns its parent's ordinary locals.
+    """
+    own = list(_in_scope(fn.body))
+    declared = {
+        name for node in own if isinstance(node, reaching) for name in node.names
+    }
+    condemned = declarations & declared
+    if condemned:
+        for node in own:
+            for name, at in _stored_names(node):
+                if name in condemned:
+                    raise mkerr(
+                        at, f"{name} is consecrated and may not be rebound"
+                    )
+
+    deeper = declarations
+    if reaching is ast.Nonlocal and isinstance(
+        fn, (ast.FunctionDef, ast.AsyncFunctionDef)
+    ):
+        # `nonlocal` binds to the nearest enclosing rite that holds the name
+        # as a local, so a rite that binds it locally shields ours from
+        # everything below. Merely declaring it `nonlocal` does not: that
+        # makes the name free here, and a deeper `nonlocal` resolves straight
+        # past to ours. A class body shields nothing, being skipped entirely
+        # by closure lookup -- hence the isinstance guard.
+        deeper = declarations - _locals_of(fn, own)
+
+    for inner in own:
+        if isinstance(inner, _SCOPES) and deeper:
+            _check_nested(inner, deeper, reaching, mkerr)
+
+
+def _locals_of(fn, own) -> set[str]:
+    """The names this rite binds as its own -- parameters included."""
+    declared = {
+        name
+        for node in own
+        if isinstance(node, (ast.Global, ast.Nonlocal))
+        for name in node.names
+    }
+    bound = {name for node in own for name, _ in _stored_names(node)}
+    args = fn.args
+    bound |= {
+        a.arg for a in (*args.posonlyargs, *args.args, *args.kwonlyargs)
+    }
+    bound |= {a.arg for a in (args.vararg, args.kwarg) if a is not None}
+    return bound - declared
 
 
 def _stored_names(node):
@@ -304,6 +407,23 @@ def _stored_names(node):
     elif isinstance(node, (ast.Import, ast.ImportFrom)):
         for alias in node.names:
             yield alias.asname or alias.name.split(".")[0], node
+    # The three below bind as surely as an assignment does, and each one
+    # silently rebound a consecrated name until it was listed here.
+    elif isinstance(node, ast.ExceptHandler) and node.name is not None:
+        # `curse MachineCurse styled PORT:`. The name is a plain str on the
+        # handler, so the handler is what carries the location.
+        yield node.name, node
+    elif isinstance(node, (ast.MatchAs, ast.MatchStar)) and node.name is not None:
+        # A capture pattern: `wherein PORT:`, `wherein X styled PORT:`,
+        # `wherein [head, *PORT]:`.
+        yield node.name, node
+    elif isinstance(node, ast.MatchMapping) and node.rest is not None:
+        # `wherein {**PORT}:`
+        yield node.rest, node
+    elif isinstance(node, _SCOPES):
+        # `rite PORT():` / `pattern PORT:` bind PORT in the *declaring*
+        # scope, which is the scope this walker is checking.
+        yield node.name, node
 
 
 def _names_in_target(target):
@@ -353,51 +473,27 @@ def _reject_misplaced_auguries(scope, mkerr) -> None:
             allowed.add(id(body[j]))
             j += 1
 
-    def walk(node):
-        # NOT ast.walk: it flattens the tree, so `continue` on a nested rite
-        # skips that node but still yields its children -- and the nested
-        # rite's own legitimate opening augury would be rejected here instead
-        # of being allowed by its own scope visit.
-        if (
-            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
-            and node is not scope
-        ):
-            return
+    # `_in_scope` stops below a nested rite, so that rite's own legitimate
+    # opening augury is left for its own scope visit to allow.
+    for node in _in_scope(scope.body):
         if _is_augur_carrier(node) and id(node) not in allowed:
             if not in_rite:
                 raise mkerr(node, "an augury belongs at the opening of a rite")
             raise mkerr(node, "an augury must be the opening of its rite")
-        for child in ast.iter_child_nodes(node):
-            walk(child)
-
-    walk(scope)
 
 
 def _reject_loop_control(body, mkerr) -> None:
     """`cease`/`persist` at the litany's own level bind to the retry loop.
 
-    Inside a real loop in the body they are the author's own, so this
-    descends into everything except loops. `ast.walk` is deliberately not
-    used: it would flatten the tree and lose the distinction, wrongly
-    rejecting a legitimate `cease` inside a `foreach` in the body.
+    Inside a real loop in the body they are the author's own, so this stops
+    at loops as well as at scopes -- a loop is its own break target, a rite
+    a different frame entirely.
     """
-
-    def walk(node):
-        if isinstance(node, (ast.For, ast.AsyncFor, ast.While)):
-            return  # its own break target
-        if isinstance(
-            node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
-        ):
-            return  # a different frame entirely
+    for node in _in_scope(body, _LOOPS):
         if isinstance(node, ast.Break):
             raise mkerr(node, "cease in a litany body binds to the retry")
         if isinstance(node, ast.Continue):
             raise mkerr(node, "persist in a litany body binds to the retry")
-        for child in ast.iter_child_nodes(node):
-            walk(child)
-
-    for stmt in body:
-        walk(stmt)
 
 
 def _build_retry(node, count, rest, curse, suffix):

@@ -7,15 +7,25 @@ from liturgy.rewrite import ConstructPass
 from liturgy.transform import split_lines, transform
 
 SOURCES = {
-    "consecrated": "consecrated PORT = 8080\n",
+    # T7: the leading comment is load-bearing. Without it the construct sat
+    # on line 1, where `fix_missing_locations`' own default for a node with
+    # no position is also 1 -- so a dropped `copy_location` produced exactly
+    # the expected line by coincidence and the fixture proved nothing.
+    "consecrated": (
+        "# a comment, so the construct is not on line 1\n"
+        "consecrated PORT = 8080\n"
+    ),
     "litany": "litany(thrice, resting=1, curse=MotiveFailure):\n    abide\n",
     "augur": "rite f(x):\n    augur:\n        x > 0\n    render x\n",
+    # The `consecrated` sits beside the litany rather than inside it: a
+    # declaration in a litany body would rebind on every attempt, and is
+    # rejected (see test_litany.py).
     "nested": (
         "rite f(x):\n"
         "    augur:\n"
         "        x > 0\n"
+        "    consecrated INNER = x\n"
         "    litany(twice, curse=MotiveFailure):\n"
-        "        consecrated INNER = x\n"
         "        render INNER\n"
     ),
 }
@@ -136,7 +146,7 @@ def _is_litany_bind(n: ast.AST) -> bool:
     )
 
 
-LITANY_HEADER_LINE = {"litany": 1, "nested": 4}
+LITANY_HEADER_LINE = {"litany": 1, "nested": 5}
 
 
 @pytest.mark.parametrize("name", sorted(LITANY_HEADER_LINE))
@@ -150,8 +160,8 @@ def test_litany_retry_scaffold_carries_the_litany_header_line(name):
 
 
 CONSECRATED_HEADER_LINE = {
-    "consecrated": (1, "PORT"),
-    "nested": (5, "INNER"),
+    "consecrated": (2, "PORT"),
+    "nested": (4, "INNER"),
 }
 
 

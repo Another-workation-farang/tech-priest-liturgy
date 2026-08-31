@@ -293,3 +293,47 @@ def test_a_recursive_rite_reuses_the_same_litany_callsite_safely():
     )
     ns = run(src)
     assert ns["calls"] == [2, 1, 2, 1, "caught"]
+
+
+# --- I6: a litany body is a loop body -------------------------------------
+#
+# `_collect_consecrated` decided "am I in a loop?" from `_LOOPS`
+# (For/AsyncFor/While) alone, and it runs BEFORE `visit_With` turns the
+# `__litany__` carrier into a `for`. So a `consecrated` in a litany body
+# compiled to a plain assignment re-executed on every attempt -- exactly the
+# "rebinds on every iteration while looking like a single declaration" the
+# spec rejects for `foreach`.
+
+
+def test_consecrating_inside_a_litany_body_is_rejected():
+    src = (
+        "litany(thrice, resting=0, curse=MachineCurse):\n"
+        "    consecrated PORT = 8080\n"
+    )
+    with pytest.raises(TechHeresy) as exc:
+        compile_litany(src, "prayer.lit")
+    assert "loop" in str(exc.value)
+    assert exc.value.lineno == 2
+
+
+def test_consecrating_deeper_inside_a_litany_body_is_rejected_too():
+    src = (
+        "litany(thrice, curse=MachineCurse):\n"
+        "    attempt:\n"
+        "        abide\n"
+        "    curse MachineCurse:\n"
+        "        consecrated PORT = 8080\n"
+    )
+    with pytest.raises(TechHeresy, match="loop"):
+        compile_litany(src, "prayer.lit")
+
+
+def test_consecrating_beside_a_litany_is_still_fine():
+    src = (
+        "consecrated PORT = 8080\n"
+        "seen = []\n"
+        "litany(thrice, curse=MachineCurse):\n"
+        "    seen.append(PORT)\n"
+    )
+    ns = run(src)
+    assert ns["seen"] == [8080] and ns["PORT"] == 8080

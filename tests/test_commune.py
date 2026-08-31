@@ -160,6 +160,26 @@ def test_consecrated_works_at_the_prompt():
 
 
 
+def test_a_rebinding_within_one_prompt_entry_is_rejected():
+    # Each entry is its own compilation unit, and `commune` compiles with
+    # mode="single" -- an `Interactive` node, not a `Module`. `ConstructPass`
+    # had no visitor for it, so the prompt got no scope visit at all: no
+    # rebinding check, and (on 3.12/3.13, where annotations are still
+    # eager) not even a desugared carrier.
+    out = commune("consecrated PORT = 8080; PORT = 9")
+    assert "may not be rebound" in out.stdout + out.stderr
+
+
+def test_a_rebinding_typed_on_a_later_line_is_not_caught():
+    # Enforcement is per-compilation-unit, and the compiler has no record of
+    # the earlier entry. This is a real limit of the design, documented in
+    # Chapter VII; asserting it here keeps it from being mistaken for a bug
+    # and "fixed" with something that cannot work.
+    out = commune("consecrated PORT = 8080", "PORT = 9", "intone(PORT)")
+    assert "9" in out.stdout
+    assert "may not be rebound" not in out.stdout + out.stderr
+
+
 def test_litany_works_at_the_prompt_typed_across_several_lines():
     out = commune(
         "tries = []",
