@@ -130,7 +130,12 @@ def test_a_symlinked_subdirectory_is_named_not_silently_skipped(tmp_path):
     code = augur([str(tmp_path)], out=buf)
     out = buf.getvalue()
     assert code == 1
-    assert "linked" in out and "symlink" in out.lower()
+    # Assert on the report's own words, not on the link's name: pytest's
+    # tmp_path basename is this test's name truncated, and "symlinked"
+    # contains both "symlink" and "linked", so a name-based assertion is
+    # satisfied by the path alone and cannot fail.
+    assert "not descended into" in out
+    assert str(tmp_path / "linked") in out
 
 
 def test_a_symlinked_top_level_directory_is_scanned_normally(tmp_path):

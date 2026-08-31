@@ -179,3 +179,24 @@ def test_a_plain_utf8_destination_is_unchanged(tmp_path):
     written = dest.read_bytes()
     assert not written.startswith(b"\xef\xbb\xbf")
     assert written == b"intone(measure(x))\n"
+
+
+def test_it_verifies_the_bytes_it_is_about_to_write_not_just_the_text(
+    tmp_path, monkeypatch
+):
+    # The text-level check compares two `str`s, neither of which ever meets
+    # an encoding, so it cannot see bytes that are wrong for the encoding
+    # their own cookie declares. Make the destination encoding disagree with
+    # the cookie the output carries: the text round-trip still passes, the
+    # encode still succeeds, and only the byte-level check can catch it.
+    import liturgy.tooling as tooling
+
+    monkeypatch.setattr(tooling, "_source_encoding", lambda raw: "utf-8")
+    src = tmp_path / "legacy.py"
+    src.write_bytes(b'# -*- coding: latin-1 -*-\nx = "caf\xe9"\n')
+    dest = tmp_path / "out.lit"
+    buf = io.StringIO()
+    code = transcribe(str(src), str(dest), out=buf)
+    assert code == 1
+    assert "does not round-trip" in buf.getvalue()
+    assert not dest.exists()
