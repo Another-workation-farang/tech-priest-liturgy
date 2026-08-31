@@ -1,0 +1,21 @@
+tests/test_transcribe.py
+  s_d162ead593e4de::t_2c54fe08fb23df 182-202
+tests/test_augur_verb.py
+  s_d162ead593e4de::t_31ddcb3eab2e98 133-138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "cb75a20ceef28994abf88012ff79ee92e94e52dd",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
