@@ -25,7 +25,17 @@ back to Python spellings, and compile as ordinary Python.
   `Substitution` spanning two rows breaks it.
 - **`ast.walk` flattens the tree and destroys scope distinctions.** It has
   caused six separate defects here. `rewrite.py` has one traversal,
-  `_in_scope`, and no `ast.walk` anywhere in `src/`.
+  `_in_scope`, and no `ast.walk` anywhere in `src/` -- except
+  `collisions.py`, which is a deliberate exception, not an oversight: the
+  substitution it mirrors is itself scope-blind (Rule 1/2 rewrite a
+  reserved word's every occurrence in the file, textually, regardless of
+  which scope it is bound in), so "is this name bound anywhere as a
+  reserved word" is genuinely a whole-file question with no scope
+  boundary to respect. Flattening is correct there for the same reason it
+  is wrong everywhere else in `src/`: it matches what the code it mirrors
+  actually does. A new scope-blind question may reuse `ast.walk` on that
+  same reasoning; anything that must distinguish one scope from another
+  belongs on `_in_scope` instead.
 - **`ast` and `traceback` count UTF-8 bytes; everything else counts
   characters.** Any offset from either must go through
   `sourcemap.char_offset` before a `SourceMap` sees it.
