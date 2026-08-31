@@ -15,6 +15,7 @@ class ConstructPass(ast.NodeTransformer):
     def __init__(self, filename: str, lines: list[str]) -> None:
         self.filename = filename
         self.lines = lines
+        self._litany_seq = 0
 
     def _heresy(self, node: ast.AST, message: str):
         line = node.lineno
@@ -73,7 +74,9 @@ class ConstructPass(ast.NodeTransformer):
                 )
 
         _reject_loop_control(node.body, self._heresy)
-        return _build_retry(node, count, rest, by_name["curse"])
+        suffix = self._litany_seq
+        self._litany_seq += 1
+        return _build_retry(node, count, rest, by_name["curse"], suffix)
 
 
 _LOOPS = (ast.For, ast.AsyncFor, ast.While)
@@ -259,21 +262,28 @@ def _reject_loop_control(body, mkerr) -> None:
         walk(stmt)
 
 
-_COUNT = "__liturgy_n"
-_ATTEMPT = "__liturgy_attempt"
+def _build_retry(node, count, rest, curse, suffix):
+    """for __i in range(__n): try: body; break; except curse: ...
 
-
-def _build_retry(node, count, rest, curse):
-    """for __i in range(__n): try: body; break; except curse: ..."""
+    `__n`/`__i` carry a per-callsite `suffix` (see `ConstructPass._litany`)
+    rather than being fixed names. Two litanies sharing a name would be a
+    silent-corruption bug the moment one nests inside the other: the inner
+    loop's assignments would overwrite the outer's bookkeeping before the
+    outer's `except` handler ever compares attempt-count against total, so
+    the outer's exhaustion check would simply never fire and its exception
+    would vanish instead of propagating.
+    """
+    count_name = f"__liturgy_n_{suffix}"
+    attempt_name = f"__liturgy_attempt_{suffix}"
     loc = lambda n: ast.copy_location(n, node)  # noqa: E731
 
     bind_n = loc(ast.Assign(
-        targets=[loc(ast.Name(id=_COUNT, ctx=ast.Store()))], value=count
+        targets=[loc(ast.Name(id=count_name, ctx=ast.Store()))], value=count
     ))
 
     guard = loc(ast.If(
         test=loc(ast.Compare(
-            left=loc(ast.Name(id=_COUNT, ctx=ast.Load())),
+            left=loc(ast.Name(id=count_name, ctx=ast.Load())),
             ops=[ast.Lt()],
             comparators=[loc(ast.Constant(value=1))],
         )),
@@ -293,10 +303,10 @@ def _build_retry(node, count, rest, curse):
     # if __i == __n - 1: raise
     reraise = loc(ast.If(
         test=loc(ast.Compare(
-            left=loc(ast.Name(id=_ATTEMPT, ctx=ast.Load())),
+            left=loc(ast.Name(id=attempt_name, ctx=ast.Load())),
             ops=[ast.Eq()],
             comparators=[loc(ast.BinOp(
-                left=loc(ast.Name(id=_COUNT, ctx=ast.Load())),
+                left=loc(ast.Name(id=count_name, ctx=ast.Load())),
                 op=ast.Sub(),
                 right=loc(ast.Constant(value=1)),
             ))],
@@ -325,6 +335,10 @@ def _build_retry(node, count, rest, curse):
     attempt = loc(ast.Try(
         body=[*node.body, loc(ast.Break())],
         handlers=[loc(ast.ExceptHandler(
+            # `curse` is the caller's expression, re-evaluated every time
+            # this handler is reached -- i.e. once per failed attempt. Only
+            # the attempt *count* carries a single-evaluation requirement;
+            # a non-trivial curse= expression has no such guarantee.
             type=curse, name=None, body=handler_body
         ))],
         orelse=[],
@@ -332,10 +346,10 @@ def _build_retry(node, count, rest, curse):
     ))
 
     loop = loc(ast.For(
-        target=loc(ast.Name(id=_ATTEMPT, ctx=ast.Store())),
+        target=loc(ast.Name(id=attempt_name, ctx=ast.Store())),
         iter=loc(ast.Call(
             func=loc(ast.Name(id="range", ctx=ast.Load())),
-            args=[loc(ast.Name(id=_COUNT, ctx=ast.Load()))],
+            args=[loc(ast.Name(id=count_name, ctx=ast.Load()))],
             keywords=[],
         )),
         body=[attempt],
