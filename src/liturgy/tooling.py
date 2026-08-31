@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import pathlib
 import sys
 
@@ -130,16 +131,45 @@ def _emit_bare(path, message, *, line: int = 1, plain: bool, out) -> None:
         _report(path, line, "", 0, 0, message, out=out)
 
 
+def _newline_style(raw: bytes) -> str:
+    """The line ending `raw` was written with, so the output can keep it.
+
+    `decode_source` (like `read_text`) performs universal-newline
+    translation on the way in, so by the time `src` exists as `str` the
+    original bytes' line endings are gone and the round-trip self-check --
+    which compares that already-normalised text against `back` -- cannot
+    see a CRLF-to-LF change happen underneath it. Detecting the style here,
+    from the untranslated bytes, and re-applying it to the output at the
+    very end is what keeps the written file's *bytes*, not just its text,
+    faithful to the source -- rewriting a user's line endings without a
+    word about it is exactly the kind of silent lie `transcribe` exists to
+    refuse elsewhere.
+    """
+    return "\r\n" if b"\r\n" in raw else "\n"
+
+
 def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
     """Render a Python file into Liturgy. 0 written, 1 refused."""
     out = out if out is not None else sys.stdout
     path = pathlib.Path(source)
 
     try:
-        src = path.read_text(encoding="utf-8")
+        raw = path.read_bytes()
     except OSError as err:
         print(f"++ CANNOT TRANSCRIBE: {path} {err.strerror} ++", file=out)
         return 1
+
+    # decode_source, not read_text(encoding="utf-8"): it honours a UTF-8 BOM
+    # and a PEP 263 `coding:` cookie, so a latin-1 or BOM'd source decodes
+    # the same way the import path decodes it, instead of being reported as
+    # a bogus SyntaxError or crashing outright.
+    try:
+        src = importlib.util.decode_source(raw)
+    except (SyntaxError, UnicodeDecodeError, LookupError) as err:
+        print(f"++ CANNOT TRANSCRIBE: {path} cannot be decoded: {err} ++", file=out)
+        return 1
+
+    newline = _newline_style(raw)
 
     try:
         collisions = find_collisions(src, str(path), liturgy=False)
@@ -178,9 +208,18 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
         print("   this is a fault in Liturgy, not in your source", file=out)
         return 1
 
+    output = litany if newline == "\n" else litany.replace("\n", newline)
+
     if dest is None:
-        print(litany, end="", file=out)
+        print(output, end="", file=out)
     else:
-        pathlib.Path(dest).write_text(litany, encoding="utf-8")
+        try:
+            pathlib.Path(dest).write_bytes(output.encode("utf-8"))
+        except OSError as err:
+            print(
+                f"++ CANNOT TRANSCRIBE: cannot write {dest}: {err.strerror} ++",
+                file=out,
+            )
+            return 1
         print(f"++ {len(split_lines(litany))} lines transcribed ++", file=out)
     return 0
