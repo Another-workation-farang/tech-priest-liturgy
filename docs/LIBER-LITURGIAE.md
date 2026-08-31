@@ -197,6 +197,16 @@ fails the suite loudly rather than leaving it unthemed.
 | `purge` | `del` |
 | `anointed` | `with` |
 
+### Numeral words
+
+Two counting words, spelled out because they name an attempt count, not a
+value in the data a rite works on:
+
+| Liturgy | Python |
+|---|---|
+| `twice` | `2` |
+| `thrice` | `3` |
+
 ### A worked litany
 
 ```
@@ -394,9 +404,9 @@ invocations work as expected — `within . invoke sibling`, and deeper.
 *A word given to the Machine God is no longer yours. Choose your own names
 knowing which are already spoken for.*
 
-Fifty-eight words are reserved: thirty-eight rites, five builtins, fifteen
-curses. Using one as your own identifier is an error. Most such errors are
-loud, and a loud error costs you a minute.
+Sixty-three words are reserved: thirty-eight rites, five builtins, fifteen
+curses, two numerals, and three constructs. Using one as your own identifier
+is an error. Most such errors are loud, and a loud error costs you a minute.
 
 ```
 render = compute()
@@ -454,6 +464,17 @@ Calling `t.render()` is fine. Naming a rite `render` is not. If you must
 implement an interface whose method name is a reserved word, that method must
 be written in a `.py` file — which a litany may freely import.
 
+### The limits of consecrated
+
+`consecrated` reserves a word the same way any other construct does, and it
+is worth being exact about what its enforcement covers, because the word
+"enforced" invites more confidence than the mechanism can support. The
+rejection happens at compile time, against the AST the compiler can see:
+rebindings, a second `consecrated` of the same name, a `consecrated` inside
+a loop body. What the compiler cannot see, it cannot stop — `setattr`,
+`globals()`, assignment through the module object, and `exec` all get
+through untouched. This is enforcement, not a guarantee.
+
 ---
 
 ## Chapter VIII — Of Heresy
@@ -489,19 +510,18 @@ Three properties are deliberate:
 
 ## Chapter IX — Rites Not Yet Written
 
-*The Quest for Knowledge is not concluded. These pages are left blank
-deliberately; do not report their blankness as a fault.*
+*The Quest for Knowledge is not concluded. Most of these pages are left
+blank deliberately; do not report their blankness as a fault. One entry
+below was struck rather than left blank, and that is recorded too.*
 
-### Constructs of the second spec
+### The one construct cut, not deferred
 
-Four constructs are designed and unbuilt. None of them parse today.
-
-| | Purpose |
-|---|---|
-| `consecrated` | A binding that may not be altered. Python has no constants, only the convention of shouting; a consecrated binding would be enforced, and rebinding one would raise `TechHeresy`. |
-| `litany` | A block re-chanted on failure — retry with rests between attempts. |
-| `augur` | Conditions read before a rite's body runs. Preconditions as contract. |
-| `noospheric` | A binding placed in a process-wide registry rather than module scope. |
+Three constructs of the second spec are built; Chapter X sets them down in
+full. A fourth was designed alongside them and did not survive: `noospheric`,
+a binding placed in a process-wide registry rather than module scope. It was
+**cut, not deferred** — it is a service locator, and Liturgy generates code
+with no runtime of its own for a registry like that to live in. There is no
+clean place left to put it.
 
 ### Verbs of the third spec
 
@@ -513,10 +533,108 @@ set its form in order), `forge`, `consecrate`, `purge`, `anoint`, and
 The `augur` verb is the one that matters most, since it is what would catch the
 quiet reservations of Chapter VII.
 
-`augur` and `purge` each appear twice above — once as a construct or rite, once
-as a verb of the command line. They do not collide: one is a word in a litany,
-the other a word typed at a terminal. The overlap is noted here so that it
-reads as intentional.
+`augur` and `purge` each name two different things in this project. `augur`
+is both Chapter X's built source construct (preconditions) and this
+still-unbuilt CLI verb (lint); `purge` is both Chapter III's built keyword
+alias for `del` and this still-unbuilt CLI verb (clearing caches). A source
+word and a CLI verb cannot actually collide — they live in entirely
+different namespaces — but the same word meaning two different things in the
+same project is exactly the kind of thing worth spelling out rather than
+leaving implicit.
+
+---
+
+## Chapter X — The Greater Rites
+
+*Three constructs the second spec adds. Python has no word for any of them —
+Liturgy needed new grammar, not new spelling, to say what they say.*
+
+Each is a compile-time transformation, not a call into some runtime library.
+A carrier pass rewrites the construct's header, in place, into ordinary
+Python that parses; a second pass over the resulting tree then restructures
+it into real semantics, or rejects the misuse outright. Nothing beyond the
+standard library is imported to make any of the three work — there is no
+Liturgy runtime for them to depend on.
+
+### consecrated — a binding that will not move
+
+```
+consecrated PORT = 8080
+```
+
+`consecrated NAME = value` declares a binding once. Every later assignment
+to that name that the compiler can see, in the scope where it was declared —
+a plain assignment, an augmented assignment, an annotated assignment, a
+walrus, a `foreach` target, a `with ... styled` target, `purge`, a binding
+`invoke`/`within`, or a name reached through destructuring — is rejected
+before the litany runs. So is a second `consecrated` of the same name, and a
+`consecrated` written inside a loop body, which would rebind on every
+iteration while reading like one declaration.
+
+A nested rite may use the same name freely; that is a new, local binding,
+not a rebinding of the enclosing one. Rebinding through `universal` inside a
+nested rite is still caught, because a `universal` declaration followed by
+an assignment is a real write back into the declaring scope, and the
+compiler can see it there too.
+
+Chapter VII, "The limits of consecrated," sets down what this enforcement
+does not reach.
+
+### litany — a rite re-chanted on failure
+
+```
+litany(thrice, resting=2, curse=TimeoutError):
+    send_offering()
+```
+
+`litany(count, resting=..., curse=...):` runs its body once, and if it
+raises one of the exceptions named by `curse=`, runs it again — up to
+`count` **total attempts**, not `count` retries. `curse=` is required and
+must be passed by keyword; there is no spelling of `litany` that catches
+everything, on the view that a retry block silently swallowing an exception
+it was never told about is worse than no retry block at all. `resting=` is
+optional. Left out, a litany moves to its next attempt with no pause and
+generates no timing code whatsoever. Exhausting every attempt re-raises the
+last failure, unchanged.
+
+`count` is evaluated exactly once, however it is spelled — a bare `thrice`,
+a variable, or a call. A count below one is rejected: at compile time when
+it is written as a literal, at run time when it is computed.
+
+`cease` and `persist` written directly in a litany's own body are rejected
+at compile time, because they would bind to the retry loop the construct
+generates, not to anything the author wrote. The same two words inside a
+real `foreach` or `whilst` nested in that body are untouched — there, they
+bind to that loop, exactly as expected.
+
+### augur — a precondition, not an assertion
+
+```
+rite divide(a, b):
+    augur:
+        b be nay Void
+        b != 0
+    render a / b
+```
+
+`augur:` opens a rite — after its docstring if it has one, never after any
+other statement — with one bare condition per line. Each condition is
+checked before the rite's own body runs. The first one that is false raises
+`ImpureOffering`, with a message that quotes the *Liturgy* source of that
+condition, not the compiled Python it became: `the omens forbid it -- b !=
+0`. Anything in the block that is not a bare condition — an assignment, a
+call kept for its side effect — is rejected at compile time; an augury holds
+conditions, not statements.
+
+It is a contract, not an assertion, and the distinction is load-bearing: it
+survives `chant`ing under `-O`, where a Python `assert` would compile away
+to nothing. It raises `ImpureOffering` rather than some purpose-built
+exception class of its own, because there is no Liturgy runtime package for
+generated code to import from — its exceptions have to be ones Python
+already provides.
+
+A nested rite's own opening augury is independent of any augury on the rite
+that contains it; each rite's opening belongs to that rite alone.
 
 ---
 
@@ -580,6 +698,13 @@ will need.
 | `SpiralOfMadness` | `RecursionError` |
 | `TheRiteIsEnded` | `StopIteration` |
 | `UnknownInvocation` | `NameError` |
+
+### Numerals
+
+| Liturgy | Python |
+|---|---|
+| `thrice` | `3` |
+| `twice` | `2` |
 
 ---
 

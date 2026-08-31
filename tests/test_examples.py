@@ -24,3 +24,14 @@ def test_bad_example_raises_division_curse():
     assert out.returncode != 0
     assert "MACHINE CURSE" in out.stderr
     assert "DivisionByTheVoid" in out.stderr
+
+
+def test_constructs_example_runs():
+    out = subprocess.run(
+        [sys.executable, "-m", "liturgy", "chant",
+         str(EXAMPLES / "constructs.lit")],
+        capture_output=True, text=True,
+    )
+    assert out.returncode == 0, out.stderr
+    assert "the omens forbid it" in out.stdout
+    assert "attempts: 3" in out.stdout
