@@ -11,7 +11,11 @@ from __future__ import annotations
 import ast
 import types
 
-from .transform import transform
+from .constructs import carrier_pass
+from .rewrite import ConstructPass
+from .transform import DEFAULT_PASSES, split_lines, transform
+
+_PASSES = (*DEFAULT_PASSES, carrier_pass)
 
 
 def compile_litany(
@@ -29,8 +33,10 @@ def compile_litany(
         SyntaxError: a complete tokenisation or parse error.
         TechHeresy: a construct was used in a way the compiler rejects.
     """
-    py, _smap = transform(src, filename=filename)
+    py, _smap = transform(src, _PASSES, filename=filename)
     tree = ast.parse(py, filename, mode)
+    tree = ConstructPass(filename, split_lines(src)).visit(tree)
+    ast.fix_missing_locations(tree)
     return compile(
         tree, filename, mode, dont_inherit=dont_inherit, optimize=optimize
     )

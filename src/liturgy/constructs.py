@@ -9,7 +9,8 @@ from __future__ import annotations
 import token as tokmod
 import tokenize
 
-from .transform import _CLOSERS, _OPENERS
+from .lexicon import CONSTRUCT_KEYWORDS
+from .transform import _CLOSERS, _INSIGNIFICANT, _OPENERS, Substitution
 
 
 # Statements whose depth-zero `:` opens a block. Both spellings appear,
@@ -105,3 +106,40 @@ def statement_starts(significant: list[tokenize.TokenInfo]) -> set[int]:
         fresh = False
 
     return starts
+
+
+def carrier_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
+    """Rewrite construct headers, in place, into parseable Python."""
+    significant = [t for t in toks if t.type not in _INSIGNIFICANT]
+    starts = statement_starts(significant)
+    subs: list[Substitution] = []
+
+    for i in sorted(starts):
+        tok = significant[i]
+        if tok.type != tokmod.NAME or tok.string not in CONSTRUCT_KEYWORDS:
+            continue
+        if tok.string == "consecrated":
+            subs.extend(_consecrated_carrier(significant, i))
+
+    return subs
+
+
+def _consecrated_carrier(
+    significant: list[tokenize.TokenInfo], i: int
+) -> list[Substitution]:
+    """`consecrated NAME = v` -> `NAME: __consecrated__ = v`."""
+    kw = significant[i]
+    name = significant[i + 1] if i + 1 < len(significant) else None
+    if name is None or name.type != tokmod.NAME:
+        raise heresy(
+            "consecrated must be followed by a name",
+            "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
+        )
+    return [
+        # Swallow the keyword and the space after it, keeping indentation.
+        Substitution(kw.start[0], kw.start[1], name.start[1], ""),
+        Substitution(
+            name.start[0], name.start[1], name.end[1],
+            f"{name.string}: __consecrated__",
+        ),
+    ]
