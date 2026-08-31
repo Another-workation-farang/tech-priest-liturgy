@@ -1,5 +1,7 @@
 import io
 import json
+import pathlib
+import shutil
 
 import pytest
 
@@ -71,10 +73,73 @@ def test_heresies_clears_the_state_file(tmp_path, monkeypatch):
     buf = io.StringIO()
     assert purge(heresies=True, root=str(tmp_path), out=buf) == 0
     assert not state.exists()
-    assert str(state) in buf.getvalue(), "the full path is reported before deletion"
+    assert str(state) in buf.getvalue(), "the full path is reported"
 
 
 def test_heresies_is_quiet_when_there_is_nothing_to_clear(tmp_path, monkeypatch):
     (tmp_path / "prayer.lit").write_text("intone(1)\n")
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     assert purge(heresies=True, root=str(tmp_path), out=io.StringIO()) == 0
+
+
+def test_a_failed_cache_directory_does_not_stop_the_others(tmp_path, monkeypatch):
+    # shutil.rmtree is monkeypatched rather than chmod'd: a mode-based
+    # failure passes trivially under root (which ignores permission bits),
+    # and this way nothing on disk is left in a state tmp_path teardown
+    # can't clean up.
+    (tmp_path / "prayer.lit").write_text("intone(1)\n")
+    bad = tmp_path / "bad" / "__pycache__"
+    bad.mkdir(parents=True)
+    (bad / "x.pyc").write_bytes(b"\x00")
+    good = tmp_path / "good" / "__pycache__"
+    good.mkdir(parents=True)
+    (good / "y.pyc").write_bytes(b"\x00")
+
+    real_rmtree = shutil.rmtree
+
+    def fake_rmtree(path, *args, **kwargs):
+        if pathlib.Path(path) == bad:
+            raise OSError(13, "Permission denied")
+        return real_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(shutil, "rmtree", fake_rmtree)
+
+    buf = io.StringIO()
+    assert purge(root=str(tmp_path), out=buf) == 1
+    assert bad.exists(), "the failed directory must be left alone, not half-deleted"
+    assert not good.exists(), "one failure must not strand the other candidate"
+    report = buf.getvalue()
+    assert "CANNOT PURGE" in report
+    assert str(bad) in report
+    assert "1 relic purged" in report
+
+
+def test_a_failed_state_unlink_does_not_undo_the_pycache_sweep(tmp_path, monkeypatch):
+    (tmp_path / "prayer.lit").write_text("intone(1)\n")
+    cache = tmp_path / "__pycache__"
+    cache.mkdir()
+    (cache / "x.pyc").write_bytes(b"\x00")
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    from liturgy import heresy
+
+    state = heresy.state_path()
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({"run": 3}))
+
+    real_unlink = pathlib.Path.unlink
+
+    def fake_unlink(self, *args, **kwargs):
+        if self == state:
+            raise OSError(13, "Permission denied")
+        return real_unlink(self, *args, **kwargs)
+
+    monkeypatch.setattr(pathlib.Path, "unlink", fake_unlink)
+
+    buf = io.StringIO()
+    assert purge(heresies=True, root=str(tmp_path), out=buf) == 1
+    assert not cache.exists(), "the pycache sweep ran first and must still count"
+    assert state.exists(), "the failed unlink must leave the file in place"
+    report = buf.getvalue()
+    assert "CANNOT PURGE" in report
+    assert str(state) in report
+    assert "1 relic purged" in report
