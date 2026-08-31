@@ -16,7 +16,6 @@ HERETICAL: dict[str, str] = {"run": "chant", "repl": "commune"}
 # and nothing needs to: argparse rejects any verb it has no subparser for.
 RESERVED_VERBS = frozenset(
     {
-        "augur",
         "prove",
         "sanctify",
         "forge",
@@ -53,6 +52,13 @@ def _build_parser() -> argparse.ArgumentParser:
     p_chant.add_argument("args", nargs=argparse.REMAINDER)
 
     verbs.add_parser("commune", help="open an interactive session")
+
+    p_augur = verbs.add_parser("augur", help="read a litany for faults")
+    p_augur.add_argument("paths", nargs="+")
+    p_augur.add_argument(
+        "--plain", action="store_true",
+        help="emit file:line:col: messages for editors and CI",
+    )
     return parser
 
 
@@ -80,6 +86,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.verb == "chant":
         return _chant(args.file, args.args)
+
+    if args.verb == "augur":
+        from .tooling import augur
+
+        return augur(args.paths, plain=args.plain)
 
     # The only other verb: the subparser is required, so argparse has already
     # rejected anything else.
