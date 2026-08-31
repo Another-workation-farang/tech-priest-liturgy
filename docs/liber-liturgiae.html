@@ -1125,6 +1125,22 @@ rename these, then chant again</pre></div>
 code, so the two verbs cannot drift apart about what counts as a
 collision.</p>
 
+<p>The same rule is applied a second time, to the Liturgy about to be
+written. Transcription can introduce a collision the Python never had —
+<code>input</code> is rendered <code>hearken</code>, and
+<code>hearken</code> is reserved. That output is not wrong: it round-trips,
+and it chants exactly as the Python ran. So it is a warning, not a
+refusal:</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy transcribe codec.py -o codec.lit
+++ 2 lines transcribed ++
+++ THE OUTPUT CARRIES 1 COLLISION ++
+  codec.lit:1  hearken      -&gt; reserved (input)
+augur will flag these; the litany is correct and chants as written</pre>
+
+<p>When the litany goes to stdout the warning goes to stderr instead, so a
+redirected file receives the words and nothing else.</p>
+
 <h3>The self-check before the writing</h3>
 
 <p>Nothing reaches disk unverified. <code>transcribe</code> transforms its

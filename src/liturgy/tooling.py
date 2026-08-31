@@ -178,6 +178,37 @@ def _source_encoding(raw: bytes) -> str:
     return encoding
 
 
+def _output_omens(litany: str, label: str) -> list[str]:
+    """What `augur` will say about the Liturgy `transcribe` is about to emit.
+
+    `transcribe` refuses on collisions in its *input*, but `to_liturgy` can
+    bind a reserved word the Python never did: `def encode(self, input)`
+    becomes `rite encode(self, hearken)`, and `hearken` is reserved. Over a
+    stdlib sample that is about one file in five. The output is not wrong --
+    it round-trips, compiles and runs identically -- so this warns rather
+    than refuses; refusing to write correct code would be the worse
+    failure. Warning here is what stops the transcribe-then-augur workflow
+    surprising people, and it costs one call to machinery already imported.
+    """
+    try:
+        collisions = find_collisions(litany, label, liturgy=True)
+    except SyntaxError:
+        # The output has already round-tripped through `transform`, so this
+        # is not reachable by a fault the user can act on. Say nothing
+        # rather than turn a warning path into a second failure path.
+        return []
+    if not collisions:
+        return []
+    plural = "S" if len(collisions) != 1 else ""
+    lines = [f"++ THE OUTPUT CARRIES {len(collisions)} COLLISION{plural} ++"]
+    lines += [
+        f"  {label}:{c.line}  {c.word:<12} -> reserved ({c.target})"
+        for c in collisions
+    ]
+    lines.append("augur will flag these; the litany is correct and chants as written")
+    return lines
+
+
 def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
     """Render a Python file into Liturgy. 0 written, 1 refused."""
     out = out if out is not None else sys.stdout
@@ -240,9 +271,15 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
         return 1
 
     output = litany if newline == "\n" else litany.replace("\n", newline)
+    omens = _output_omens(litany, dest if dest is not None else str(path))
 
     if dest is None:
         print(output, end="", file=out)
+        # stdout is the payload in this mode, not a report. A diagnostic
+        # spliced into it would be exactly the silent corruption transcribe
+        # exists to refuse, so the warning goes to stderr instead.
+        for line in omens:
+            print(line, file=sys.stderr)
         return 0
 
     # Encode in the source's own declared encoding, not always UTF-8: a
@@ -288,6 +325,8 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
         )
         return 1
     print(f"++ {len(split_lines(litany))} lines transcribed ++", file=out)
+    for line in omens:
+        print(line, file=out)
     return 0
 
 

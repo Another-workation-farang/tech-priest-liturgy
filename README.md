@@ -409,6 +409,24 @@ rename these, then chant again
 That is the same collision rule `augur` reports, from the same code, so the
 two verbs cannot drift apart about what counts.
 
+The rule is applied to the output as well, as a warning rather than a
+refusal. Rendering Python into Liturgy can *introduce* a collision the source
+never had — `def encode(self, input)` becomes `rite encode(self, hearken)`,
+and `hearken` is reserved. The file is correct and chants exactly as the
+Python ran, so it is written; `transcribe` just says what `augur` will say
+about it, instead of leaving you to find out:
+
+```
+$ liturgy transcribe codec.py -o codec.lit
+++ 2 lines transcribed ++
+++ THE OUTPUT CARRIES 1 COLLISION ++
+  codec.lit:1  hearken      -> reserved (input)
+augur will flag these; the litany is correct and chants as written
+```
+
+Writing to stdout instead, the warning goes to stderr, so a redirected file
+gets the litany and nothing else.
+
 Before anything reaches disk it round-trips its own output: the generated
 Liturgy is transformed back to Python and compared against the source, and if
 the two differ, nothing is written and the failure is reported as a fault in

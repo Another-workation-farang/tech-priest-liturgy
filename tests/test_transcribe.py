@@ -200,3 +200,49 @@ def test_it_verifies_the_bytes_it_is_about_to_write_not_just_the_text(
     assert code == 1
     assert "does not round-trip" in buf.getvalue()
     assert not dest.exists()
+
+
+# --- the output is what augur will read, so warn about it here ---
+# `to_liturgy` can bind a reserved word the Python never did: `input`
+# becomes `hearken`. The file is correct and chants, so this warns; it must
+# not become a refusal.
+_INTRODUCES = 'def encode(self, input, errors="strict"):\n    return input\n'
+
+
+def test_a_collision_introduced_by_transcription_is_warned_about(tmp_path):
+    dest = tmp_path / "out.lit"
+    code, out = run(tmp_path, _INTRODUCES, dest=str(dest))
+    assert code == 0
+    assert dest.exists()
+    assert "transcribed" in out
+    assert "hearken" in out and "input" in out
+    assert "augur will flag these" in out
+
+
+def test_the_warning_is_not_a_refusal(tmp_path):
+    # The input itself is clean, so nothing here may raise the exit code or
+    # withhold the file.
+    dest = tmp_path / "out.lit"
+    code, out = run(tmp_path, _INTRODUCES, dest=str(dest))
+    assert code == 0
+    assert "CANNOT TRANSCRIBE" not in out
+    assert "hearken" in dest.read_text()
+
+
+def test_a_clean_output_is_not_warned_about(tmp_path):
+    dest = tmp_path / "out.lit"
+    code, out = run(tmp_path, "print(1)\n", dest=str(dest))
+    assert code == 0
+    assert "COLLISION" not in out
+
+
+def test_the_stdout_payload_stays_clean_and_the_warning_goes_to_stderr(
+    tmp_path, capsys
+):
+    # Piping `transcribe x.py > x.lit` must not splice a report into the
+    # file. Everything transcribe prints to `out` here is the litany.
+    code, out = run(tmp_path, _INTRODUCES)
+    assert code == 0
+    assert "COLLISION" not in out
+    assert out == "rite encode(self, hearken, errors=\"strict\"):\n    render hearken\n"
+    assert "hearken" in capsys.readouterr().err
