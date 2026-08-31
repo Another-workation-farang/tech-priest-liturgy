@@ -43,9 +43,36 @@ drift apart about what counts.
 ### What a collision is
 
 A collision is **a binding whose source-language name is reserved** — not
-merely a reserved word appearing somewhere. Spec I's three exemptions mean
-`template.render()`, `f(intone=1)` and `from jinja2 import render` are all
-correct code, and none of them is a collision.
+merely a reserved word appearing somewhere. `template.render()` and
+`f(intone=1)` are correct code and are not collisions: neither binds anything.
+
+`within jinja2 invoke render` **is** a collision, and this corrects an earlier
+draft of this spec which listed it as an exemption. Spec I's third rule stops
+the *substitution* firing on an import target, without which the statement would
+become `import return` and fail to compile. But the resulting binding is still
+`render`, and every later *reference* to it substitutes to `return`:
+
+    within json invoke loads styled render
+    intone(render("{}"))
+
+compiles to `from json import loads as render` / `print(return("{}"))` — a
+syntax error. The import brings in a name nothing can reach. The exemption is
+about what the transform does; the collision is about what the resulting program
+can do, and the two are not in conflict.
+
+### Two clauses
+
+A binding at line L collides if either holds:
+
+- **(a) A substitution at line L produced the bound name.** The author wrote a
+  Liturgy word and it became a Python binding — `span = 5` becoming `range = 5`.
+- **(b) The bound name is itself a `LEXICON` key.** The binding survived
+  unsubstituted, because an exemption protected it, but every reference to it
+  will substitute — the import case above.
+
+Clause (b) alone is the whole `.py` rule, since a `.py` file has no
+substitutions. So the two file types share one implementation with one branch
+rather than two separate scans.
 
 Binding analysis reuses `rewrite._stored_names`, which Spec II hardened to
 cover assignment, augmented assignment, walrus, `for` targets, `with ... as`,
@@ -56,14 +83,12 @@ agree quietly drifting apart.
 
 ### Two paths, because the file types differ
 
-- **`.lit`** — run `transform()`, parse the generated Python, walk
-  `_stored_names`, then map each binding's position back through the
-  `SourceMap` to recover the word the author actually typed. If that word was
-  substituted, it is a collision.
-- **`.py`** — parse directly, walk `_stored_names`, and flag any bound name
-  that is a `LEXICON` key. This answers a different question — *would this
-  transcribe?* — with the same machinery. `span = 5` is fine Python, survives
-  `to_liturgy` untouched, and becomes `range = 5` when compiled.
+- **`.lit`** — run `transform()` and `alias_pass()`, parse the generated
+  Python, walk `_stored_names`, and apply both clauses.
+- **`.py`** — parse directly and apply clause (b) only. This answers a different
+  question — *would this transcribe?* — with the same code. `span = 5` is fine
+  Python, survives `to_liturgy` untouched, and becomes `range = 5` when
+  compiled.
 
 ### Quiet and loud
 
@@ -77,13 +102,19 @@ Each collision records which it is:
   `augur` still reports them, earlier and with a better message than the
   compiler gives.
 
-### A known imprecision, stated rather than hidden
+### Where the position comes from
 
-`_stored_names` yields the *statement* node for `except ... as` and for import
-aliases, because `ExceptHandler.name` is a plain string and carries no position
-of its own. For those two shapes the reported line is exact but the column is
-the statement's, not the name's. Acceptable for a linter; recorded so nobody
-later reads it as a bug.
+Not from the AST node. `_stored_names` yields the *statement* node for `for`,
+`def`, `class`, `except ... as` and imports, so its column is the statement's
+start, not the bound name's. A prototype that read the word at that column
+produced five false negatives.
+
+Clause (a) instead takes its position straight from the `Substitution` the alias
+pass already produced — exact, and already in Liturgy coordinates, so nothing
+needs mapping back through the `SourceMap` at all. Clause (b) has no
+substitution to draw on and falls back to the node's column, which for the five
+statement-node shapes is the statement's start. Line is always exact; column is
+approximate only in clause (b), and only for those shapes.
 
 ## Architecture
 
@@ -201,12 +232,17 @@ Three tiers, matching Specs I and II.
 
 ### 2. Named regressions
 
-Permanent, in this project's tradition. These three shapes caused a Critical in
-Spec I's final review and must never be reported as collisions:
+Permanent, in this project's tradition. The first two shapes caused a Critical
+in Spec I's final review and must never be reported as collisions, because
+neither binds anything:
 
 - `template.render()` — attribute position
 - `f(intone=1)` — keyword-argument position
-- `from jinja2 import render` — import target
+
+And the counterpart, which must always be reported, because it does bind:
+
+- `within jinja2 invoke render` — the import compiles, and binds a name every
+  later reference substitutes away from
 
 ### 3. Integration — each verb through the real CLI
 
