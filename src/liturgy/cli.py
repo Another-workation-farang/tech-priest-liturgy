@@ -25,33 +25,48 @@ RESERVED_VERBS = frozenset(
 )
 
 
-def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="liturgy")
+def _add_global_flags(parser: argparse.ArgumentParser, *, default) -> None:
+    """`--absolved`/`--profane`, accepted before or after the verb.
+
+    The copies on each verb's subparser pass `default=argparse.SUPPRESS`
+    rather than False: argparse applies a subparser's defaults *after* the
+    parent has parsed, so an ordinary default would silently overwrite a
+    flag given before the verb. With SUPPRESS the subparser writes only
+    when the flag is actually present, and either position wins.
+
+    One placement caveat remains, by design: `chant`'s REMAINDER hands
+    everything after the file to the litany itself, exactly as `python
+    file.py --profane` would, so for chant these flags go before the file.
+    """
     parser.add_argument(
         "--absolved",
         action="store_true",
-        help=(
-            "suppress rebukes for mundane verb names "
-            "(must come before the verb)"
-        ),
+        default=default,
+        help="suppress rebukes for mundane verb names",
     )
     parser.add_argument(
         "--profane",
         action="store_true",
-        help=(
-            "render plain Python tracebacks instead of machine curses "
-            "(must come before the verb)"
-        ),
+        default=default,
+        help="render plain Python tracebacks instead of machine curses",
     )
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="liturgy")
+    _add_global_flags(parser, default=False)
     verbs = parser.add_subparsers(dest="verb", required=True)
 
     p_chant = verbs.add_parser("chant", help="execute a litany")
+    _add_global_flags(p_chant, default=argparse.SUPPRESS)
     p_chant.add_argument("file")
     p_chant.add_argument("args", nargs=argparse.REMAINDER)
 
-    verbs.add_parser("commune", help="open an interactive session")
+    p_commune = verbs.add_parser("commune", help="open an interactive session")
+    _add_global_flags(p_commune, default=argparse.SUPPRESS)
 
     p_augur = verbs.add_parser("augur", help="read a litany for faults")
+    _add_global_flags(p_augur, default=argparse.SUPPRESS)
     p_augur.add_argument("paths", nargs="+")
     p_augur.add_argument(
         "--plain", action="store_true",
@@ -59,10 +74,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
 
     p_trans = verbs.add_parser("transcribe", help="render Python into Liturgy")
+    _add_global_flags(p_trans, default=argparse.SUPPRESS)
     p_trans.add_argument("source")
     p_trans.add_argument("-o", "--out", dest="dest", default=None)
 
     p_purge = verbs.add_parser("purge", help="clear generated caches")
+    _add_global_flags(p_purge, default=argparse.SUPPRESS)
     p_purge.add_argument(
         "--heresies", action="store_true", help="also clear the heresy record"
     )

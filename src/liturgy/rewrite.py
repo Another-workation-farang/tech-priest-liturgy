@@ -8,8 +8,19 @@ from __future__ import annotations
 
 import ast
 
-from .constructs import heresy
+from .constructs import (
+    AUGUR_CARRIER,
+    CONSECRATED_CARRIER,
+    LITANY_CARRIER,
+    heresy,
+)
 from .sourcemap import char_offset
+
+# The two litany guards fire either at compile time (a literal) or at run
+# time (a computed value); one spelling per fault, shared by both tiers, so
+# the diagnostics cannot drift apart.
+_AT_LEAST_ONCE = "a litany must be chanted at least once"
+_NO_NEGATIVE_REST = "a litany cannot rest for a negative span"
 
 
 class ConstructPass(ast.NodeTransformer):
@@ -120,10 +131,10 @@ class ConstructPass(ast.NodeTransformer):
     # -- litany / augur --------------------------------------------------
     def visit_With(self, node):
         self.generic_visit(node)
-        call = _carrier_call(node, "__litany__")
+        call = _carrier_call(node, LITANY_CARRIER)
         if call is not None:
             return self._litany(node, call)
-        call = _carrier_call(node, "__augur__")
+        call = _carrier_call(node, AUGUR_CARRIER)
         if call is not None:
             return self._augur(node, call)
         return node
@@ -134,6 +145,14 @@ class ConstructPass(ast.NodeTransformer):
         if len(call.args) != 1:
             raise self._heresy(node, "litany takes one attempt count")
         for kw in call.keywords:
+            if kw.arg is None:
+                # `**mapping` -- kw.arg is None, and formatting that into
+                # the message below produced "litany has no None argument".
+                raise self._heresy(
+                    node,
+                    "litany takes no ** expansion; "
+                    "name resting= and curse= in the header",
+                )
             if kw.arg not in ("resting", "curse"):
                 raise self._heresy(node, f"litany has no {kw.arg} argument")
         by_name = {kw.arg: kw.value for kw in call.keywords}
@@ -143,11 +162,17 @@ class ConstructPass(ast.NodeTransformer):
             )
         count, rest = call.args[0], by_name.get("resting")
 
-        if isinstance(count, ast.Constant) and isinstance(count.value, int):
-            if count.value < 1:
-                raise self._heresy(
-                    node, "a litany must be chanted at least once"
-                )
+        count_value = _literal_number(count)
+        if isinstance(count_value, int) and count_value < 1:
+            raise self._heresy(node, _AT_LEAST_ONCE)
+
+        # The same two-tier guard the count gets. Unguarded, a negative
+        # resting reached time.sleep *inside* the except handler, and the
+        # ValueError it raised there replaced the retry -- an outer curse
+        # could catch it as if the body itself had failed again.
+        rest_value = _literal_number(rest) if rest is not None else None
+        if rest_value is not None and rest_value < 0:
+            raise self._heresy(node, _NO_NEGATIVE_REST)
 
         _reject_loop_control(node.body, self._heresy)
         suffix = self._litany_seq
@@ -162,6 +187,18 @@ class ConstructPass(ast.NodeTransformer):
             if not isinstance(stmt, ast.Expr):
                 raise self._heresy(
                     stmt, "an augury holds conditions, not statements"
+                )
+            # A call is a condition -- its truth is the omen. Two shapes
+            # are not: a constant is the same omen every time (a docstring
+            # in the block was silently a truthy "condition"), and a bare
+            # walrus is an assignment wearing a condition's clothes.
+            if isinstance(stmt.value, ast.Constant):
+                raise self._heresy(
+                    stmt, "an augury holds conditions; a constant is not one"
+                )
+            if isinstance(stmt.value, ast.NamedExpr):
+                raise self._heresy(
+                    stmt, "an augury holds conditions, not assignments"
                 )
             checks.append(self._omen(node, stmt.value))
         return checks
@@ -182,6 +219,28 @@ class ConstructPass(ast.NodeTransformer):
             ))],
             orelse=[],
         ))
+
+
+def _literal_number(node):
+    """The value of a numeric literal, `-1` included, else None.
+
+    A negative literal is not an `ast.Constant`: the parser wraps it as
+    `UnaryOp(USub, Constant)`, which is exactly the spelling the two
+    compile-time guards above most need to see. The sign is unwrapped
+    first so both spellings pass one predicate. Booleans are excluded --
+    `True` is an int to isinstance, and nobody writing `resting=True`
+    meant a number.
+    """
+    sign = 1
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+        sign, node = -1, node.operand
+    if (
+        isinstance(node, ast.Constant)
+        and isinstance(node.value, (int, float))
+        and not isinstance(node.value, bool)
+    ):
+        return sign * node.value
+    return None
 
 
 _LOOPS = (ast.For, ast.AsyncFor, ast.While)
@@ -234,7 +293,7 @@ def _repeats(node) -> bool:
     rule against `consecrated` in a `foreach` exists to forbid.
     """
     return isinstance(node, _LOOPS) or (
-        isinstance(node, ast.With) and _carrier_call(node, "__litany__") is not None
+        isinstance(node, ast.With) and _carrier_call(node, LITANY_CARRIER) is not None
     )
 
 
@@ -300,7 +359,7 @@ def _is_consecrated(stmt) -> bool:
     return (
         isinstance(stmt, ast.AnnAssign)
         and isinstance(stmt.annotation, ast.Name)
-        and stmt.annotation.id == "__consecrated__"
+        and stmt.annotation.id == CONSECRATED_CARRIER
         and isinstance(stmt.target, ast.Name)
         and stmt.value is not None
     )
@@ -448,6 +507,10 @@ def _stored_names(node):
     elif isinstance(node, ast.MatchMapping) and node.rest is not None:
         # `wherein {**PORT}:`
         yield node.rest, node
+    elif isinstance(node, ast.TypeAlias):
+        # `archetype PORT = int` binds PORT as surely as an assignment;
+        # left unlisted it silently rebound a consecrated name.
+        yield node.name.id, node
     elif isinstance(node, _SCOPES):
         # `rite PORT():` / `pattern PORT:` bind PORT in the *declaring*
         # scope, which is the scope this walker is checking.
@@ -479,7 +542,17 @@ def _carrier_call(node: ast.With, name: str):
 
 
 def _is_augur_carrier(stmt) -> bool:
-    return isinstance(stmt, ast.With) and _carrier_call(stmt, "__augur__") is not None
+    return isinstance(stmt, ast.With) and _carrier_call(stmt, AUGUR_CARRIER) is not None
+
+
+def _is_one_line_augury(stmt) -> bool:
+    """A bare annotation of the name `augur` -- `augur: x > 0` on one line."""
+    return (
+        isinstance(stmt, ast.AnnAssign)
+        and isinstance(stmt.target, ast.Name)
+        and stmt.target.id == "augur"
+        and stmt.value is None
+    )
 
 
 def _is_docstring(stmt) -> bool:
@@ -504,6 +577,17 @@ def _reject_misplaced_auguries(scope, mkerr) -> None:
     # `_in_scope` stops below a nested rite, so that rite's own legitimate
     # opening augury is left for its own scope visit to allow.
     for node in _in_scope(scope.body):
+        # `augur: x > 0` on one line parses as an annotation of a variable
+        # named augur, not as an augury -- and leaving it to annotate
+        # silently would check nothing, in a rite or out of one. Rejected
+        # everywhere a block augury would be judged, not only at a rite's
+        # opening slot: the shape reads as a one-line augury wherever it
+        # sits. An annotation *with* a value is unmistakably the author's.
+        if _is_one_line_augury(node):
+            raise mkerr(
+                node,
+                "an augury's conditions belong on the lines beneath augur:",
+            )
         if _is_augur_carrier(node) and id(node) not in allowed:
             if not in_rite:
                 raise mkerr(node, "an augury belongs at the opening of a rite")
@@ -527,40 +611,51 @@ def _reject_loop_control(body, mkerr) -> None:
 def _build_retry(node, count, rest, curse, suffix):
     """for __i in range(__n): try: body; break; except curse: ...
 
-    `__n`/`__i` carry a per-callsite `suffix` (see `ConstructPass._litany`)
-    rather than being fixed names. Two litanies sharing a name would be a
-    silent-corruption bug the moment one nests inside the other: the inner
-    loop's assignments would overwrite the outer's bookkeeping before the
-    outer's `except` handler ever compares attempt-count against total, so
-    the outer's exhaustion check would simply never fire and its exception
-    would vanish instead of propagating.
+    `__n`/`__i`/`__rest` carry a per-callsite `suffix` (see
+    `ConstructPass._litany`) rather than being fixed names. Two litanies
+    sharing a name would be a silent-corruption bug the moment one nests
+    inside the other: the inner loop's assignments would overwrite the
+    outer's bookkeeping before the outer's `except` handler ever compares
+    attempt-count against total, so the outer's exhaustion check would
+    simply never fire and its exception would vanish instead of
+    propagating.
+
+    `count` and `rest` are each bound once, up front, and guarded there:
+    a bad value fails before the first attempt, not inside the except
+    handler where its error would replace the retry and read as the
+    body's own failure.
     """
     count_name = f"__liturgy_n_{suffix}"
     attempt_name = f"__liturgy_attempt_{suffix}"
+    rest_name = f"__liturgy_rest_{suffix}"
     loc = lambda n: ast.copy_location(n, node)  # noqa: E731
 
-    bind_n = loc(ast.Assign(
-        targets=[loc(ast.Name(id=count_name, ctx=ast.Store()))], value=count
-    ))
-
-    guard = loc(ast.If(
-        test=loc(ast.Compare(
-            left=loc(ast.Name(id=count_name, ctx=ast.Load())),
-            ops=[ast.Lt()],
-            comparators=[loc(ast.Constant(value=1))],
-        )),
-        body=[loc(ast.Raise(
-            exc=loc(ast.Call(
-                func=loc(ast.Name(id="ValueError", ctx=ast.Load())),
-                args=[loc(ast.Constant(
-                    value="a litany must be chanted at least once"
-                ))],
-                keywords=[],
+    def guarded(name, value, threshold, op, message):
+        """name = value; if name <op> threshold: raise ValueError(message)."""
+        bind = loc(ast.Assign(
+            targets=[loc(ast.Name(id=name, ctx=ast.Store()))], value=value
+        ))
+        check = loc(ast.If(
+            test=loc(ast.Compare(
+                left=loc(ast.Name(id=name, ctx=ast.Load())),
+                ops=[op],
+                comparators=[loc(ast.Constant(value=threshold))],
             )),
-            cause=None,
-        ))],
-        orelse=[],
-    ))
+            body=[loc(ast.Raise(
+                exc=loc(ast.Call(
+                    func=loc(ast.Name(id="ValueError", ctx=ast.Load())),
+                    args=[loc(ast.Constant(value=message))],
+                    keywords=[],
+                )),
+                cause=None,
+            ))],
+            orelse=[],
+        ))
+        return [bind, check]
+
+    header = guarded(count_name, count, 1, ast.Lt(), _AT_LEAST_ONCE)
+    if rest is not None:
+        header += guarded(rest_name, rest, 0, ast.Lt(), _NO_NEGATIVE_REST)
 
     # if __i == __n - 1: raise
     reraise = loc(ast.If(
@@ -579,7 +674,9 @@ def _build_retry(node, count, rest, curse, suffix):
 
     handler_body = [reraise]
     if rest is not None:
-        # __import__("time").sleep(rest) -- self-contained, no injected import
+        # __import__("time").sleep(__rest) -- self-contained, no injected
+        # import, and the already-bound, already-guarded name: nothing in
+        # this handler can fail for the resting's own sake.
         handler_body.append(loc(ast.Expr(value=loc(ast.Call(
             func=loc(ast.Attribute(
                 value=loc(ast.Call(
@@ -590,7 +687,7 @@ def _build_retry(node, count, rest, curse, suffix):
                 attr="sleep",
                 ctx=ast.Load(),
             )),
-            args=[rest],
+            args=[loc(ast.Name(id=rest_name, ctx=ast.Load()))],
             keywords=[],
         )))))
 
@@ -618,4 +715,4 @@ def _build_retry(node, count, rest, curse, suffix):
         orelse=[],
     ))
 
-    return [bind_n, guard, loop]
+    return [*header, loop]

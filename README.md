@@ -27,7 +27,8 @@ time.
 > reserved words.
 >
 > It is **breakable**. Some of it is documented: naming a variable `span` or
-> `measure` silently shadows a builtin and fails somewhere else entirely,
+> `measure` (or `discern`, or any of the ten quiet words) silently shadows
+> the name it aliases and fails somewhere else entirely,
 > `consecrated` cannot stop `setattr` or `globals()`, and any word Liturgy
 > reserves is a word your program may not use as an identifier. `augur` will
 > now find that first class of sharp edge for you, which is not the same as
@@ -119,6 +120,13 @@ Three exceptions keep this from breaking on real code you do not control:
 
 Those three rules exist because you control your own identifiers, but you do
 not control a library's.
+
+One family of names is reserved beyond the tables below: `__consecrated__`,
+`__litany__`, `__augur__` and anything beginning `__liturgy_` — the private
+carriers and bookkeeping the construct compiler writes into generated code.
+A litany that spelled one would be indistinguishable from the machinery, so
+using one anywhere but after a dot is a loud compile error rather than a
+silent rewrite.
 
 ## The lexicon
 
@@ -255,15 +263,21 @@ object, and `exec` all get through. This is enforcement, not a guarantee.
 
 `litany(thrice, resting=2, curse=TimeoutError):` re-chants its body when it
 raises. The first argument is the *total* number of attempts, not the number
-of retries. `curse=` names what to catch and is required and keyword-only,
-so nothing is caught by accident; `resting=` is optional and, left out,
-pauses for nothing between attempts. `cease`/`persist` written at the
+of retries. `curse=` names what to catch and is required and keyword-only
+(spelled out — not passed through `**`), so nothing is caught by accident;
+`resting=` is optional and, left out,
+pauses for nothing between attempts. Count and resting are each evaluated
+once and guarded up front — a count below one or a negative resting is
+rejected at compile time as a literal, before the first attempt otherwise.
+`cease`/`persist` written at the
 litany's own level are rejected at compile time — they would bind to the
 retry loop the construct generates, not anything you wrote — but the same
 words inside a real loop in the body are fine.
 
 `augur:` is a set of bare conditions, one per line, allowed only at the
-opening of a rite (a docstring may come first). It is a contract, not an
+opening of a rite (a docstring may come first). A statement, a constant, or
+a walrus in the block is rejected at compile time; a call is a condition,
+judged by the truth of what it renders. It is a contract, not an
 assertion — it survives `-O` — and a failing condition raises
 `ImpureOffering` with a message that quotes the *Liturgy* source of the
 condition that failed, not the compiled Python. It is not a
@@ -301,7 +315,8 @@ not a fourth escalation. The count lives in a small state file
 if that variable is unset), so it persists across runs; losing an increment
 to a concurrent write would only affect the joke, not correctness.
 
-Pass `--absolved` to suppress the rebuke for a single invocation:
+Pass `--absolved` — before or after the verb, as you like — to suppress the
+rebuke for a single invocation:
 
 ```
 $ liturgy --absolved run hello.lit
@@ -351,7 +366,9 @@ somewhere — still worth reporting, but it will announce itself.
 `augur` makes exactly two checks. First, every binding whose name is one of
 the sixty words that become another word, by either route: you wrote the
 reserved word and it was substituted, or an exemption protected the word and
-you are now bound to it unsubstituted. Second, for a `.lit` file, that it
+you are now bound to it unsubstituted. (A `.py` file binding one of the
+machine-reserved dunders above is reported under this check too — a litany
+could never import it by that name.) Second, for a `.lit` file, that it
 actually compiles, so `augur` and `chant` cannot disagree about whether a file
 is well-formed.
 
@@ -368,7 +385,11 @@ going to grow into one. It reports the class of fault that is specific to
 Liturgy, which is the class no other tool in your setup can see.
 
 Arguments may be files or directories; a directory is walked for `.lit` and
-`.py` files. Exit status is 0 when nothing was reported and 1 when anything
+`.py` files, pruning the usual noise — dot-directories, `__pycache__`, and
+anything holding a `pyvenv.cfg`, so a vendored virtual environment does not
+drown real findings under third-party code. A directory you name directly is
+always read, hidden or not, and overlapping arguments report each finding
+once. Exit status is 0 when nothing was reported and 1 when anything
 was. A directory reached through a symlink is named rather than skipped in
 silence, because a linter that quietly does not read a file is worse than no
 linter.
@@ -430,7 +451,10 @@ gets the litany and nothing else.
 Before anything reaches disk it round-trips its own output: the generated
 Liturgy is transformed back to Python and compared against the source, and if
 the two differ, nothing is written and the failure is reported as a fault in
-Liturgy rather than in your file. A destination file gets a second, byte-level
+Liturgy rather than in your file. The output is also compiled, so a Python
+program no litany can express — one binding a bare `consecrated`, or using a
+machine-reserved dunder — is refused as "the output would not chant" instead
+of written broken. A destination file gets a second, byte-level
 round-trip in the source's own declared encoding. Line endings and a PEP 263
 `coding:` cookie are preserved, so the output differs from the input in its
 words and in nothing else.
@@ -500,11 +524,11 @@ Traceback (most recent call last):
   File "/Users/messagematrix/workspace/laboratory/tech-priest-liturgy/.venv/bin/liturgy", line 6, in <module>
     sys.exit(main())
              ~~~~^^
-  File "/Users/messagematrix/workspace/laboratory/tech-priest-liturgy/src/liturgy/cli.py", line 74, in main
+  File "/Users/messagematrix/workspace/laboratory/tech-priest-liturgy/src/liturgy/cli.py", line 113, in main
     return _chant(args.file, args.args)
-  File "/Users/messagematrix/workspace/laboratory/tech-priest-liturgy/src/liturgy/loader.py", line 102, in chant
-    exec(compile(py, path, "exec", dont_inherit=True), module.__dict__)
-    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/messagematrix/workspace/laboratory/tech-priest-liturgy/src/liturgy/loader.py", line 128, in chant
+    exec(compile_litany(src, path), module.__dict__)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/Users/messagematrix/workspace/laboratory/tech-priest-liturgy/examples/bad.lit", line 1, in <module>
     intone(1 / 0)
           ^^^^^

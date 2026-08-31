@@ -54,11 +54,33 @@ def record_source(path: str, src: str) -> None:
     """Record the exact source compiled for `path`.
 
     Call this at the moment of compilation -- from `LiturgyLoader.
-    source_to_code` and from `chant()` -- so a later curse render reflects
-    what actually ran, not whatever the file currently contains on disk.
+    source_to_code`, from `chant()`, and from the commune prompt -- so a
+    later curse render reflects what actually ran, not whatever the file
+    currently contains on disk. A recorded path need not exist on disk at
+    all: the prompt records each entry under a virtual name, which is what
+    lets a curse quote what was typed there.
     """
     _source_cache[path] = src
     _map_cache.pop(path, None)
+
+
+def forget_source(path: str) -> None:
+    """Drop a recorded source. The commune prompt retires old entries with
+    this so an arbitrarily long session does not grow the cache without
+    bound; forgetting a real file merely falls back to reading it."""
+    _source_cache.pop(path, None)
+    _map_cache.pop(path, None)
+
+
+def _is_litany(filename: str) -> bool:
+    """Is `filename` Liturgy -- a .lit path, or a recorded virtual source?
+
+    Everything rendering-related branches on this rather than on the
+    suffix alone: an entry typed at the commune prompt has no file and no
+    suffix, but its source is recorded, and quoting the generated Python
+    at someone who typed Liturgy was the old behaviour this replaces.
+    """
+    return filename.endswith(SUFFIX) or filename in _source_cache
 
 
 def curse_name(exc_type: type) -> str:
@@ -170,7 +192,7 @@ def _lit_location(exc: BaseException | None) -> str | None:
     launcher frames sit above.
     """
     filename = getattr(exc, "filename", None)
-    if isinstance(filename, str) and filename.endswith(SUFFIX):
+    if isinstance(filename, str) and _is_litany(filename):
         return filename
     return None
 
@@ -209,7 +231,7 @@ def _drop_launcher_frames(
     a line, and every frame present is plumbing that got us to it.
     """
     for i, frame in enumerate(frames):
-        if frame.filename.endswith(SUFFIX):
+        if _is_litany(frame.filename):
             return [f for f in frames[i:] if not _is_plumbing(f)]
     return [] if anchored else frames
 
@@ -220,7 +242,7 @@ def _is_plumbing(frame: traceback.FrameSummary) -> bool:
     A .lit frame is never plumbing, however it got there -- a litany that
     somehow lives inside the package directory is still the user's code.
     """
-    if frame.filename.endswith(SUFFIX):
+    if _is_litany(frame.filename):
         return False
     if frame.filename.startswith("<frozen importlib."):
         return True
@@ -293,7 +315,7 @@ def _render_syntax_location(exc: SyntaxError, out: list[str]) -> None:
     """
     filename = exc.filename or "<unknown>"
     lineno = exc.lineno
-    is_lit = filename.endswith(SUFFIX)
+    is_lit = _is_litany(filename)
     if is_lit:
         out.append(f"   the rite was ill-written at {filename}, line {lineno}")
     else:
@@ -341,7 +363,7 @@ def _render_one(
         traceback.extract_tb(tb), anchored=_lit_location(exc) is not None
     )
     for frame in frames:
-        if frame.filename.endswith(SUFFIX):
+        if _is_litany(frame.filename):
             _render_lit_frame(frame, out)
         else:
             out.append(

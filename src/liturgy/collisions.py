@@ -13,8 +13,8 @@ import tokenize
 from dataclasses import dataclass
 from types import SimpleNamespace
 
-from .compiler import _PASSES
-from .constructs import carrier_pass
+from .compiler import _PASSES, parse_named
+from .constructs import carrier_pass, is_machine_name
 from .lexicon import LEXICON
 from .rewrite import _names_in_target, _stored_names
 from .sourcemap import char_offset
@@ -28,12 +28,16 @@ class Collision:
     `col` is 0-based. `quiet` means the substitution target is not a Python
     keyword, so the file compiles and silently shadows -- which is the whole
     reason this check exists.
+
+    `target` is None for a machine name -- `__litany__` and its kin become
+    nothing; they are simply the generated code's own, and a litany that
+    spoke one would be indistinguishable from a carrier.
     """
 
     line: int
     col: int
     word: str
-    target: str
+    target: str | None
     quiet: bool
 
 
@@ -142,6 +146,10 @@ def _bindings(node):
     elif isinstance(node, (ast.Import, ast.ImportFrom)):
         for alias in node.names:
             yield alias.asname or alias.name.split(".")[0], _import_bind_at(alias)
+    elif isinstance(node, ast.TypeAlias):
+        # `type span = int` (3.12+) binds through its own `ast.Name`, so
+        # clause (a)'s exact-occurrence rule applies to it unchanged.
+        yield node.name.id, node.name
     else:
         # ExceptHandler, MatchAs/MatchStar/MatchMapping, and rite/pattern
         # (FunctionDef/AsyncFunctionDef/ClassDef) names -- everything
@@ -261,7 +269,10 @@ def find_collisions(
         # ordinary correct code, never reaching the compile step that is
         # meant to be the one place augur can disagree with chant.
         py, smap = transform(src, _PASSES, filename=filename)
-        tree = ast.parse(py, filename)
+        # `parse_named`, not bare `ast.parse`: the caller reports a failure
+        # here as a compile failure, and the wrapper names the substitution
+        # the error sits in, exactly as `chant` would for the same file.
+        tree = parse_named(py, filename, src, smap)
         py_lines = split_lines(py)
         toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
         alias_subs = alias_pass(toks)
@@ -298,7 +309,7 @@ def find_collisions(
             if sub is not None:
                 word = lines[line - 1][sub.col_start : sub.col_end]
                 col = sub.col_start
-            elif name in LEXICON:
+            elif name in LEXICON or is_machine_name(name):
                 word = name
                 if smap is not None:
                     col = smap.to_lit(line, py_col)
@@ -310,8 +321,13 @@ def find_collisions(
                     col = char_offset(src_line, raw_col)
             else:
                 continue
-            found.add(
-                Collision(line, col, word, LEXICON[word], _is_quiet(LEXICON[word]))
-            )
+            # `target` is None for a machine name, bound in a .py file (in
+            # a .lit file the carrier pass has already refused it, so that
+            # arm is only reachable with liturgy=False): it becomes nothing
+            # -- the fault is speaking it at all -- and nothing about it is
+            # quiet.
+            target = LEXICON.get(word)
+            quiet = target is not None and _is_quiet(target)
+            found.add(Collision(line, col, word, target, quiet))
 
     return sorted(found, key=lambda c: (c.line, c.col, c.word))

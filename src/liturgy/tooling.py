@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import os
 import pathlib
 import shutil
 import sys
@@ -30,38 +31,95 @@ def _readable(f: pathlib.Path) -> bool:
     return f.is_file() or (f.is_symlink() and not f.is_dir())
 
 
+def _skipped_quietly(d: pathlib.Path) -> bool:
+    """Is `d` a directory the walk prunes without a word?
+
+    Three kinds, all of them noise no adept means to lint: hidden
+    directories (`.venv`, `.git`, editor droppings), `__pycache__`, and any
+    directory holding a `pyvenv.cfg` -- the marker every virtual
+    environment carries, hidden or not. Without this, `augur .` on a
+    project with a vendored environment drowned real findings under every
+    third-party `.py` that binds `render` or `span`. A directory the
+    caller names *directly* is always walked -- naming it is asking.
+    """
+    return (
+        d.name.startswith(".")
+        or d.name == "__pycache__"
+        or (d / "pyvenv.cfg").is_file()
+    )
+
+
 def _gather(
     paths: list[str],
-) -> tuple[list[pathlib.Path], list[pathlib.Path]]:
+) -> tuple[list[pathlib.Path], list[tuple[pathlib.Path, str]]]:
     """Files to read, expanding directories to the sources we understand.
 
-    Returns `(files, unscanned_dirs)`. `rglob` lists a symlinked directory
-    itself but does not descend into it -- true through this project's 3.12
-    floor; the glob methods only grew a `recurse_symlinks` keyword in 3.13.
-    So a `.lit`/`.py` file reachable only through one is invisible to a
-    plain walk, and reporting the tree clean without a word about it would
-    be the one thing a linter must not do: claiming to have read what it
-    never saw. Each such directory is named instead, in `unscanned_dirs`,
-    so the caller can say so rather than silently skip it. (The path the
-    caller names directly is never itself skipped this way, symlink or not
-    -- `rglob` walks *from* it regardless; the gap is only for a symlinked
-    directory met partway through the walk.)
+    Returns `(files, notes)`. `notes` names, with a reason each, every
+    directory that was met and not read: a symlinked directory (never
+    entered -- a `.lit` file behind one is invisible to the walk, and
+    reporting the tree clean without a word about it would be the one
+    thing a linter must not do) and a directory the walk could not open.
+    Directories pruned as noise (see `_skipped_quietly`) are not noted;
+    hidden files are skipped the same way. The path the caller names
+    directly is never skipped by any of these rules -- naming it is asking
+    for it, symlink, hidden or not.
+
+    Files are deduplicated across arguments, so overlapping paths --
+    `augur quiet.lit .` -- report each finding once.
     """
     files: list[pathlib.Path] = []
-    unscanned_dirs: list[pathlib.Path] = []
+    notes: list[tuple[pathlib.Path, str]] = []
+    seen: set[str] = set()
+
+    def claim(f: pathlib.Path) -> None:
+        key = os.path.abspath(f)
+        if key not in seen:
+            seen.add(key)
+            files.append(f)
+
+    def walk(d: pathlib.Path, collected, skipped) -> None:
+        try:
+            entries = sorted(d.iterdir())
+        except OSError as err:
+            skipped.append((d, f"cannot be read: {err.strerror}"))
+            return
+        for entry in entries:
+            if entry.is_dir() and not entry.is_symlink():
+                if not _skipped_quietly(entry):
+                    walk(entry, collected, skipped)
+            elif entry.is_dir():
+                # A symlinked directory is never entered. One that is noise
+                # anyway -- a symlinked `.venv`, say -- is pruned as
+                # quietly as its real counterpart would be; any other is
+                # named, not passed over in silence.
+                if not _skipped_quietly(entry):
+                    skipped.append((
+                        entry,
+                        "symlinked directory: not descended into, not scanned",
+                    ))
+            elif entry.suffix in _SOURCES and _readable(entry):
+                if entry.name.startswith("."):
+                    # A hidden source file is skipped -- but a reader that
+                    # quietly does not read a file is worse than no
+                    # reader, so it is named; name it directly to read it.
+                    skipped.append((entry, "hidden: not read"))
+                else:
+                    collected.append(entry)
+
     for raw in paths:
         p = pathlib.Path(raw)
         if p.is_dir():
-            entries = list(p.rglob("*"))
-            files.extend(
-                sorted(f for f in entries if f.suffix in _SOURCES and _readable(f))
-            )
-            unscanned_dirs.extend(
-                sorted(d for d in entries if d.is_dir() and d.is_symlink())
-            )
+            collected: list[pathlib.Path] = []
+            skipped: list[tuple[pathlib.Path, str]] = []
+            walk(p, collected, skipped)
+            for f in sorted(collected):
+                claim(f)
+            for note in sorted(skipped):
+                if note not in notes:
+                    notes.append(note)
         else:
-            files.append(p)
-    return files, unscanned_dirs
+            claim(p)
+    return files, notes
 
 
 def _report(path, line, src_line, col, width, message, *, out) -> None:
@@ -78,14 +136,11 @@ def augur(paths: list[str], *, plain: bool = False, out=None) -> int:
     out = out if out is not None else sys.stdout
     troubled = False
 
-    files, unscanned_dirs = _gather(paths)
+    files, notes = _gather(paths)
 
-    for d in unscanned_dirs:
+    for d, message in notes:
         troubled = True
-        _emit_bare(
-            d, "symlinked directory: not descended into, not scanned",
-            plain=plain, out=out,
-        )
+        _emit_bare(d, message, plain=plain, out=out)
 
     for path in files:
         # decode_source, not read_text(encoding="utf-8"): a BOM or a PEP 263
@@ -123,6 +178,12 @@ def augur(paths: list[str], *, plain: bool = False, out=None) -> int:
                 line=err.lineno or 1, plain=plain, out=out,
             )
             continue
+        except ValueError as err:
+            # e.g. a null byte in a .py file: compile() raises ValueError,
+            # not SyntaxError, and an -> int contract does not traceback.
+            troubled = True
+            _emit_bare(path, f"cannot be compiled: {err}", plain=plain, out=out)
+            continue
 
         if liturgy:
             # Compiling is what makes augur agree with chant. Collisions are
@@ -139,9 +200,15 @@ def augur(paths: list[str], *, plain: bool = False, out=None) -> int:
         lines = split_lines(src)
         for c in collisions:
             troubled = True
-            note = f"{c.word} is reserved; it becomes {c.target}"
-            if c.quiet:
-                note += " -- silently"
+            if c.target is None:
+                note = (
+                    f"{c.word} is the machine's own name; "
+                    "a litany may not speak it"
+                )
+            else:
+                note = f"{c.word} is reserved; it becomes {c.target}"
+                if c.quiet:
+                    note += " -- silently"
             if plain:
                 print(f"{path}:{c.line}:{c.col + 1}: {note}", file=out)
             else:
@@ -190,6 +257,11 @@ def _source_encoding(raw: bytes) -> str:
     return encoding
 
 
+def _collision_row(label: str, c) -> str:
+    what = "the machine's own" if c.target is None else f"reserved ({c.target})"
+    return f"  {label}:{c.line}  {c.word:<12} -> {what}"
+
+
 def _output_omens(litany: str, label: str) -> list[str]:
     """What `augur` will say about the Liturgy `transcribe` is about to emit.
 
@@ -213,10 +285,7 @@ def _output_omens(litany: str, label: str) -> list[str]:
         return []
     plural = "S" if len(collisions) != 1 else ""
     lines = [f"++ THE OUTPUT CARRIES {len(collisions)} COLLISION{plural} ++"]
-    lines += [
-        f"  {label}:{c.line}  {c.word:<12} -> reserved ({c.target})"
-        for c in collisions
-    ]
+    lines += [_collision_row(label, c) for c in collisions]
     lines.append("augur will flag these; the litany is correct and chants as written")
     return lines
 
@@ -253,6 +322,11 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
             file=out,
         )
         return 1
+    except ValueError as err:
+        # e.g. a null byte: compile() raises ValueError, not SyntaxError,
+        # and an -> int contract does not traceback.
+        print(f"++ CANNOT TRANSCRIBE: {path} cannot be compiled: {err} ++", file=out)
+        return 1
 
     if collisions:
         print(
@@ -261,10 +335,7 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
             file=out,
         )
         for c in collisions:
-            print(
-                f"  {path}:{c.line}  {c.word:<12} -> reserved ({c.target})",
-                file=out,
-            )
+            print(_collision_row(str(path), c), file=out)
         print("rename these, then chant again", file=out)
         return 1
 
@@ -282,8 +353,27 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
         print("   this is a fault in Liturgy, not in your source", file=out)
         return 1
 
+    # Round-tripping proves the words are faithful; it does not prove they
+    # chant. A Python source can spell what a litany may not -- a bare
+    # `consecrated = 5`, a call to its own `__litany__` -- and the collision
+    # check catches only bindings. Compiling the output is the backstop
+    # that catches every such shape at once, before anything claims the
+    # transcription succeeded.
+    label = dest if dest is not None else str(path)
+    try:
+        compile_litany(litany, label)
+    except SyntaxError as err:
+        print("++ CANNOT TRANSCRIBE: the output would not chant ++", file=out)
+        print(f"   line {err.lineno}: {err.msg}", file=out)
+        print("rewrite or rename what it names, then transcribe again", file=out)
+        return 1
+    except ValueError as err:
+        print("++ CANNOT TRANSCRIBE: the output would not chant ++", file=out)
+        print(f"   {err}", file=out)
+        return 1
+
     output = litany if newline == "\n" else litany.replace("\n", newline)
-    omens = _output_omens(litany, dest if dest is not None else str(path))
+    omens = _output_omens(litany, label)
 
     if dest is None:
         print(output, end="", file=out)
