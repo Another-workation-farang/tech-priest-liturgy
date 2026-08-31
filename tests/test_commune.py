@@ -133,3 +133,56 @@ def test_console_script_repl_can_import_from_the_working_directory(tmp_path):
         cwd=str(tmp_path), capture_output=True, text=True,
     )
     assert "ave" in out.stdout
+
+
+# --- Spec II constructs at the prompt --------------------------------------
+#
+# `runsource` used to transform with DEFAULT_PASSES, so every construct
+# header reached `self.compile()` un-desugared and died as a SyntaxError
+# before `compile_litany` was ever consulted. Nothing in this file mentioned
+# a construct, which is why that shipped. These drive the real console over
+# stdin, one construct each, plus a block typed across several lines.
+
+
+def commune(*lines: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, "-m", "liturgy", "commune"],
+        input="".join(f"{line}\n" for line in lines),
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_consecrated_works_at_the_prompt():
+    out = commune("consecrated PORT = 8080", "intone(PORT)")
+    assert "8080" in out.stdout
+    assert "SyntaxError" not in out.stdout + out.stderr
+
+
+
+def test_litany_works_at_the_prompt_typed_across_several_lines():
+    out = commune(
+        "tries = []",
+        "litany(thrice, curse=MotiveFailure):",
+        "    tries.append(1)",
+        "    should measure(tries) < 2:",
+        "        proclaim MotiveFailure('again')",
+        "",
+        "intone(measure(tries))",
+    )
+    assert "2" in out.stdout
+    assert "SyntaxError" not in out.stdout + out.stderr
+
+
+def test_augur_works_at_the_prompt():
+    out = commune(
+        "rite divide(a, b):",
+        "    augur:",
+        "        b != 0",
+        "    render a / b",
+        "",
+        "intone(divide(6, 2))",
+        "divide(1, 0)",
+    )
+    assert "3.0" in out.stdout
+    assert "the omens forbid it -- b != 0" in out.stdout + out.stderr
