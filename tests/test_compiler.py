@@ -113,3 +113,35 @@ def test_no_carrier_name_survives_in_single_mode_either(name):
         {n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and n.id in CARRIERS}
     )
     assert not left, f"carrier names survived ConstructPass: {left}"
+
+
+# --- I5: the compiler fills in the filename a token pass cannot know --------
+
+
+@pytest.mark.parametrize(
+    "src",
+    [
+        "consecrated = 5\n",
+        "litany 3:\n    abide\n",
+        "augur x:\n    abide\n",
+    ],
+    ids=["consecrated", "litany", "augur"],
+)
+def test_a_carrier_heresy_carries_the_real_filename(src):
+    from liturgy.constructs import TechHeresy
+
+    with pytest.raises(TechHeresy) as exc:
+        compile_litany(src, "prayer.lit")
+    assert exc.value.filename == "prayer.lit"
+
+
+def test_a_filename_the_carrier_pass_did_set_is_not_overwritten():
+    # Only the "<unknown>" placeholder is replaced. A heresy that already
+    # names a file -- as everything raised from `ConstructPass` does -- keeps
+    # what it was given.
+    from liturgy.constructs import TechHeresy
+    from liturgy.compiler import _rewritten_tree
+
+    with pytest.raises(TechHeresy) as exc:
+        _rewritten_tree("litany(0, curse=MachineCurse):\n    abide\n", "p.lit")
+    assert exc.value.filename == "p.lit"

@@ -787,3 +787,45 @@ def test_an_ascii_caret_is_unchanged(tmp_path):
     # regression guard for the fix itself.
     out = _chant(tmp_path, 'pad = "aaaa"; intone(1 // 0); tail = "bbbb"\n')
     assert _caret_underlines(out, "1 // 0"), out
+
+
+# --- I5: a carrier-pass heresy must name the file it came from --------------
+#
+# `constructs.heresy` writes "<unknown>" because a token pass is handed a bare
+# token list and cannot know the filename. The renderer then found no .lit
+# anchor, `_drop_launcher_frames` had nothing to cut at, and the two commonest
+# construct typos each printed ten frames of runpy/cli/compiler/transform/
+# constructs internals above the message.
+
+PLUMBING = ("runpy", "compiler.py", "transform.py", "constructs.py", "cli.py")
+
+CARRIER_TYPOS = {
+    "consecrated-without-a-name": (
+        "consecrated = 5\n", "consecrated must be followed by a name",
+    ),
+    "litany-without-parentheses": (
+        "litany 3:\n    abide\n", "litany takes a parenthesised attempt count",
+    ),
+    "augur-with-an-argument": (
+        "augur x:\n    abide\n", "augur opens a block and takes no arguments",
+    ),
+}
+
+
+@pytest.mark.parametrize("name", sorted(CARRIER_TYPOS))
+def test_a_carrier_typo_renders_clean_and_names_the_file(tmp_path, name):
+    source, message = CARRIER_TYPOS[name]
+    path = tmp_path / "typo.lit"
+    path.write_text(source)
+    out = subprocess.run(
+        [sys.executable, "-m", "liturgy", "chant", str(path)],
+        capture_output=True, text=True,
+        env={**os.environ, "XDG_STATE_HOME": str(tmp_path)},
+    )
+    rendered = out.stdout + out.stderr
+    assert message in rendered, rendered
+    assert "the rite was ill-written at" in rendered, rendered
+    assert str(path) in rendered, rendered
+    assert "<unknown>" not in rendered, rendered
+    for frame in PLUMBING:
+        assert frame not in rendered, f"{frame} frame leaked:\n{rendered}"

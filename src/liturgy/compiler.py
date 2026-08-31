@@ -11,15 +11,34 @@ from __future__ import annotations
 import ast
 import types
 
-from .constructs import carrier_pass
+from .constructs import TechHeresy, carrier_pass
 from .rewrite import ConstructPass
 from .transform import DEFAULT_PASSES, split_lines, transform
 
 _PASSES = (*DEFAULT_PASSES, carrier_pass)
 
+# What `constructs.heresy` writes when it has no filename to write. The token
+# passes are handed a bare token list -- see `transform.TokenPass` -- so the
+# carrier pass genuinely cannot know what file it is reading.
+_UNKNOWN = "<unknown>"
+
 
 def _rewritten_tree(src: str, filename: str, *, mode: str = "exec") -> ast.AST:
-    py, smap = transform(src, _PASSES, filename=filename)
+    try:
+        py, smap = transform(src, _PASSES, filename=filename)
+    except TechHeresy as err:
+        # The carrier pass raises for the two commonest construct typos --
+        # `consecrated = 5` and `litany 3:` -- and cannot name the file.
+        # Filling it in here is what lets `curse` recognise a .lit anchor:
+        # without it `_lit_location` returns None, `_drop_launcher_frames`
+        # finds nothing to cut at, and the user gets ten frames of
+        # runpy/cli/compiler/transform/constructs plumbing instead of the
+        # two-line render every other Liturgy error produces. Threading a
+        # filename through the TokenPass protocol would cost every pass a
+        # parameter to serve one of them.
+        if err.filename == _UNKNOWN:
+            err.filename = filename
+        raise
     tree = ast.parse(py, filename, mode)
     tree = ConstructPass(
         filename, split_lines(src), smap, split_lines(py)
