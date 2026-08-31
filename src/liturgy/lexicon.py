@@ -73,5 +73,23 @@ CURSES: dict[str, str] = {
     "RiteUnwritten": "NotImplementedError",
 }
 
-LEXICON: dict[str, str] = {**KEYWORDS, **SOFTWORDS, **CURSES}
+# Numeral words. Targets are integer literals, not Python names, so these
+# cannot live in KEYWORDS or SOFTWORDS -- those tables' targets are validated
+# against keyword.kwlist and builtins respectively.
+NUMERALS: dict[str, str] = {
+    "twice": "2",
+    "thrice": "3",
+}
+
+# Recognised by the carrier pass, not substituted by the alias pass: they map
+# to no Python word at all. Reserved nonetheless.
+CONSTRUCT_KEYWORDS: frozenset[str] = frozenset(
+    {"consecrated", "litany", "augur"}
+)
+
+LEXICON: dict[str, str] = {**KEYWORDS, **SOFTWORDS, **CURSES, **NUMERALS}
 INVERSE: dict[str, str] = {py: lit for lit, py in LEXICON.items()}
+
+# The one place that answers "is this word taken". Consumed by the corpus
+# sweep's skip logic, the documented count, and Spec III's augur lint.
+RESERVED: frozenset[str] = frozenset(LEXICON) | CONSTRUCT_KEYWORDS

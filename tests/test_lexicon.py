@@ -60,3 +60,35 @@ def test_every_curse_target_is_a_real_exception_class(lit, target):
     cls = getattr(builtins, target, None)
     assert isinstance(cls, type), f"{target!r} is not a builtin"
     assert issubclass(cls, BaseException)
+
+
+def test_numerals_substitute_to_integer_literals():
+    assert lexicon.NUMERALS == {"twice": "2", "thrice": "3"}
+
+
+@pytest.mark.parametrize("lit,target", sorted(lexicon.NUMERALS.items()))
+def test_every_numeral_target_is_a_decimal_integer(lit, target):
+    assert target.isdigit(), f"{lit} -> {target} is not an integer literal"
+
+
+def test_numerals_are_in_the_lexicon():
+    # They substitute like any other alias, everywhere -- `x = thrice` is `x = 3`.
+    assert lexicon.LEXICON["thrice"] == "3"
+
+
+def test_construct_keywords_map_to_no_python_word():
+    # They are recognised by the carrier pass, not substituted by the alias pass.
+    assert not (lexicon.CONSTRUCT_KEYWORDS & set(lexicon.LEXICON))
+
+
+def test_reserved_is_the_union_of_every_taken_word():
+    assert lexicon.RESERVED == set(lexicon.LEXICON) | lexicon.CONSTRUCT_KEYWORDS
+
+
+def test_reserved_count_is_sixty_three():
+    # 38 keywords + 5 builtins + 15 curses + 2 numerals + 3 constructs.
+    assert len(lexicon.RESERVED) == 63
+
+
+def test_numerals_do_not_break_bijectivity():
+    assert len(lexicon.INVERSE) == len(lexicon.LEXICON)
