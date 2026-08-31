@@ -1,0 +1,809 @@
+<title>Liber Liturgiae</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Spectral:ital,wght@0,300;0,400;0,600;1,300;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root {
+  /* Light: a stamped steel plate, not vellum. */
+  --ground:   #E4E0D8;
+  --surface:  #EFECE5;
+  --plate:    #D8D3C8;
+  --ink:      #1B1613;
+  --muted:    #6B6154;
+  --accent:   #9C3B22;
+  --brass:    #8A6B14;
+  --rule:     #C3BCAE;
+  --code-bg:  #1D1815;
+  --code-ink: #E8DFD2;
+  --shadow:   rgba(27, 22, 19, .10);
+
+  --measure: 66ch;
+  --step--1: clamp(.80rem, .78rem + .1vw, .86rem);
+  --step-0:  clamp(1rem, .97rem + .16vw, 1.09rem);
+  --step-1:  clamp(1.22rem, 1.15rem + .34vw, 1.44rem);
+  --step-2:  clamp(1.5rem, 1.36rem + .68vw, 1.95rem);
+  --step-3:  clamp(1.95rem, 1.66rem + 1.4vw, 2.9rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:   #14100E;
+    --surface:  #1D1815;
+    --plate:    #241E1A;
+    --ink:      #E8DFD2;
+    --muted:    #9A8E7E;
+    --accent:   #C8563A;
+    --brass:    #C9A227;
+    --rule:     #3A312A;
+    --code-bg:  #0E0B09;
+    --code-ink: #E8DFD2;
+    --shadow:   rgba(0, 0, 0, .5);
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground:   #14100E;
+  --surface:  #1D1815;
+  --plate:    #241E1A;
+  --ink:      #E8DFD2;
+  --muted:    #9A8E7E;
+  --accent:   #C8563A;
+  --brass:    #C9A227;
+  --rule:     #3A312A;
+  --code-bg:  #0E0B09;
+  --code-ink: #E8DFD2;
+  --shadow:   rgba(0, 0, 0, .5);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Spectral, Georgia, "Times New Roman", serif;
+  font-size: var(--step-0);
+  font-weight: 300;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── shell ───────────────────────────────────────────── */
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+@media (min-width: 62rem) {
+  .shell { grid-template-columns: 15rem minmax(0, 1fr); }
+}
+
+/* ── chapter rail ────────────────────────────────────── */
+.rail {
+  display: none;
+  border-right: 1px solid var(--rule);
+  background: var(--surface);
+}
+@media (min-width: 62rem) {
+  .rail {
+    display: block;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 2.5rem 1.25rem 3rem 1.75rem;
+  }
+}
+.rail h2 {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: .62rem;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 1.1rem;
+}
+.rail ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
+.rail a {
+  display: grid;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  gap: .5rem;
+  align-items: baseline;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: .87rem;
+  line-height: 1.35;
+  border-radius: 2px;
+}
+.rail a:hover, .rail a:focus-visible { color: var(--accent); }
+.rail .num {
+  font-family: Cinzel, Georgia, serif;
+  font-size: .78rem;
+  letter-spacing: .06em;
+  color: var(--brass);
+}
+
+/* ── page ────────────────────────────────────────────── */
+main { padding: 0 1.5rem 6rem; min-width: 0; }
+@media (min-width: 48rem) { main { padding: 0 3rem 8rem; } }
+.col { max-width: var(--measure); margin-inline: auto; }
+.col > * + * { margin-block-start: 1.15em; }
+
+/* ── masthead ────────────────────────────────────────── */
+.masthead {
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding: clamp(3.5rem, 9vw, 7rem) 0 2.5rem;
+  text-align: center;
+}
+.cant {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: .58rem;
+  letter-spacing: .34em;
+  color: var(--muted);
+  opacity: .38;
+  overflow: hidden;
+  white-space: nowrap;
+  user-select: none;
+  margin-bottom: 2.25rem;
+}
+.masthead h1 {
+  font-family: Cinzel, Georgia, serif;
+  font-weight: 600;
+  font-size: var(--step-3);
+  line-height: 1.05;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  margin: 0;
+  color: var(--ink);
+}
+.masthead .sub {
+  font-size: var(--step-0);
+  font-style: italic;
+  color: var(--muted);
+  text-wrap: balance;
+  margin: 1.1rem auto 0;
+  max-width: 44ch;
+}
+.masthead .stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: 2.25rem;
+  padding: .45rem 1rem;
+  border: 1px solid var(--brass);
+  color: var(--brass);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: .6rem;
+  font-weight: 500;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.masthead .stamp::before { content: "\2699"; font-size: .85rem; }
+
+.canon {
+  max-width: var(--measure);
+  margin: 0 auto 3.5rem;
+  padding: .9rem 1.1rem;
+  background: var(--plate);
+  border-left: 2px solid var(--accent);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: var(--step--1);
+  line-height: 1.6;
+  color: var(--muted);
+}
+.canon strong { color: var(--ink); font-weight: 600; }
+
+/* ── chapters ────────────────────────────────────────── */
+.chapter { max-width: var(--measure); margin: 0 auto; padding-top: 4.5rem; }
+.chapter-head { border-top: 1px solid var(--rule); padding-top: 1.5rem; margin-bottom: 2rem; }
+.chapter-head .num {
+  display: block;
+  font-family: Cinzel, Georgia, serif;
+  font-size: .8rem;
+  font-weight: 500;
+  letter-spacing: .3em;
+  color: var(--brass);
+  margin-bottom: .7rem;
+}
+.chapter-head h2 {
+  font-family: Cinzel, Georgia, serif;
+  font-weight: 600;
+  font-size: var(--step-2);
+  line-height: 1.15;
+  letter-spacing: .02em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+/* the in-voice frame — visually distinct from the plain body */
+.rubric {
+  border-left: 2px solid var(--brass);
+  padding: .1rem 0 .1rem 1.25rem;
+  margin: 1.75rem 0 2rem;
+  font-style: italic;
+  font-size: var(--step-0);
+  color: var(--muted);
+  line-height: 1.65;
+}
+.rubric p + p { margin-top: .8em; }
+
+h3 {
+  font-family: Spectral, Georgia, serif;
+  font-weight: 600;
+  font-size: var(--step-1);
+  line-height: 1.25;
+  text-wrap: balance;
+  margin: 2.75rem 0 .2rem;
+}
+h4 {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-weight: 600;
+  font-size: .72rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 2rem 0 .1rem;
+}
+p { margin: 1.15em 0; }
+a { color: var(--accent); }
+strong { font-weight: 600; }
+
+blockquote.promise {
+  margin: 1.75rem 0;
+  padding: 1.15rem 1.3rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  font-size: var(--step-0);
+  font-style: normal;
+  color: var(--ink);
+}
+blockquote.promise p { margin: 0; }
+blockquote.promise p + p { margin-top: .7em; }
+
+ul { padding-left: 1.15rem; }
+li { margin: .5em 0; }
+li::marker { color: var(--brass); }
+
+/* ── code ────────────────────────────────────────────── */
+pre {
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border: 1px solid var(--rule);
+  padding: 1rem 1.15rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: .84rem;
+  line-height: 1.6;
+  font-weight: 400;
+}
+pre .c { color: var(--brass); }
+pre .o { color: var(--accent); }
+code {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: .87em;
+  background: var(--plate);
+  padding: .1em .34em;
+  border-radius: 2px;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ── tables ──────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--rule); }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+th {
+  text-align: left;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-weight: 600;
+  font-size: .64rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface);
+  padding: .6rem .9rem;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+td { padding: .5rem .9rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td code { background: none; padding: 0; }
+td:first-child code { color: var(--accent); font-weight: 500; }
+.concordance td:nth-child(3) code { color: var(--accent); font-weight: 500; }
+
+/* ── colophon ────────────────────────────────────────── */
+.colophon {
+  max-width: var(--measure);
+  margin: 6rem auto 0;
+  padding-top: 2rem;
+  border-top: 1px solid var(--rule);
+  text-align: center;
+  font-style: italic;
+  color: var(--muted);
+  font-size: var(--step--1);
+  line-height: 1.9;
+}
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+
+<div class="shell">
+<nav class="rail" aria-label="Chapters">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#i"><span class="num">I</span><span>Of the Machine Tongue</span></a></li>
+    <li><a href="#ii"><span class="num">II</span><span>The Rite of Installation</span></a></li>
+    <li><a href="#iii"><span class="num">III</span><span>The Lesser Rites</span></a></li>
+    <li><a href="#iv"><span class="num">IV</span><span>Sanctioned Builtins</span></a></li>
+    <li><a href="#v"><span class="num">V</span><span>Of Curses and Their Reading</span></a></li>
+    <li><a href="#vi"><span class="num">VI</span><span>The Three Prohibitions</span></a></li>
+    <li><a href="#vii"><span class="num">VII</span><span>Of Words Reserved</span></a></li>
+    <li><a href="#viii"><span class="num">VIII</span><span>Of Heresy</span></a></li>
+    <li><a href="#ix"><span class="num">IX</span><span>Rites Not Yet Written</span></a></li>
+    <li><a href="#appendix"><span class="num">&mdash;</span><span>The Full Concordance</span></a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="masthead">
+  <div class="cant" aria-hidden="true">01001100 01001001 01010100 01010101 01010010 01000111 01011001 00101110 01000011 01001111 01000111</div>
+  <h1>Liber Liturgiae</h1>
+  <p class="sub">The Rites of the Machine Tongue, set down for Adepts of the Second Class</p>
+  <div class="stamp">Forge World Tertius Minoris</div>
+</header>
+
+<div class="canon">
+  <strong>Canonical source.</strong> <code>docs/LIBER-LITURGIAE.md</code> in the repository is the authority. This page renders the same text; if the two disagree, the Markdown is right and this page needs the same edit.
+</div>
+
+<section class="chapter" id="i">
+  <div class="chapter-head"><span class="num">Chapter I</span><h2>Of the Machine Tongue</h2></div>
+  <div class="col">
+    <div class="rubric">
+      <p>The Omnissiah does not speak as men speak. He speaks in current and in interrupt, and the adept who would be understood must shape his mouth to the machine's grammar rather than demand the machine shape itself to his.</p>
+      <p>Liturgy is that shaping. It is not a new tongue. It is the old tongue, spoken with the proper reverence.</p>
+    </div>
+    <p>Liturgy is a superset of Python. Every keyword has a ritual spelling: <code>if</code> is <code>should</code>, <code>def</code> is <code>rite</code>, <code>return</code> is <code>render</code>. A <code>.lit</code> file is tokenized, its ritual words are substituted back to their Python spellings, and the result is compiled exactly as a <code>.py</code> file would be. Underneath, it is Python &mdash; the same objects, the same scoping, the same control flow, the same standard library.</p>
+
+    <h3>The promise, and its fine print</h3>
+    <blockquote class="promise"><p><strong>All valid Python is valid Liturgy, except programs that use a Liturgy word as an identifier.</strong> Liturgy reserves more words than Python does.</p></blockquote>
+    <p><code>print</code> still works in a <code>.lit</code> file. So does <code>def</code>. Substitution runs one way &mdash; ritual spelling to Python spelling &mdash; so the Python spellings are never touched. What breaks is a program that names a variable <code>rite</code>, or <code>render</code>, or <code>curse</code>.</p>
+    <p>This is the same fine print Perl's source filters carried. It is stated as a rule rather than worked around, because working around it would require the transform to understand scope, and it does not need to.</p>
+    <p>Chapter VII treats the consequences in full. Read it before you name anything.</p>
+  </div>
+</section>
+
+<section class="chapter" id="ii">
+  <div class="chapter-head"><span class="num">Chapter II</span><h2>The Rite of Installation</h2></div>
+  <div class="col">
+    <div class="rubric"><p>Before the machine will hear you, it must be told that you exist.</p></div>
+    <p>Liturgy requires <strong>Python 3.12 or later</strong>. This is not deference to fashion. On 3.12 and after, PEP&nbsp;701 causes the internals of an f-string to tokenize as real name tokens, so <code>f"{measure(x)}"</code> substitutes correctly. On 3.11 and earlier the entire f-string is a single opaque string token and the substitution silently does not happen. Supporting both would mean two different meanings for identical source, which is worse than supporting one.</p>
+    <pre><code><span class="c">$</span> pipx install .</code></pre>
+
+    <h3><code>chant</code> &mdash; to execute a litany</h3>
+    <pre><code><span class="c">$</span> liturgy chant hello.lit
+Ave Omnissiah</code></pre>
+    <p><code>chant</code> runs a <code>.lit</code> file with <code>__main__</code> semantics, the way <code>python file.py</code> runs a Python one. Arguments after the filename are passed to the prayer.</p>
+
+    <h3><code>commune</code> &mdash; to hold converse</h3>
+    <pre><code><span class="c">$</span> liturgy commune
+<span class="o">++ COMMUNION ESTABLISHED ++</span>
+&gt;&gt;&gt; rite fib(n):
+...     should n &lt; 2:
+...         render n
+...     render fib(n-1) + fib(n-2)
+...
+&gt;&gt;&gt; intone([fib(i) foreach i among span(8)])
+[0, 1, 1, 2, 3, 5, 8, 13]</code></pre>
+    <p>An interactive session. It knows the difference between a litany you have not finished typing and one you have typed wrongly, and will keep prompting for the first while reporting the second.</p>
+
+    <h3>Importing</h3>
+    <p>A <code>.lit</code> file imports like any module once the hook is installed, which both verbs do for you. Liturgy may import Python; Python may import Liturgy.</p>
+    <pre><code>within reliquary invoke bless
+invoke json</code></pre>
+  </div>
+</section>
+
+<section class="chapter" id="iii">
+  <div class="chapter-head"><span class="num">Chapter III</span><h2>The Lesser Rites</h2></div>
+  <div class="col">
+    <div class="rubric"><p>Thirty-eight words. The adept commits them to memory, or to a wafer, or to an implant. There is no dishonour in the wafer.</p></div>
+    <p>Every Python keyword has exactly one ritual spelling. A test iterates the live <code>keyword.kwlist</code> on every run, so a future Python release that adds a keyword fails the suite loudly rather than leaving it unthemed.</p>
+
+    <h4>Binding and naming</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><code>rite</code></td><td><code>def</code></td><td>declare a rite</td></tr>
+        <tr><td><code>pattern</code></td><td><code>class</code></td><td>declare a pattern</td></tr>
+        <tr><td><code>servitor</code></td><td><code>lambda</code></td><td>a rite too small to name</td></tr>
+        <tr><td><code>styled</code></td><td><code>as</code></td><td>bind under another name</td></tr>
+        <tr><td><code>universal</code></td><td><code>global</code></td><td>bind at module scope</td></tr>
+        <tr><td><code>adjacent</code></td><td><code>nonlocal</code></td><td>bind in the enclosing scope</td></tr>
+        <tr><td><code>archetype</code></td><td><code>type</code></td><td>declare a type alias</td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Truth and the Void</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>Sanctioned</code></td><td><code>True</code></td></tr>
+        <tr><td><code>Heretical</code></td><td><code>False</code></td></tr>
+        <tr><td><code>Void</code></td><td><code>None</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Branching</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>should</code></td><td><code>if</code></td></tr>
+        <tr><td><code>lest</code></td><td><code>elif</code></td></tr>
+        <tr><td><code>otherwise</code></td><td><code>else</code></td></tr>
+        <tr><td><code>discern</code></td><td><code>match</code></td></tr>
+        <tr><td><code>wherein</code></td><td><code>case</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Iteration</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>foreach</code></td><td><code>for</code></td></tr>
+        <tr><td><code>among</code></td><td><code>in</code></td></tr>
+        <tr><td><code>whilst</code></td><td><code>while</code></td></tr>
+        <tr><td><code>cease</code></td><td><code>break</code></td></tr>
+        <tr><td><code>persist</code></td><td><code>continue</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Rendering and emanation</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>render</code></td><td><code>return</code></td></tr>
+        <tr><td><code>emanate</code></td><td><code>yield</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Logic</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>likewise</code></td><td><code>and</code></td></tr>
+        <tr><td><code>elsewise</code></td><td><code>or</code></td></tr>
+        <tr><td><code>nay</code></td><td><code>not</code></td></tr>
+        <tr><td><code>be</code></td><td><code>is</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Warding</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>attempt</code></td><td><code>try</code></td></tr>
+        <tr><td><code>curse</code></td><td><code>except</code></td></tr>
+        <tr><td><code>regardless</code></td><td><code>finally</code></td></tr>
+        <tr><td><code>proclaim</code></td><td><code>raise</code></td></tr>
+        <tr><td><code>attest</code></td><td><code>assert</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Invocation</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>invoke</code></td><td><code>import</code></td></tr>
+        <tr><td><code>within</code></td><td><code>from</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Rites of the distant machine</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>remote</code></td><td><code>async</code></td></tr>
+        <tr><td><code>attend</code></td><td><code>await</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Lesser observances</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>abide</code></td><td><code>pass</code></td></tr>
+        <tr><td><code>purge</code></td><td><code>del</code></td></tr>
+        <tr><td><code>anointed</code></td><td><code>with</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>A worked litany</h3>
+    <pre><code>pattern Reliquary:
+    rite __init__(self, relics):
+        self.relics = relics
+
+    rite blessed(self):
+        render [r foreach r among self.relics should r.startswith(<span class="o">"sanctified"</span>)]
+
+
+r = Reliquary([<span class="o">"sanctified cog"</span>, <span class="o">"profane wire"</span>, <span class="o">"sanctified oil"</span>])
+intone(measure(r.blessed()))</code></pre>
+    <pre><code><span class="c">$</span> liturgy chant reliquary.lit
+2</code></pre>
+  </div>
+</section>
+
+<section class="chapter" id="iv">
+  <div class="chapter-head"><span class="num">Chapter IV</span><h2>Sanctioned Builtins</h2></div>
+  <div class="col">
+    <div class="rubric"><p>Five only. The Cult does not multiply names without cause, and every name taken is a name the adept may no longer use for his own purposes.</p></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>intone</code></td><td><code>print</code></td></tr>
+        <tr><td><code>measure</code></td><td><code>len</code></td></tr>
+        <tr><td><code>span</code></td><td><code>range</code></td></tr>
+        <tr><td><code>unseal</code></td><td><code>open</code></td></tr>
+        <tr><td><code>hearken</code></td><td><code>input</code></td></tr>
+      </tbody>
+    </table></div>
+    <p>The set is deliberately small. Each addition widens the reserved-word surface described in Chapter VII, so growth is a considered act rather than a reflex.</p>
+  </div>
+</section>
+
+<section class="chapter" id="v">
+  <div class="chapter-head"><span class="num">Chapter V</span><h2>Of Curses and Their Reading</h2></div>
+  <div class="col">
+    <div class="rubric"><p>When the machine spirit is displeased it does not fall silent. It tells you precisely what offended it, in what rite, and at what word. The adept who does not read the curse has wasted the machine's courtesy.</p></div>
+
+    <h3>The names of curses</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>PrimalCurse</code></td><td><code>BaseException</code></td></tr>
+        <tr><td><code>MachineCurse</code></td><td><code>Exception</code></td></tr>
+        <tr><td><code>ImpureOffering</code></td><td><code>ValueError</code></td></tr>
+        <tr><td><code>PatternMismatch</code></td><td><code>TypeError</code></td></tr>
+        <tr><td><code>LostPattern</code></td><td><code>KeyError</code></td></tr>
+        <tr><td><code>BeyondTheManifest</code></td><td><code>IndexError</code></td></tr>
+        <tr><td><code>AbsentAugmetic</code></td><td><code>AttributeError</code></td></tr>
+        <tr><td><code>DivisionByTheVoid</code></td><td><code>ZeroDivisionError</code></td></tr>
+        <tr><td><code>ForbiddenLore</code></td><td><code>ImportError</code></td></tr>
+        <tr><td><code>RelicNotFound</code></td><td><code>FileNotFoundError</code></td></tr>
+        <tr><td><code>SpiralOfMadness</code></td><td><code>RecursionError</code></td></tr>
+        <tr><td><code>TheRiteIsEnded</code></td><td><code>StopIteration</code></td></tr>
+        <tr><td><code>UnknownInvocation</code></td><td><code>NameError</code></td></tr>
+        <tr><td><code>MotiveFailure</code></td><td><code>RuntimeError</code></td></tr>
+        <tr><td><code>RiteUnwritten</code></td><td><code>NotImplementedError</code></td></tr>
+      </tbody>
+    </table></div>
+    <p>An exception with no ritual name keeps its own. The lookup walks the class hierarchy, so <code>ModuleNotFoundError</code> renders as <code>ForbiddenLore</code> by descent from <code>ImportError</code>, rather than appearing untranslated in a translated curse.</p>
+
+    <h3>Reading a curse</h3>
+    <pre><code><span class="o">++ MACHINE CURSE ++</span>
+   the rite was broken at the threshold of prayer.lit, line 6
+       invoke_spirit(7)
+       <span class="o">^^^^^^^^^^^^^^^^</span>
+   the rite was broken at prayer.lit, line 3, in rite invoke_spirit
+       render tome / 0
+              <span class="o">^^^^^^^^</span>
+   DivisionByTheVoid: division by zero
+<span class="o">++ the machine spirit is displeased ++</span></code></pre>
+    <p>Four things are true of this that are not true of a naive translation layer:</p>
+    <ul>
+      <li><strong>The line numbers are the Liturgy line numbers.</strong> The transform never adds or removes a line, so line N of the generated Python is line N of your source. Nothing is remapped because nothing moved.</li>
+      <li><strong>The carets point at the Liturgy columns.</strong> Words do change width &mdash; <code>should</code> is six characters and <code>if</code> is two &mdash; so a column map is kept and consulted when a curse is rendered.</li>
+      <li><strong>The source shown is what actually ran.</strong> The exact text compiled is recorded at compile time, so editing the file after import does not cause the curse to quote a line that never executed.</li>
+      <li><strong>&ldquo;at the threshold of&rdquo;</strong> marks module-level code. Module level is not a rite, and the curse does not claim it is.</li>
+    </ul>
+    <p>Frames belonging to Liturgy itself &mdash; the loader, the transform, the import machinery &mdash; are suppressed, exactly as CPython hides its own import internals. Frames from libraries your litany called into are kept, because those are your answer rather than noise.</p>
+
+    <h3>Errors before execution</h3>
+    <p>A litany that will not compile has no frames at all. The curse still names the file, the line, the source text and the column:</p>
+    <pre><code><span class="o">++ MACHINE CURSE ++</span>
+   the rite was ill-written at prayer.lit, line 1
+       x = (1, 2
+           <span class="o">^</span>
+   UnfinishedLitany: '(' was never closed</code></pre>
+    <p><code>UnfinishedLitany</code> is a <code>SyntaxError</code> subclass, so <code>curse SyntaxError</code> catches it wherever you would expect.</p>
+
+    <h3><code>--profane</code></h3>
+    <div class="rubric"><p>There are occasions &mdash; the reporting of a fault to a distant forge, chiefly &mdash; when the plain tongue serves better than the proper one. It is permitted. It is not encouraged.</p></div>
+    <pre><code><span class="c">$</span> liturgy --profane chant prayer.lit</code></pre>
+    <p>Renders an ordinary Python traceback. <code>LITURGY_PROFANE=1</code> does the same.</p>
+  </div>
+</section>
+
+<section class="chapter" id="vi">
+  <div class="chapter-head"><span class="num">Chapter VI</span><h2>The Three Prohibitions</h2></div>
+  <div class="col">
+    <div class="rubric"><p>The reservation of words binds the adept's own naming. It cannot bind the naming of others. A pattern drawn from a distant forge may call its own parts whatever it likes, and the litany must still be able to speak to it.</p></div>
+    <p>Substitution is therefore forbidden in three positions.</p>
+
+    <h3>The first: after a dot</h3>
+    <p>A name following <code>.</code> is never substituted. Without this, <code>template.render()</code> would become <code>template.return()</code> &mdash; a syntax error &mdash; and every library with a <code>.render()</code>, <code>.pattern</code> or <code>.span()</code> would break on contact.</p>
+    <pre><code>invoke re
+
+intone(re.compile(<span class="o">"x+"</span>).pattern)
+intone(re.match(<span class="o">"x+"</span>, <span class="o">"xxy"</span>).span())</code></pre>
+    <pre><code><span class="c">$</span> liturgy chant attributes.lit
+x+
+(0, 2)</code></pre>
+    <p>Both survive, though <code>pattern</code> and <code>span</code> are reserved words.</p>
+
+    <h3>The second: in keyword-argument position</h3>
+    <p>A name immediately followed by <code>=</code> inside a call is never substituted, so <code>func(intone=True)</code> does not silently become <code>func(print=True)</code>.</p>
+    <p>The rule makes one exception, for the f-string debug form. In <code>f"{measure=}"</code> the <code>=</code> is not a keyword argument, so substitution proceeds and the value is printed as <code>f"{len=}"</code> intends.</p>
+
+    <h3>The third: within an invocation</h3>
+    <p>Inside an <code>invoke</code> or <code>within</code> statement, only the statement's own keywords are substituted. The targets are left alone.</p>
+    <pre><code>within json invoke loads styled parse_json
+
+intone(parse_json(<span class="o">'{"a": 1}'</span>))</code></pre>
+    <pre><code><span class="c">$</span> liturgy chant invocation.lit
+{'a': 1}</code></pre>
+    <p><code>loads</code> is untouched; <code>within</code>, <code>invoke</code> and <code>styled</code> are translated. Relative invocations work as expected &mdash; <code>within . invoke sibling</code>, and deeper.</p>
+  </div>
+</section>
+
+<section class="chapter" id="vii">
+  <div class="chapter-head"><span class="num">Chapter VII</span><h2>Of Words Reserved</h2></div>
+  <div class="col">
+    <div class="rubric"><p>A word given to the Machine God is no longer yours. Choose your own names knowing which are already spoken for.</p></div>
+    <p>Fifty-eight words are reserved: thirty-eight rites, five builtins, fifteen curses. Using one as your own identifier is an error. Most such errors are loud, and a loud error costs you a minute.</p>
+    <pre><code>render = compute()</code></pre>
+    <pre><code>SyntaxError: invalid syntax</code></pre>
+
+    <h3>The quiet ones</h3>
+    <p>Two of the builtin aliases fail quietly instead, and these are the ones to know. <code>span</code> and <code>measure</code> translate to <code>range</code> and <code>len</code> &mdash; which are names, not keywords, so assigning to them is legal Python:</p>
+    <pre><code>span = <span class="o">"text range"</span>
+intone(span)</code></pre>
+    <p>This runs. It prints <code>text range</code>. What it compiled to is:</p>
+    <pre><code>range = <span class="o">"text range"</span>
+print(range)</code></pre>
+    <p>You have shadowed a builtin. Nothing complains now. The complaint arrives later and elsewhere, when something calls <code>span(10)</code> and receives a string. The same holds for <code>measure</code>, <code>unseal</code> and <code>hearken</code>.</p>
+    <p>Until the <code>augur</code> rite of Chapter IX exists to warn you, this is a thing to carry in your head. <code>span</code> in particular is a natural name for a range of text, and it is precisely the wrong one.</p>
+
+    <h3>Calling is not defining</h3>
+    <p>The first prohibition protects your <em>use</em> of a library's <code>.render()</code>. It does not let you <em>declare</em> one, because a declaration is not in attribute position:</p>
+    <pre><code>pattern Template:
+    rite render(self):
+        render <span class="o">"rendered"</span></code></pre>
+    <pre><code>   the rite was ill-written at template.lit, line 2
+       rite render(self):
+            <span class="o">^^^^^^</span>
+   SyntaxError: invalid syntax</code></pre>
+    <p>Calling <code>t.render()</code> is fine. Naming a rite <code>render</code> is not. If you must implement an interface whose method name is a reserved word, that method must be written in a <code>.py</code> file &mdash; which a litany may freely import.</p>
+  </div>
+</section>
+
+<section class="chapter" id="viii">
+  <div class="chapter-head"><span class="num">Chapter VIII</span><h2>Of Heresy</h2></div>
+  <div class="col">
+    <div class="rubric"><p>The rites have names. Use them.</p></div>
+    <p>The mundane verbs work. <code>run</code> invokes <code>chant</code>; <code>repl</code> invokes <code>commune</code>. They work because at some hour of the night you will type <code>run</code>, and a tool that refuses on a point of doctrine is a tool you will stop using.</p>
+    <p>They are nonetheless noted.</p>
+    <pre><code><span class="c">$</span> liturgy run hello.lit
+<span class="o">++ TECH-HERESY DETECTED ++</span>
+<span class="o">++ this rite is named CHANT. the omission is noted. ++</span>
+Ave Omnissiah</code></pre>
+    <p>The rebuke escalates across invocations &mdash; <em>the omission is noted</em>, then <em>the transgression is recorded in your permanent record</em>, then <em>the Inquisition has been notified</em> &mdash; and saturates there.</p>
+    <p>Three properties are deliberate:</p>
+    <ul>
+      <li>It is written to <strong>stderr</strong>, so <code>liturgy run x.lit | jq</code> is unaffected.</li>
+      <li>It <strong>does not change the exit code</strong>. Heresy is a moral failing, not a runtime failure.</li>
+      <li>It can be <strong>silenced</strong>, by <code>--absolved</code> or <code>LITURGY_PIOUS=0</code>, because a build log that carries it on every line is a build log nobody reads.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chapter" id="ix">
+  <div class="chapter-head"><span class="num">Chapter IX</span><h2>Rites Not Yet Written</h2></div>
+  <div class="col">
+    <div class="rubric"><p>The Quest for Knowledge is not concluded. These pages are left blank deliberately; do not report their blankness as a fault.</p></div>
+
+    <h3>Constructs of the second spec</h3>
+    <p>Four constructs are designed and unbuilt. None of them parse today.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Construct</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>consecrated</code></td><td>A binding that may not be altered. Python has no constants, only the convention of shouting; a consecrated binding would be enforced, and rebinding one would raise <code>TechHeresy</code>.</td></tr>
+        <tr><td><code>litany</code></td><td>A block re-chanted on failure &mdash; retry with rests between attempts.</td></tr>
+        <tr><td><code>augur</code></td><td>Conditions read before a rite's body runs. Preconditions as contract.</td></tr>
+        <tr><td><code>noospheric</code></td><td>A binding placed in a process-wide registry rather than module scope.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Verbs of the third spec</h3>
+    <p>Reserved now so that nothing else claims the names: <code>augur</code> (to read a litany for faults without chanting it), <code>prove</code> (to run its trials), <code>sanctify</code> (to set its form in order), <code>forge</code>, <code>consecrate</code>, <code>purge</code>, <code>anoint</code>, and <code>transcribe</code> &mdash; to render a Python file into Liturgy.</p>
+    <p>The <code>augur</code> verb is the one that matters most, since it is what would catch the quiet reservations of Chapter VII.</p>
+    <p><code>augur</code> and <code>purge</code> each appear twice above &mdash; once as a construct or rite, once as a verb of the command line. They do not collide: one is a word in a litany, the other a word typed at a terminal. The overlap is noted here so that it reads as intentional.</p>
+  </div>
+</section>
+
+<section class="chapter" id="appendix">
+  <div class="chapter-head"><span class="num">Appendix</span><h2>The Full Concordance</h2></div>
+  <div class="col">
+    <p>The mapping is a bijection: no two ritual words share a Python word, and no Python word has two ritual spellings. A test asserts it, because the reverse direction is what a future <code>transcribe</code> will need.</p>
+
+    <h4>Rites</h4>
+    <div class="table-wrap"><table class="concordance">
+      <thead><tr><th>Liturgy</th><th>Python</th><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>abide</code></td><td><code>pass</code></td><td><code>nay</code></td><td><code>not</code></td></tr>
+        <tr><td><code>adjacent</code></td><td><code>nonlocal</code></td><td><code>otherwise</code></td><td><code>else</code></td></tr>
+        <tr><td><code>among</code></td><td><code>in</code></td><td><code>pattern</code></td><td><code>class</code></td></tr>
+        <tr><td><code>anointed</code></td><td><code>with</code></td><td><code>persist</code></td><td><code>continue</code></td></tr>
+        <tr><td><code>archetype</code></td><td><code>type</code></td><td><code>proclaim</code></td><td><code>raise</code></td></tr>
+        <tr><td><code>attempt</code></td><td><code>try</code></td><td><code>purge</code></td><td><code>del</code></td></tr>
+        <tr><td><code>attend</code></td><td><code>await</code></td><td><code>regardless</code></td><td><code>finally</code></td></tr>
+        <tr><td><code>attest</code></td><td><code>assert</code></td><td><code>remote</code></td><td><code>async</code></td></tr>
+        <tr><td><code>be</code></td><td><code>is</code></td><td><code>render</code></td><td><code>return</code></td></tr>
+        <tr><td><code>cease</code></td><td><code>break</code></td><td><code>rite</code></td><td><code>def</code></td></tr>
+        <tr><td><code>curse</code></td><td><code>except</code></td><td><code>Sanctioned</code></td><td><code>True</code></td></tr>
+        <tr><td><code>discern</code></td><td><code>match</code></td><td><code>servitor</code></td><td><code>lambda</code></td></tr>
+        <tr><td><code>elsewise</code></td><td><code>or</code></td><td><code>should</code></td><td><code>if</code></td></tr>
+        <tr><td><code>emanate</code></td><td><code>yield</code></td><td><code>styled</code></td><td><code>as</code></td></tr>
+        <tr><td><code>foreach</code></td><td><code>for</code></td><td><code>universal</code></td><td><code>global</code></td></tr>
+        <tr><td><code>Heretical</code></td><td><code>False</code></td><td><code>Void</code></td><td><code>None</code></td></tr>
+        <tr><td><code>invoke</code></td><td><code>import</code></td><td><code>wherein</code></td><td><code>case</code></td></tr>
+        <tr><td><code>lest</code></td><td><code>elif</code></td><td><code>whilst</code></td><td><code>while</code></td></tr>
+        <tr><td><code>likewise</code></td><td><code>and</code></td><td><code>within</code></td><td><code>from</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Builtins</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>hearken</code></td><td><code>input</code></td></tr>
+        <tr><td><code>intone</code></td><td><code>print</code></td></tr>
+        <tr><td><code>measure</code></td><td><code>len</code></td></tr>
+        <tr><td><code>span</code></td><td><code>range</code></td></tr>
+        <tr><td><code>unseal</code></td><td><code>open</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Curses</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Liturgy</th><th>Python</th></tr></thead>
+      <tbody>
+        <tr><td><code>AbsentAugmetic</code></td><td><code>AttributeError</code></td></tr>
+        <tr><td><code>BeyondTheManifest</code></td><td><code>IndexError</code></td></tr>
+        <tr><td><code>DivisionByTheVoid</code></td><td><code>ZeroDivisionError</code></td></tr>
+        <tr><td><code>ForbiddenLore</code></td><td><code>ImportError</code></td></tr>
+        <tr><td><code>ImpureOffering</code></td><td><code>ValueError</code></td></tr>
+        <tr><td><code>LostPattern</code></td><td><code>KeyError</code></td></tr>
+        <tr><td><code>MachineCurse</code></td><td><code>Exception</code></td></tr>
+        <tr><td><code>MotiveFailure</code></td><td><code>RuntimeError</code></td></tr>
+        <tr><td><code>PatternMismatch</code></td><td><code>TypeError</code></td></tr>
+        <tr><td><code>PrimalCurse</code></td><td><code>BaseException</code></td></tr>
+        <tr><td><code>RelicNotFound</code></td><td><code>FileNotFoundError</code></td></tr>
+        <tr><td><code>RiteUnwritten</code></td><td><code>NotImplementedError</code></td></tr>
+        <tr><td><code>SpiralOfMadness</code></td><td><code>RecursionError</code></td></tr>
+        <tr><td><code>TheRiteIsEnded</code></td><td><code>StopIteration</code></td></tr>
+        <tr><td><code>UnknownInvocation</code></td><td><code>NameError</code></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<footer class="colophon">
+  <p>Thus concludes the <em>Liber Liturgiae</em>.<br>
+  Praise the Omnissiah, who is the Machine, and the Machine, which is knowledge.</p>
+</footer>
+</main>
+</div>
