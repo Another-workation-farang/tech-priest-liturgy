@@ -197,19 +197,84 @@ def _liturgy_word_as_identifier(toks) -> bool:
     caveat -- Rule 1 exists to protect `button.invoke()` and
     `template.render()`, which are attributes on objects the author does not
     own. Those files stay in the corpus; they are the point.
+
+    Nor is a Liturgy word in *keyword-argument* position at a call site --
+    Rule 2 exists to protect `increment_count(thrice=3)`, mirroring Rule 1.
+    That is narrower than "NAME immediately followed by `=` at paren depth
+    greater than zero": the same shape is a real binding, not a load, when
+    the enclosing parens are a `def`'s parameter list or lambda's parameter
+    region (`def f(twice=3)`, `lambda twice=3: twice`) -- those must stay
+    flagged, so a bracket stack tracks which open paren is a def's own, and
+    a small depth-matched stack tracks an active `lambda ...:` header,
+    which has no brackets of its own at all.
     """
-    prev = None
-    for tok in toks:
-        if tok.type in TRIVIAL:
+    sig = [t for t in toks if t.type not in TRIVIAL]
+    depth = 0
+    # One entry per currently-open bracket; True only for a `def`'s own `(`.
+    bracket_is_params: list[bool] = []
+    # Depths at which an unclosed `lambda ...:` parameter list is active.
+    lambda_param_depths: list[int] = []
+
+    for i, tok in enumerate(sig):
+        prev = sig[i - 1] if i > 0 else None
+        prev2 = sig[i - 2] if i > 1 else None
+
+        if tok.type == tokenize.OP and tok.string in "([{":
+            is_def_params = (
+                tok.string == "("
+                and prev is not None
+                and prev.type == tokenize.NAME
+                and prev2 is not None
+                and prev2.type == tokenize.NAME
+                and prev2.string == "def"
+            )
+            bracket_is_params.append(is_def_params)
+            depth += 1
             continue
+        if tok.type == tokenize.OP and tok.string in ")]}":
+            if bracket_is_params:
+                bracket_is_params.pop()
+            depth = max(0, depth - 1)
+            continue
+
+        if tok.type == tokenize.NAME and tok.string == "lambda":
+            lambda_param_depths.append(depth)
+            continue
+        if (
+            tok.type == tokenize.OP
+            and tok.string == ":"
+            and lambda_param_depths
+            and lambda_param_depths[-1] == depth
+        ):
+            lambda_param_depths.pop()
+            continue
+
+        if tok.type != tokenize.NAME or tok.string not in RESERVED:
+            continue
+
         after_dot = (
             prev is not None
             and prev.type == tokenize.OP
             and prev.string == "."
         )
-        if tok.type == tokenize.NAME and tok.string in RESERVED and not after_dot:
-            return True
-        prev = tok
+        if after_dot:
+            continue
+
+        in_param_list = (bracket_is_params and bracket_is_params[-1]) or (
+            lambda_param_depths and lambda_param_depths[-1] == depth
+        )
+        nxt = sig[i + 1] if i + 1 < len(sig) else None
+        is_kwarg_name = (
+            depth > 0
+            and nxt is not None
+            and nxt.type == tokenize.OP
+            and nxt.string == "="
+            and not in_param_list
+        )
+        if is_kwarg_name:
+            continue
+
+        return True
     return False
 
 
