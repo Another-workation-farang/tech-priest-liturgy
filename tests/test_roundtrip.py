@@ -10,7 +10,7 @@ import pytest
 
 from _reverse import to_liturgy
 
-from liturgy.lexicon import LEXICON
+from liturgy.lexicon import RESERVED
 from liturgy.transform import transform
 
 
@@ -206,10 +206,14 @@ def _liturgy_word_as_identifier(toks) -> bool:
             and prev.type == tokenize.OP
             and prev.string == "."
         )
-        if tok.type == tokenize.NAME and tok.string in LEXICON and not after_dot:
+        if tok.type == tokenize.NAME and tok.string in RESERVED and not after_dot:
             return True
         prev = tok
     return False
+
+
+def test_the_sweep_skips_on_the_full_reserved_set():
+    assert {"litany", "augur", "consecrated", "thrice", "twice"} <= RESERVED
 
 
 def _corpus() -> list[pathlib.Path]:

@@ -18,6 +18,16 @@ from .transform import DEFAULT_PASSES, split_lines, transform
 _PASSES = (*DEFAULT_PASSES, carrier_pass)
 
 
+def _rewritten_tree(src: str, filename: str, *, mode: str = "exec") -> ast.AST:
+    py, smap = transform(src, _PASSES, filename=filename)
+    tree = ast.parse(py, filename, mode)
+    tree = ConstructPass(
+        filename, split_lines(src), smap, split_lines(py)
+    ).visit(tree)
+    ast.fix_missing_locations(tree)
+    return tree
+
+
 def compile_litany(
     src: str,
     filename: str,
@@ -33,12 +43,7 @@ def compile_litany(
         SyntaxError: a complete tokenisation or parse error.
         TechHeresy: a construct was used in a way the compiler rejects.
     """
-    py, smap = transform(src, _PASSES, filename=filename)
-    tree = ast.parse(py, filename, mode)
-    tree = ConstructPass(
-        filename, split_lines(src), smap, split_lines(py)
-    ).visit(tree)
-    ast.fix_missing_locations(tree)
+    tree = _rewritten_tree(src, filename, mode=mode)
     return compile(
         tree, filename, mode, dont_inherit=dont_inherit, optimize=optimize
     )
