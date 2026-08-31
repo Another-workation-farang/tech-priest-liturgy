@@ -1,0 +1,23 @@
+docs/liturgy-data-slate.html
+  s_b09dfbf15061bd::t_f62a69e885f687 1-191
+docs/liber-liturgiae.html
+  s_b09dfbf15061bd::t_f62a69e885f687 3-9,11-26,28-190,194-221,224-227,229-242,244-261,264-292
+docs/STYLE-COGITATOR.md
+  s_b09dfbf15061bd::t_7542b101edd610 1-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "79e00547d2e4470c02d1f7c858addcabe1a1c57a",
+  "prompts": {},
+  "sessions": {
+    "s_b09dfbf15061bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5330c8a-88dd-4ff0-a2ab-2adadce1f242",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
