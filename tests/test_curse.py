@@ -697,3 +697,93 @@ def test_a_very_long_chain_is_rendered_without_recursing():
 
     assert lines[1].strip() == "ImpureOffering: 0"  # the root, rendered first
     assert lines[-2].strip() == "ImpureOffering: 2999"
+
+
+# --- I4: byte offsets vs character columns ---------------------------------
+#
+# `ast.col_offset` and `traceback`'s `colno`/`end_colno` are UTF-8 *byte*
+# offsets. Everything else -- `tokenize`, string slicing, `SourceMap` -- counts
+# characters. A multi-byte character earlier on the line slides every later
+# column right by its extra bytes, so the caret lands past what it means, or
+# runs off the end of the line and is dropped entirely.
+#
+# The sigils below are U+2720 MALTESE CROSS: three bytes each, two extra.
+
+
+def _caret_span(out: str) -> tuple[int, int]:
+    """(start, width) of the caret row, in characters of the printed line."""
+    for prev, row in zip(out.splitlines(), out.splitlines()[1:]):
+        stripped = row.strip()
+        if stripped and set(stripped) == {"^"}:
+            return row.index("^") - 7, len(stripped)
+    raise AssertionError(f"no caret row in:\n{out}")
+
+
+def _caret_underlines(out: str, needle: str) -> bool:
+    """Does the caret sit exactly under `needle` in the line above it?"""
+    rows = out.splitlines()
+    for i, row in enumerate(rows[1:], start=1):
+        stripped = row.strip()
+        if stripped and set(stripped) == {"^"}:
+            printed = rows[i - 1][7:]
+            start, width = _caret_span(out)
+            return printed[start : start + width] == needle
+    raise AssertionError(f"no caret row in:\n{out}")
+
+
+def _chant(tmp_path, source: str) -> str:
+    path = tmp_path / "sigils.lit"
+    path.write_text(source, encoding="utf-8")
+    out = subprocess.run(
+        [sys.executable, "-m", "liturgy", "chant", str(path)],
+        capture_output=True, text=True,
+        env={**os.environ, "XDG_STATE_HOME": str(tmp_path)},
+    )
+    return out.stdout + out.stderr
+
+
+def test_a_runtime_caret_is_placed_in_characters_not_bytes(tmp_path):
+    # Two sigils before the failing expression: six bytes, two characters.
+    # The unconverted offset put the caret four columns to the right.
+    out = _chant(
+        tmp_path,
+        'sigil = "✠✠"; intone(1 // 0); pad = "xxxxxxxxxxxxxxxxxxxx"\n',
+    )
+    assert _caret_underlines(out, "1 // 0"), out
+
+
+def test_a_runtime_caret_is_not_lost_off_the_end_of_a_sigilled_line(tmp_path):
+    # Five sigils: ten extra bytes pushed the caret past the end of the line,
+    # and `_render_caret`'s bounds check then dropped it altogether.
+    out = _chant(tmp_path, 'sigil = "✠✠✠✠✠"; intone(1 // 0)\n')
+    assert _caret_underlines(out, "1 // 0"), out
+
+
+def test_the_caret_accounts_for_alias_substitution_as_well(tmp_path):
+    # `intone` -> `print` and `measure` -> `len` both shorten the generated
+    # line, so the byte offset must be measured against the *generated*
+    # Python, not the Liturgy the caret is drawn under.
+    out = _chant(tmp_path, 'intone("✠ ave ✠"); intone(measure(Void))\n')
+    assert _caret_underlines(out, "measure(Void)"), out
+
+
+def test_a_tech_heresy_caret_is_placed_in_characters_not_bytes(tmp_path):
+    # The Spec II half: `ConstructPass._heresy` handed `node.col_offset`
+    # straight to `TechHeresy.offset`, which the renderer runs through
+    # `SourceMap.to_lit`. Same exception class as the carrier pass, which
+    # already builds character offsets -- two coordinate systems, one
+    # renderer.
+    out = _chant(
+        tmp_path,
+        "consecrated PORT = 8080\n"
+        'sigil = "✠✠✠✠✠"; PORT = 9999; tail = "bbbb"\n',
+    )
+    assert "may not be rebound" in out
+    assert _caret_underlines(out, "P"), out
+
+
+def test_an_ascii_caret_is_unchanged(tmp_path):
+    # The conversion is a no-op on a line of plain ASCII; this is the
+    # regression guard for the fix itself.
+    out = _chant(tmp_path, 'pad = "aaaa"; intone(1 // 0); tail = "bbbb"\n')
+    assert _caret_underlines(out, "1 // 0"), out

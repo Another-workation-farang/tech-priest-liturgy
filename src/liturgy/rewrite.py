@@ -23,11 +23,23 @@ class ConstructPass(ast.NodeTransformer):
         self._litany_seq = 0
 
     def _heresy(self, node: ast.AST, message: str):
+        """A located TechHeresy, in the same coordinates `constructs.heresy`
+        uses.
+
+        `node.col_offset` is a UTF-8 *byte* offset into the generated Python
+        line, an `ast` quirk. `TechHeresy.offset` is read by
+        `curse._render_syntax_location`, which runs it through
+        `SourceMap.to_lit` -- and every column the SourceMap knows is a
+        *character* offset, because its spans come from `tokenize`. The
+        carrier pass in `constructs.py` builds its offsets from
+        `tok.start[1]`, which is already character-based. One exception
+        class, one renderer: the conversion has to happen here.
+        """
         line = node.lineno
         text = self.lines[line - 1] if line - 1 < len(self.lines) else ""
-        return heresy(
-            message, self.filename, line, (node.col_offset or 0) + 1, text
-        )
+        py_line = self.py_lines[line - 1] if line - 1 < len(self.py_lines) else ""
+        col = char_offset(py_line, node.col_offset or 0)
+        return heresy(message, self.filename, line, col + 1, text)
 
     def _liturgy_source(self, node: ast.expr) -> str:
         """The Liturgy text of an expression, for an augury's message.

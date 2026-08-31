@@ -1,5 +1,5 @@
 # tests/test_sourcemap.py
-from liturgy.sourcemap import SourceMap, Span
+from liturgy.sourcemap import SourceMap, Span, char_offset
 
 
 def build(*spans):
@@ -57,3 +57,33 @@ def test_columns_before_first_span_are_identity():
     m = build(Span(3, 8, 7, 13))
     assert m.to_lit(1, 0) == 0
     assert m.to_lit(1, 2) == 2
+
+
+# --- char_offset: the one door byte offsets come through --------------------
+#
+# `ast.col_offset`/`end_col_offset` and `traceback`'s `colno`/`end_colno`
+# count UTF-8 bytes. Every column `SourceMap` speaks is a character offset.
+
+
+def test_char_offset_is_the_identity_on_ascii():
+    line = "x = 1 // 0\n"
+    for i in range(len(line) + 1):
+        assert char_offset(line, i) == i
+
+
+def test_char_offset_discounts_the_extra_bytes_of_earlier_characters():
+    line = 'sigil = "✠✠"; boom\n'   # two 3-byte characters
+    assert line.index("boom") == 14
+    assert line.encode("utf-8").index(b"boom") == 18
+    assert char_offset(line, 18) == 14
+
+
+def test_char_offset_passes_through_when_there_is_no_line_to_measure():
+    # An unfinished litany keeps its column map but loses the generated text.
+    # "No text" must mean "leave the offset alone", not "collapse it to 0".
+    assert char_offset("", 12) == 12
+
+
+def test_char_offset_of_a_byte_past_the_end_is_the_whole_line():
+    line = "✠✠\n"
+    assert char_offset(line, 999) == len(line)
