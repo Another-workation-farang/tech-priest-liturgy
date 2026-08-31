@@ -11,6 +11,7 @@ import io
 import keyword
 import tokenize
 from dataclasses import dataclass
+from types import SimpleNamespace
 
 from .compiler import _PASSES
 from .constructs import carrier_pass
@@ -38,6 +39,31 @@ class Collision:
 
 def _is_quiet(target: str) -> bool:
     return not keyword.iskeyword(target)
+
+
+def _import_bind_at(alias: ast.alias) -> SimpleNamespace:
+    """Where the name `alias` binds actually starts, in generated Python.
+
+    `ast.alias` (Python 3.10+) carries its own `lineno`/`col_offset` --
+    but for `x as y` those point at `x`, the imported name, not `y`, the
+    bound one. Unaliased, `alias.col_offset` already *is* the bound name's
+    position (the first dotted component for `import a.b.c`, matching what
+    `_stored_names` binds) and needs no adjustment.
+
+    Aliased, the bound name is `y`, sitting at the *end* of the alias
+    clause with nothing else able to follow it there -- so its start is
+    `end_col_offset` minus its own width. Rule 3 forbids substituting an
+    alias, so `asname` is guaranteed to appear in the generated Python
+    exactly as spelled, and being a LEXICON word (the only reason this is
+    ever called) it is plain ASCII, so the byte width and the character
+    width are the same number.
+    """
+    if alias.asname is None:
+        return SimpleNamespace(lineno=alias.lineno, col_offset=alias.col_offset)
+    return SimpleNamespace(
+        lineno=alias.end_lineno,
+        col_offset=alias.end_col_offset - len(alias.asname),
+    )
 
 
 def _bindings(node):
@@ -70,20 +96,26 @@ def _bindings(node):
     for `consecrated`'s purposes) but each already has an exact node of its
     own -- `ast.arg`, and the comprehension's own `Name` targets.
 
-    The remaining shapes have no such node: an import alias/target, an
-    exception name, a `match` capture and a `def`/`class` name are all
+    An exception name, a `match` capture and a `def`/`class` name are also
     plain strings on their node, not `ast.Name`s, so there is nothing more
-    precise to re-derive. These are delegated to `_stored_names` unchanged,
-    at the statement's (or handler's, or pattern's) own column -- exactly
-    as before. `import`'s aliases are never substituted (Rule 3 protects
-    them), so clause (a) never needs precision there regardless; the other
-    three are compound-statement headers, which Python's grammar forbids
-    joining to anything else on the same source row, so the ambiguity a
-    precise node exists to resolve cannot arise for them. `global`/
-    `nonlocal` share that same lack of a per-name node, but -- unlike
-    those three -- are simple statements a row can otherwise crowd with a
+    precise to re-derive for them. These are delegated to `_stored_names`
+    unchanged, at the handler's (or pattern's) own column -- exactly as
+    before. They are compound-statement headers, which Python's grammar
+    forbids joining to anything else on the same source row, so the
+    ambiguity a precise node exists to resolve cannot arise for them.
+    `global`/`nonlocal` share that same lack of a per-name node, but --
+    unlike those -- are simple statements a row can otherwise crowd with a
     load of the same word; this is accepted as a known, unlikely-to-matter
-    gap rather than chased down, same as the other three shapes.
+    gap rather than chased down, same as the other shapes.
+
+    An import alias/target is a plain string too, but unlike those, it does
+    have a node of its own -- `ast.alias`, since Python 3.10 -- so it is not
+    delegated to `_stored_names` (whose position is the *statement's*, always
+    column 0 in every case this project's own tooling reports: the `within`/
+    `invoke` keyword, not the bound name). `import`'s aliases are never
+    substituted (Rule 3 protects them), so clause (a) never needs precision
+    there regardless -- but clause (b) does, and `_import_bind_at` derives it
+    from the alias node below.
     """
     if isinstance(node, ast.Assign):
         for t in node.targets:
@@ -107,6 +139,9 @@ def _bindings(node):
         yield from ((n.id, n) for n in _names_in_target(node.target))
     elif isinstance(node, (ast.Global, ast.Nonlocal)):
         yield from ((name, node) for name in node.names)
+    elif isinstance(node, (ast.Import, ast.ImportFrom)):
+        for alias in node.names:
+            yield alias.asname or alias.name.split(".")[0], _import_bind_at(alias)
     else:
         # Import/ImportFrom, ExceptHandler, MatchAs/MatchStar/MatchMapping,
         # and rite/pattern (FunctionDef/AsyncFunctionDef/ClassDef) names --

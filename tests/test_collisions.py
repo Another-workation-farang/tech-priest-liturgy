@@ -144,6 +144,25 @@ def test_a_chained_assignment_to_the_same_word_both_collide():
     ]
 
 
+def test_an_import_alias_reports_the_bound_names_column_not_the_statements():
+    # `invoke os styled span` -> `import os as span`. Rule 3 never
+    # substitutes the alias, so the reported column must be where `span`
+    # itself starts in the Liturgy source (17), not column 0 where the
+    # `invoke`/`import` statement begins -- `ast.alias`'s own position
+    # points at `os`, not the `as`-name, so that position has to be derived
+    # from the alias's *end*, not just forwarded.
+    (c,) = find_collisions("invoke os styled span\n", "p.lit", liturgy=True)
+    assert (c.line, c.col) == (1, 17)
+
+
+def test_an_import_target_reports_the_bound_names_column_not_the_statements():
+    # `within jinja2 invoke render` -> `from jinja2 import render`, no
+    # alias. The bound name is `render` itself, at column 21 -- not column
+    # 0, where the `within`/`from` statement begins.
+    (c,) = find_collisions("within jinja2 invoke render\n", "p.lit", liturgy=True)
+    assert (c.line, c.col) == (1, 21)
+
+
 def test_a_keyword_only_parameter_reports_its_liturgy_column():
     # `rite f(*, span=1):` -> `def f(*, span=1):` -- `rite` -> `def` is one
     # character shorter, so `span` sits at column 9 in the generated Python
