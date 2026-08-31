@@ -1,0 +1,37 @@
+tests/test_positions.py
+  s_d162ead593e4de::t_8adb349bf495a3 14-17
+  s_d162ead593e4de::t_e2b2f5349e87ae 10-13,20-22,27,149,163-164
+tests/test_litany.py
+  s_d162ead593e4de::t_076058065b6d3d 296-339
+src/liturgy/sourcemap.py
+  s_d162ead593e4de::t_b687496bf52861 5-8,17-32
+  s_d162ead593e4de::t_a4b2736486143a 33-34
+src/liturgy/rewrite.py
+  s_d162ead593e4de::t_8a008038ca8334 12,43,66,69
+  s_d162ead593e4de::t_ed47b102dd4244 177-210,214,221-230,234-267,281-297,303-309,313,315-317,321-322,324-381,410-422,424,426
+  s_d162ead593e4de::t_7642f4763ab563 83-90,423,425,476-478,488-490,492
+tests/test_consecrated.py
+  s_d162ead593e4de::t_5ae70d4a1be531 87-104,108-297
+  s_d162ead593e4de::t_8adb349bf495a3 105-107
+tests/test_commune.py
+  s_d162ead593e4de::t_db765a66e27114 163-182
+tests/test_compiler.py
+  s_d162ead593e4de::t_7b0727f95d26ce 98-103
+  s_d162ead593e4de::t_e265097a48821b 44-97,104-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "c9181603c68a250204d95f31d403354f9fe8bb77",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
