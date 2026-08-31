@@ -89,12 +89,17 @@ def test_profane_env_var_also_gives_a_plain_traceback(tmp_path):
 
 def test_reserved_verbs_are_declared():
     # Spec III owns these; Core must not hand the names to anything else.
-    assert {"augur", "prove", "sanctify", "transcribe"} <= cli.RESERVED_VERBS
+    # augur (Task 3), transcribe (Task 4), and purge (Task 5) have since
+    # graduated to real subparsers, so they are no longer merely reserved.
+    assert cli.RESERVED_VERBS == {"prove", "sanctify", "forge", "consecrate", "anoint"}
+    assert "augur" not in cli.RESERVED_VERBS
+    assert "transcribe" not in cli.RESERVED_VERBS
+    assert "purge" not in cli.RESERVED_VERBS
 
 
 def test_an_unknown_verb_is_rejected(prayer):
     # RESERVED_VERBS reserves nothing mechanically; argparse does the work.
-    out = run_cli(["augur", str(prayer)])
+    out = run_cli(["prove", str(prayer)])
     assert out.returncode != 0
     assert "invalid choice" in out.stderr
 

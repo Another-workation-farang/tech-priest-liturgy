@@ -136,6 +136,10 @@
   .code-block .string  { color: var(--highlight-color); }
   .code-block .kw      { color: var(--text-primary); font-weight: bold; }
   pre.shell .prompt    { color: var(--text-secondary); }
+  /* A warning box that quotes a whole invocation needs the prompt too, and
+     the alert red must not swallow it -- the command is not the fault. */
+  .warning .prompt     { color: var(--text-secondary); text-shadow: none; }
+  .warning .cmd        { color: var(--text-primary); text-shadow: none; }
 
   .warning {
     color: var(--alert-color);
@@ -227,6 +231,7 @@ right, and this one needs the same edit.</div>
    <a href="#ch8">[VIII] OF HERESY</a>
    <a href="#ch9">[IX]   RITES NOT YET WRITTEN</a>
    <a href="#ch10">[X]    THE GREATER RITES</a>
+   <a href="#ch11">[XI]   THE READING OF OMENS</a>
    <a href="#appendix">[APX]  THE FULL CONCORDANCE</a>
 </pre>
 </nav>
@@ -726,9 +731,18 @@ are quiet, then — <code>span</code>, <code>measure</code>,
 <code>unseal</code>, <code>hearken</code>, <code>litany</code>,
 <code>augur</code> — and the rest are loud.</p>
 
-<p>Until the <code>augur</code> rite of Chapter IX exists to warn you, this
-is a thing to carry in your head. <code>span</code> in particular is a
-natural name for a range of text, and it is precisely the wrong one.</p>
+<p><code>span</code> in particular is a natural name for a range of text,
+and it is precisely the wrong one. Four of the six no longer have to be
+carried in your head: <code>span</code>, <code>measure</code>,
+<code>unseal</code> and <code>hearken</code> each <i>become</i> another
+word, and <code>liturgy augur</code> reports every binding that does.
+Chapter XI sets it down.</p>
+
+<p><code>litany</code> and <code>augur</code> are not reported, and should
+not be. A construct word is never substituted, so there is nothing it
+silently becomes — the only hazard is the one above, that you may one day
+want the construct on a line whose name you have already spent. That one
+stays yours to track.</p>
 
 <h3>Calling is not defining</h3>
 
@@ -841,27 +855,41 @@ than module scope. It was <b>cut, not deferred</b> — it is a service
 locator, and Liturgy generates code with no runtime of its own for a
 registry like that to live in. There is no clean place left to put it.</p>
 
-<h3>Verbs of the third spec</h3>
+<h3>The five verbs still unwritten</h3>
 
-<p>Reserved now so that nothing else claims the names: <code>augur</code>
-(to read a litany for faults without chanting it), <code>prove</code> (to
-run its trials), <code>sanctify</code> (to set its form in order),
-<code>forge</code>, <code>consecrate</code>, <code>purge</code>,
-<code>anoint</code>, and <code>transcribe</code> — to render a Python file
-into Liturgy.</p>
+<p>Three verbs of the third spec are built; Chapter XI sets them down. Five
+names remain reserved on the command line, and it is worth recording why
+each is still a name and nothing more, rather than leaving the blanks
+unexplained.</p>
 
-<p>The <code>augur</code> verb is the one that matters most, since it is
-what would catch the quiet reservations of Chapter VII.</p>
+<p><code>prove</code> — to run a litany's trials — is unbuilt because the
+trials already run. The import hook is a real one, so pytest imports a
+<code>.lit</code> module like any other, and a short
+<code>conftest.py</code> that installs the hook and hands
+<code>pytest.Module</code> any <code>test_*.lit</code> collects them
+directly, failures quoting the Liturgy source. A verb wrapping that would
+add a layer and no capability.</p>
+
+<p><code>sanctify</code> — to set a litany's form in order — is unbuilt
+because a formatter is its own project rather than a verb on someone
+else's. Doing it properly means a full-fidelity round-trip through
+comments, blank lines and string quoting; doing it improperly means a tool
+that eats your source.</p>
+
+<p><code>forge</code>, <code>consecrate</code> and <code>anoint</code> are
+unbuilt because there was never a feature behind them. They were reserved
+as flavour — three good words held back so that nothing trivial could spend
+them later. They are held, not planned, and no page is being left blank for
+them.</p>
 
 <p><code>augur</code> and <code>purge</code> each name two different things
-in this project. <code>augur</code> is both Chapter X's built source
-construct (preconditions) and this still-unbuilt CLI verb (lint);
-<code>purge</code> is both Chapter III's built keyword alias for
-<code>del</code> and this still-unbuilt CLI verb (clearing caches). A source
-word and a CLI verb cannot actually collide — they live in entirely
-different namespaces — but the same word meaning two different things in
-the same project is exactly the kind of thing worth spelling out rather
-than leaving implicit.</p>
+in this project. <code>augur</code> is both Chapter X's source construct
+(preconditions) and Chapter XI's CLI verb (lint); <code>purge</code> is
+both Chapter III's keyword alias for <code>del</code> and Chapter XI's CLI
+verb (clearing caches). A source word and a CLI verb cannot actually
+collide — they live in entirely different namespaces — but the same word
+meaning two different things in the same project is exactly the kind of
+thing worth spelling out rather than leaving implicit.</p>
 </section>
 
 <section id="ch10">
@@ -960,6 +988,205 @@ to import from — its exceptions have to be ones Python already provides.</p>
 rite that contains it; each rite's opening belongs to that rite alone.</p>
 </section>
 
+<section id="ch11">
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[XI] THE READING OF OMENS</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<p class="epigraph">Two verbs chant. Three do not. An adept who only ever chants learns of his
+errors from the machine, at the hour the machine chooses. These three are
+the rites of asking first.</p>
+
+<p><code>augur</code>, <code>transcribe</code> and <code>purge</code> are
+the built verbs of the third spec. None of them runs your litany.
+<code>augur</code> reads one, <code>transcribe</code> writes one, and
+<code>purge</code> clears what chanting left behind.</p>
+
+<h3>augur — the omens read before the chant</h3>
+
+<p>Not to be confused with Chapter X's <code>augur:</code> construct, which
+is source and guards a rite. This is a command-line verb, and it guards a
+file.</p>
+
+<div class="warning"><pre><span class="prompt">$</span> <span class="cmd">liturgy augur quiet.lit</span>
+++ THE OMENS ARE TROUBLED ++
+   quiet.lit, line 1
+       span = "text range"
+       ^^^^
+   span is reserved; it becomes range -- silently</pre></div>
+
+<p>That is the trap of Chapter VII, found before it can be sprung.
+<code>--plain</code> gives one parseable line per finding, for an editor or
+a build log:</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy augur --plain quiet.lit
+quiet.lit:1:1: span is reserved; it becomes range -- silently</pre>
+
+<p>The trailing <code>-- silently</code> is the important half. It appears
+when the substitution target is an ordinary name rather than a Python
+keyword, which is exactly the case where the file compiles and the harm is
+deferred. A finding without it is a collision that will announce itself
+loudly somewhere; a finding with it is one that will not.</p>
+
+<p>Arguments may be files or directories, and a directory is walked for
+<code>.lit</code> and <code>.py</code> files — <code>augur</code> reads
+plain Python too, because a <code>.py</code> file in a Liturgy project is a
+file whose names a litany may one day import. The exit status is 0 when
+nothing was reported and 1 when anything was. A directory reached through a
+symlink is named in the report rather than passed over in silence; a reader
+that quietly does not read a file is worse than no reader.</p>
+
+<h3>The two checks, and no third</h3>
+
+<p><code>augur</code> makes exactly two.</p>
+
+<p><b>Words that become another word, used as your own names.</b> A binding
+collides two ways, and both are reported. Either you wrote the reserved word
+and the substitution produced the bound name — <code>span = ...</code>
+becoming <code>range = ...</code> — or one of Chapter VI's exemptions
+protected the word from substitution and left you bound to it whole.</p>
+
+<p>This check reaches the sixty words that have a Python spelling, not all
+sixty-three. The three construct words are outside it by construction: they
+are never substituted, so no binding of one can quietly come to mean
+something else. <code>consecrated</code> is still caught — by the second
+check, as a compile failure — and <code>litany</code> and <code>augur</code>
+are genuinely not faults.</p>
+
+<p><b>That the litany compiles.</b> For a <code>.lit</code> file,
+<code>augur</code> compiles the source after gathering collisions, so a file
+<code>augur</code> calls clean is a file <code>chant</code> will accept. The
+two must not be able to disagree about that.</p>
+
+<p>There is deliberately no third. No line-length rule, no unused-import
+check, no naming convention. <code>augur</code> reports the class of fault
+that is specific to Liturgy — the class no other tool in your setup can
+see — and leaves the rest to the tools that already do it well. It is not a
+general linter and is not going to become one.</p>
+
+<h3>The collision Chapter VI does not cover</h3>
+
+<p>The third prohibition leaves an invocation's targets unsubstituted. That
+is what makes <code>within json invoke loads</code> work. It also means a
+target bound under a reserved name stays bound under it:</p>
+
+<div class="code-block"><pre><span class="kw">within</span> json <span class="kw">invoke</span> loads <span class="kw">styled</span> render</pre></div>
+
+<p><code>render</code> is not substituted here — the exemption protects
+it — so the module is genuinely bound to the name <code>render</code>. Every
+<i>later</i> mention of <code>render</code> is outside the exemption and
+becomes <code>return</code>, so the litany fails at the point of use, with a
+syntax error that says nothing about the import that caused it. This is the
+subtle one, and it is why <code>augur</code> treats an import target as a
+binding like any other:</p>
+
+<div class="warning"><pre><span class="prompt">$</span> <span class="cmd">liturgy augur imp.lit</span>
+++ THE OMENS ARE TROUBLED ++
+   imp.lit, line 1
+       within json invoke loads styled render
+                                       ^^^^^^
+   render is reserved; it becomes return</pre></div>
+
+<p>The caret is the point. Four of the six words on that line are Liturgy's
+own, and only the last of them is yours to have got wrong.</p>
+
+<p>Chapter VI's exemptions govern what is substituted. They say nothing
+about what is safe to be bound to, and the two are not the same
+question.</p>
+
+<h3>transcribe — a Python file rendered into the proper tongue</h3>
+
+<pre class="shell"><span class="prompt">$</span> liturgy transcribe greet.py
+rite greet(name):
+    should nay name:
+        render "Ave Omnissiah"
+    render f"Ave {name}"
+
+
+foreach i among span(2):
+    intone(greet(""))</pre>
+
+<p>Given <code>-o</code>, it writes the file instead of printing it and
+reports the count:</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy transcribe greet.py -o greet.lit
+++ 8 lines transcribed ++</pre>
+
+<p><code>transcribe</code> refuses in preference to producing something
+subtly wrong. It refuses a source that will not parse, a source it cannot
+decode, and — the case that matters — a source binding a name Liturgy
+reserves, because no correct Liturgy spelling of that program exists:</p>
+
+<div class="warning"><pre>++ CANNOT TRANSCRIBE: 1 COLLISION ++
+  shadow.py:1  span         -&gt; reserved (range)
+rename these, then chant again</pre></div>
+
+<p>That is the same rule <code>augur</code> reports, computed by the same
+code, so the two verbs cannot drift apart about what counts as a
+collision.</p>
+
+<p>The same rule is applied a second time, to the Liturgy about to be
+written. Transcription can introduce a collision the Python never had —
+<code>input</code> is rendered <code>hearken</code>, and
+<code>hearken</code> is reserved. That output is not wrong: it round-trips,
+and it chants exactly as the Python ran. So it is a warning, not a
+refusal:</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy transcribe codec.py -o codec.lit
+++ 2 lines transcribed ++
+++ THE OUTPUT CARRIES 1 COLLISION ++
+  codec.lit:1  hearken      -&gt; reserved (input)
+augur will flag these; the litany is correct and chants as written</pre>
+
+<p>When the litany goes to stdout the warning goes to stderr instead, so a
+redirected file receives the words and nothing else.</p>
+
+<h3>The self-check before the writing</h3>
+
+<p>Nothing reaches disk unverified. <code>transcribe</code> transforms its
+own output back into Python and compares it against the source it read. If
+the two differ, the output is wrong, and it is not written:</p>
+
+<div class="warning"><pre>++ CANNOT TRANSCRIBE: the output does not round-trip ++
+   this is a fault in Liturgy, not in your source</pre></div>
+
+<p>This is the property test the suite runs over the standard library,
+applied to one real file at the moment it matters. A destination file gets a
+second check at the byte level: the exact bytes about to be written are
+decoded the way a consumer honouring their own <code>coding:</code> cookie
+would decode them, and compared again. Line endings and the source's
+declared encoding are carried through unchanged, so the transcribed file
+differs from its source in its words and in nothing else.</p>
+
+<h3>purge — the clearing of relics</h3>
+
+<p><code>purge</code> removes every <code>__pycache__</code> directory
+beneath the working directory, and, given <code>--heresies</code>, the
+heresy record of Chapter VIII along with them.</p>
+
+<p>It is the only verb that destroys anything, so it is guarded. It refuses
+outright unless the tree holds at least one <code>.lit</code> file:</p>
+
+<div class="warning"><pre>   no .lit file found; refusing to delete anything</pre></div>
+
+<p>A recursive delete launched from the wrong directory is a bad afternoon,
+and the presence of a litany is a cheap proxy for being where you meant to
+be. Symlinked directories are never entered.</p>
+
+<p>The reporting is guarded in the same spirit. Each removal is named on its
+own line, and that line is printed only once the delete beneath it has
+actually succeeded — the report never claims a deletion that did not happen.
+A directory that will not go, for want of permission or because it vanished
+between the walk and the delete, is reported and stepped over rather than
+raising; one unreadable cache must not strand the rest. The run ends with a
+count of what actually went:</p>
+
+<pre class="shell">++ 0 relics purged ++</pre>
+
+<p>The exit status is 0 when everything asked for went, and 1 if the guard
+refused or any single removal failed.</p>
+</section>
+
 <section id="appendix">
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 <h2><pre>[APX] APPENDIX — THE FULL CONCORDANCE</pre></h2>
@@ -967,8 +1194,8 @@ rite that contains it; each rite's opening belongs to that rite alone.</p>
 
 <p>Liturgy to Python, then Python to Liturgy. The mapping is a bijection:
 no two ritual words share a Python word, and no Python word has two ritual
-spellings. A test asserts it, because the reverse direction is what a
-future <code>transcribe</code> will need.</p>
+spellings. A test asserts it, because the reverse direction is what Chapter
+XI's <code>transcribe</code> reads.</p>
 
 <h3>Rites</h3>
 

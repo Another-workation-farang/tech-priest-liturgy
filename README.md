@@ -16,6 +16,27 @@ tell "unfinished" apart from "wrong" — turns into a fairly thorough tour of
 how CPython actually loads and runs source. That tour is the part worth the
 time.
 
+> ## Do not use this in production
+>
+> Liturgy is a toy, built for fun and for the excuse it gave to go rummaging
+> around in CPython's import machinery. It is not a serious language and it is
+> not maintained as one.
+>
+> It is **incomplete** — the third of three planned specs is three verbs
+> into an eight-verb surface, and five of those names are still nothing but
+> reserved words.
+>
+> It is **breakable**. Some of it is documented: naming a variable `span` or
+> `measure` silently shadows a builtin and fails somewhere else entirely,
+> `consecrated` cannot stop `setattr` or `globals()`, and any word Liturgy
+> reserves is a word your program may not use as an identifier. `augur` will
+> now find that first class of sharp edge for you, which is not the same as
+> the sharp edge not being there. The rest is the ordinary risk of a project
+> written in a few days by one person and reviewed by nobody who has to live
+> with it.
+>
+> Run it on prayers you would not mind losing.
+
 ## Ave Omnissiah
 
 Save this as `hello.lit`:
@@ -50,7 +71,9 @@ That installs the `liturgy` console script.
 
 ## `chant` and `commune`
 
-Two verbs exist. `chant <file.lit> [args...]` executes a Liturgy file the way
+These two run litanies; the [three tooling verbs](#augur-transcribe-and-purge)
+further down read, translate and tidy them. `chant <file.lit> [args...]`
+executes a Liturgy file the way
 `python file.py` executes a Python one: the file becomes `__main__`,
 `sys.argv` is set up the same way, and a plain `should __name__ == "__main__":`
 block at the bottom works exactly as expected (see `examples/fibonacci.lit`).
@@ -290,6 +313,155 @@ must be exactly `"0"` — `false`, empty, or anything else still counts as
 impious). Calling a rite by its proper name, `chant` or `commune`, never
 triggers a rebuke in the first place.
 
+## `augur`, `transcribe` and `purge`
+
+Three tooling verbs are built. They do not run your litany; they read it,
+translate into it, or clean up after it.
+
+### `augur` — read a litany for faults without chanting it
+
+`augur` exists for the failure mode the disclaimer at the top of this file
+and the superset promise above both warn about: a Liturgy word used as your
+own name. Most of those are loud, but `span = "text range"` compiles, runs,
+and shadows `range` for the rest of the program. Nothing complains until
+something else calls `span(10)` and gets a string back. This is the thing
+that complains at the right moment:
+
+```
+$ liturgy augur quiet.lit
+++ THE OMENS ARE TROUBLED ++
+   quiet.lit, line 1
+       span = "text range"
+       ^^^^
+   span is reserved; it becomes range -- silently
+```
+
+`--plain` emits one parseable line per finding, for an editor or a CI log:
+
+```
+$ liturgy augur --plain quiet.lit
+quiet.lit:1:1: span is reserved; it becomes range -- silently
+```
+
+The trailing `-- silently` marks the dangerous half of the finding: the
+substitution target is an ordinary name rather than a Python keyword, so the
+file compiles and the damage is deferred. Without it, the collision is loud
+somewhere — still worth reporting, but it will announce itself.
+
+`augur` makes exactly two checks. First, every binding whose name is one of
+the sixty words that become another word, by either route: you wrote the
+reserved word and it was substituted, or an exemption protected the word and
+you are now bound to it unsubstituted. Second, for a `.lit` file, that it
+actually compiles, so `augur` and `chant` cannot disagree about whether a file
+is well-formed.
+
+The three construct words are outside the first check and belong outside it:
+they are never substituted, so a binding of one cannot quietly come to mean
+something else. `consecrated = 5` is caught anyway, by the second check, as a
+compile failure. `litany = 5` and `augur = 6` are reported by neither, because
+neither is a fault — the name is yours until the day you want the construct on
+that line.
+
+It stops there on purpose. There is no line-length rule, no unused-import
+check, no naming convention — `augur` is not a general linter and is not
+going to grow into one. It reports the class of fault that is specific to
+Liturgy, which is the class no other tool in your setup can see.
+
+Arguments may be files or directories; a directory is walked for `.lit` and
+`.py` files. Exit status is 0 when nothing was reported and 1 when anything
+was. A directory reached through a symlink is named rather than skipped in
+silence, because a linter that quietly does not read a file is worse than no
+linter.
+
+### `transcribe` — render a Python file into Liturgy
+
+```
+$ liturgy transcribe greet.py
+rite greet(name):
+    should nay name:
+        render "Ave Omnissiah"
+    render f"Ave {name}"
+
+
+foreach i among span(2):
+    intone(greet(""))
+```
+
+With `-o`, it writes instead of printing:
+
+```
+$ liturgy transcribe greet.py -o greet.lit
+++ 8 lines transcribed ++
+```
+
+`transcribe` refuses rather than producing something subtly wrong. It refuses
+a source that does not parse, and it refuses a source that binds a name
+Liturgy reserves — because there is no correct Liturgy spelling of a program
+whose variable is called `span`:
+
+```
+$ liturgy transcribe shadow.py
+++ CANNOT TRANSCRIBE: 1 COLLISION ++
+  shadow.py:1  span         -> reserved (range)
+rename these, then chant again
+```
+
+That is the same collision rule `augur` reports, from the same code, so the
+two verbs cannot drift apart about what counts.
+
+The rule is applied to the output as well, as a warning rather than a
+refusal. Rendering Python into Liturgy can *introduce* a collision the source
+never had — `def encode(self, input)` becomes `rite encode(self, hearken)`,
+and `hearken` is reserved. The file is correct and chants exactly as the
+Python ran, so it is written; `transcribe` just says what `augur` will say
+about it, instead of leaving you to find out:
+
+```
+$ liturgy transcribe codec.py -o codec.lit
+++ 2 lines transcribed ++
+++ THE OUTPUT CARRIES 1 COLLISION ++
+  codec.lit:1  hearken      -> reserved (input)
+augur will flag these; the litany is correct and chants as written
+```
+
+Writing to stdout instead, the warning goes to stderr, so a redirected file
+gets the litany and nothing else.
+
+Before anything reaches disk it round-trips its own output: the generated
+Liturgy is transformed back to Python and compared against the source, and if
+the two differ, nothing is written and the failure is reported as a fault in
+Liturgy rather than in your file. A destination file gets a second, byte-level
+round-trip in the source's own declared encoding. Line endings and a PEP 263
+`coding:` cookie are preserved, so the output differs from the input in its
+words and in nothing else.
+
+### `purge` — clear generated caches
+
+`purge` removes every `__pycache__` directory beneath the working directory,
+and with `--heresies`, the heresy state file as well.
+
+It is the only verb that deletes anything, so it is guarded: it refuses
+outright unless the tree holds at least one `.lit` file, on the grounds that a
+recursive delete launched from the wrong directory is a bad afternoon.
+
+```
+   no .lit file found; refusing to delete anything
+```
+
+Symlinked directories are never entered. Each removal is reported on its own
+line, naming the directory, and that line is printed only after the delete has
+actually succeeded — the report never claims a deletion that did not happen. A
+directory that cannot be removed is reported and skipped rather than aborting
+the run, so one unreadable cache does not strand the rest; the run still ends
+with a count of what went:
+
+```
+++ 0 relics purged ++
+```
+
+Exit status is 0 when everything asked for went, and 1 if the guard refused or
+any single removal failed.
+
 ## When a rite breaks
 
 An unhandled exception in a `.lit` file does not print a Python traceback by
@@ -356,26 +528,37 @@ requires Python >= 3.12.
 
 ## What's not built yet
 
-This is Spec I and II of three — Core and Constructs. Spec I gets you
-alias-only Liturgy: writing, running, and debugging `.lit` files with an
-honest import hook and honest tracebacks. Spec II adds the three constructs
-above. One more spec is designed but not implemented:
+Spec I gets you alias-only Liturgy: writing, running, and debugging `.lit`
+files with an honest import hook and honest tracebacks. Spec II adds the three
+constructs above. Spec III is the CLI verb surface, and three of its eight
+verbs — `augur`, `transcribe`, `purge` — are built and documented above.
 
-- **Spec III — tooling.** A CLI verb surface: `augur` (lint), `prove` (test
-  runner), `sanctify` (formatter), `transcribe` (translate plain Python into
-  Liturgy), plus `forge`, `consecrate`, `purge`, and `anoint`. Core already
-  reserves all eight names on the command line, so Spec III has nowhere left
-  to collide.
+The other five are still nothing but names the command line refuses to hand
+to anything else:
 
-Two of those names are reused deliberately across the two namespaces, and it
-is worth saying so plainly rather than letting it confuse anyone later:
-`augur` is both a Spec II source construct (preconditions) and a Spec III CLI
-verb (lint), and `purge` is both a Spec I keyword alias for `del` and a
-Spec III CLI verb (clearing caches). A source keyword and a CLI verb cannot
-actually collide with each other — they live in entirely different
-namespaces — but the same word meaning two different things in the same
-project is exactly the kind of thing worth spelling out instead of leaving
-implicit.
+- **`prove`** (test runner) — pytest already runs `.lit` tests, because the
+  import hook is a real one. A few lines of `conftest.py` — `install()`, plus a
+  `pytest_collect_file` that hands `pytest.Module` any `test_*.lit` — is
+  enough to collect them directly, failures quoting the Liturgy source and
+  all. A Liturgy-branded wrapper around that would add a layer and no
+  capability.
+- **`sanctify`** (formatter) — a formatter is its own project. Doing it
+  properly means a full-fidelity round-trip through comments, blank lines and
+  string quoting, and doing it improperly means a tool that eats your source.
+  Neither is a weekend.
+- **`forge`**, **`consecrate`**, **`anoint`** — reserved as flavour. There
+  was never a feature behind them, only three good words nobody wanted a
+  later contributor to spend on something trivial. They are held, not
+  planned.
+
+Two names are reused deliberately across the two namespaces, and it is worth
+saying so plainly rather than letting it confuse anyone later: `augur` is both
+a Spec II source construct (preconditions) and the Spec III CLI verb (lint),
+and `purge` is both a Spec I keyword alias for `del` and the Spec III CLI verb
+(clearing caches). A source keyword and a CLI verb cannot actually collide
+with each other — they live in entirely different namespaces — but the same
+word meaning two different things in the same project is exactly the kind of
+thing worth spelling out instead of leaving implicit.
 
 The full design is in
 [`design/specs/2026-08-30-liturgy-core-design.md`](design/specs/2026-08-30-liturgy-core-design.md);

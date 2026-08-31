@@ -16,14 +16,11 @@ HERETICAL: dict[str, str] = {"run": "chant", "repl": "commune"}
 # and nothing needs to: argparse rejects any verb it has no subparser for.
 RESERVED_VERBS = frozenset(
     {
-        "augur",
         "prove",
         "sanctify",
         "forge",
         "consecrate",
-        "purge",
         "anoint",
-        "transcribe",
     }
 )
 
@@ -53,6 +50,22 @@ def _build_parser() -> argparse.ArgumentParser:
     p_chant.add_argument("args", nargs=argparse.REMAINDER)
 
     verbs.add_parser("commune", help="open an interactive session")
+
+    p_augur = verbs.add_parser("augur", help="read a litany for faults")
+    p_augur.add_argument("paths", nargs="+")
+    p_augur.add_argument(
+        "--plain", action="store_true",
+        help="emit file:line:col: messages for editors and CI",
+    )
+
+    p_trans = verbs.add_parser("transcribe", help="render Python into Liturgy")
+    p_trans.add_argument("source")
+    p_trans.add_argument("-o", "--out", dest="dest", default=None)
+
+    p_purge = verbs.add_parser("purge", help="clear generated caches")
+    p_purge.add_argument(
+        "--heresies", action="store_true", help="also clear the heresy record"
+    )
     return parser
 
 
@@ -80,6 +93,21 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.verb == "chant":
         return _chant(args.file, args.args)
+
+    if args.verb == "augur":
+        from .tooling import augur
+
+        return augur(args.paths, plain=args.plain)
+
+    if args.verb == "transcribe":
+        from .tooling import transcribe
+
+        return transcribe(args.source, args.dest)
+
+    if args.verb == "purge":
+        from .tooling import purge
+
+        return purge(heresies=args.heresies)
 
     # The only other verb: the subparser is required, so argparse has already
     # rejected anything else.

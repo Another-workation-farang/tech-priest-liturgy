@@ -63,7 +63,7 @@ _CLOSERS = frozenset(")]}")
 # this token start an import statement? Direction-sensitive: Liturgy source
 # may spell the keyword either way (it is a superset of Python), so the
 # forward direction must check both spellings. Python source is unambiguous,
-# so the reverse pass (see `_reverse.py`) only needs to check the raw token.
+# so the reverse pass (see `liturgy.reverse`) only needs to check the raw token.
 IsImportStart = Callable[[tokenize.TokenInfo, str | None], bool]
 
 
