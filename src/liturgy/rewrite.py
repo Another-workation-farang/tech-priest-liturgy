@@ -188,6 +188,21 @@ _LOOPS = (ast.For, ast.AsyncFor, ast.While)
 _SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
 _MODULES = (ast.Module, ast.Interactive)
 
+# A `servitor` is a scope too, and it is the one that hides. It holds no
+# statements, so no rule here has anything to say about its interior -- but a
+# walrus inside one binds the *servitor's* local, not ours:
+#
+#     consecrated PORT = 8080
+#     f = servitor: (PORT := 1)      # binds inside f; module PORT untouched
+#
+# so the traversal must still stop at it, or that correct program is rejected.
+# A comprehension is deliberately NOT here: PEP 572 assigns a walrus inside
+# one to the *containing* scope, which is ours, and a comprehension's own
+# target never reaches `_stored_names`.
+_EXPR_SCOPES = (ast.Lambda,)
+
+_BOUNDARIES = _SCOPES + _EXPR_SCOPES
+
 
 def _in_scope(nodes, stop=()):
     """Yield `nodes` and every descendant of them in the same scope.
@@ -199,12 +214,13 @@ def _in_scope(nodes, stop=()):
     This is the one traversal in this module, and `ast.walk` is deliberately
     not used anywhere in it. `ast.walk` flattens the tree, and every rule
     here turns on exactly the distinction that flattening destroys -- which
-    scope a binding, a `universal`, a `cease` or an augury belongs to. Five
-    separate defects on this branch have been one `ast.walk` or another.
+    scope a binding, a `universal`, a `cease` or an augury belongs to. Six
+    separate defects on this branch have been a walk that lost a scope
+    boundary.
     """
     for node in nodes:
         yield node
-        if not isinstance(node, _SCOPES + stop):
+        if not isinstance(node, _BOUNDARIES + stop):
             yield from _in_scope(ast.iter_child_nodes(node), stop)
 
 
@@ -272,7 +288,7 @@ def _collect_consecrated(scope, mkerr) -> dict[str, ast.AST]:
                 visit(value, in_loop)
 
     def visit(node, in_loop):
-        if isinstance(node, _SCOPES):
+        if isinstance(node, _BOUNDARIES):
             return  # its own visit will collect its own declarations
         descend(node, in_loop or _repeats(node))
 
