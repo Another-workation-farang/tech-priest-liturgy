@@ -8,7 +8,7 @@ import tokenize
 
 import pytest
 
-from _reverse import to_liturgy
+from liturgy.reverse import to_liturgy
 
 from liturgy.constructs import carrier_pass
 from liturgy.lexicon import RESERVED
