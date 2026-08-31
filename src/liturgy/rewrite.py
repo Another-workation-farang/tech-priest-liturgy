@@ -11,11 +11,25 @@ import ast
 from .constructs import heresy
 
 
+def _char_offset(line: str, byte_offset: int) -> int:
+    """Convert a UTF-8 byte offset (as `ast` reports) to a character offset.
+
+    `ast.col_offset`/`end_col_offset` count UTF-8 bytes; everything else
+    here -- `tokenize`, string slicing, the SourceMap -- counts characters.
+    A multi-byte character earlier on the line would otherwise skew every
+    later column.
+    """
+    return len(line.encode("utf-8")[:byte_offset].decode("utf-8"))
+
+
 class ConstructPass(ast.NodeTransformer):
-    def __init__(self, filename: str, lines: list[str], smap) -> None:
+    def __init__(
+        self, filename: str, lines: list[str], smap, py_lines: list[str]
+    ) -> None:
         self.filename = filename
         self.lines = lines
         self.smap = smap
+        self.py_lines = py_lines
         self._litany_seq = 0
 
     def _heresy(self, node: ast.AST, message: str):
@@ -28,15 +42,44 @@ class ConstructPass(ast.NodeTransformer):
     def _liturgy_source(self, node: ast.expr) -> str:
         """The Liturgy text of an expression, for an augury's message.
 
-        The node's columns are generated-Python columns; the SourceMap maps
-        them back, and lines are identical by the transform's invariant.
+        The node's columns are generated-Python columns, and two mismatches
+        stand between them and the Liturgy text.
+
+        First, `col_offset`/`end_col_offset` are UTF-8 *byte* offsets (an
+        `ast` quirk), while the SourceMap's spans are *character*-indexed --
+        they come from `tokenize`, which counts characters. Byte offsets are
+        converted to character offsets against the **generated Python**
+        line -- the offsets are into that text, not the Liturgy line -- via
+        `_char_offset`, before the SourceMap is consulted.
+
+        Second, a condition can be a parenthesised expression spanning
+        several physical lines. Lines are identical in *number* between
+        Liturgy and generated Python (the transform's invariant), but a
+        diagnostic message must not itself contain a newline, so each
+        covered line is sliced separately and the pieces are collapsed with
+        a single space.
+
         Falls back to unparsing the Python if anything is missing.
         """
         try:
-            line = self.lines[node.lineno - 1]
-            start = self.smap.to_lit(node.lineno, node.col_offset)
-            end = self.smap.to_lit(node.lineno, node.end_col_offset)
-            text = line[start:end].strip()
+            parts = []
+            for lineno in range(node.lineno, node.end_lineno + 1):
+                py_line = self.py_lines[lineno - 1]
+                lit_line = self.lines[lineno - 1]
+                byte_start = node.col_offset if lineno == node.lineno else 0
+                byte_end = (
+                    node.end_col_offset
+                    if lineno == node.end_lineno
+                    else len(py_line.encode("utf-8"))
+                )
+                start = self.smap.to_lit(
+                    lineno, _char_offset(py_line, byte_start)
+                )
+                end = self.smap.to_lit(
+                    lineno, _char_offset(py_line, byte_end)
+                )
+                parts.append(lit_line[start:end].strip())
+            text = " ".join(p for p in parts if p)
             if text:
                 return text
         except Exception:

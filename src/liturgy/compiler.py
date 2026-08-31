@@ -35,7 +35,9 @@ def compile_litany(
     """
     py, smap = transform(src, _PASSES, filename=filename)
     tree = ast.parse(py, filename, mode)
-    tree = ConstructPass(filename, split_lines(src), smap).visit(tree)
+    tree = ConstructPass(
+        filename, split_lines(src), smap, split_lines(py)
+    ).visit(tree)
     ast.fix_missing_locations(tree)
     return compile(
         tree, filename, mode, dont_inherit=dont_inherit, optimize=optimize
