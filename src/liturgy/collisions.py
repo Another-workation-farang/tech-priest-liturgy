@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from .lexicon import LEXICON
 from .rewrite import _names_in_target, _stored_names
 from .sourcemap import char_offset
-from .transform import alias_pass, split_lines, transform
+from .transform import Substitution, alias_pass, split_lines, transform
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,31 +39,120 @@ def _is_quiet(target: str) -> bool:
 
 
 def _bindings(node):
-    """Every binding, including three `_stored_names` does not report.
+    """Every binding, at the most precise position available.
 
-    `_stored_names` exists for Spec II's `consecrated` check, where a
-    parameter and a comprehension target are correctly *not* rebindings --
-    each opens its own scope. For collisions they matter, because the
-    substitution does not care about scope:
+    Clause (a) in `find_collisions` must attribute a substitution to the
+    exact occurrence it produced -- not merely to the row, and not to
+    whichever occurrence of the same word happens to be looked up first.
+    `_stored_names` cannot supply that: it reports Assign, AugAssign,
+    AnnAssign, NamedExpr, For/AsyncFor, withitem and Delete bindings against
+    the *statement* (or expression) node, because that is what Spec II's
+    `consecrated` needs -- it treats every target of one tuple assignment,
+    or every name in one chained assignment, as opening the same scope, not
+    as distinguishable occurrences. For collisions the opposite is true:
+    `span, span = 1, 2` is two occurrences that must not be conflated, and
+    `intone(span); span = 1` has a *load* of `span` sharing the row with
+    the actual bind, which a lookup keyed by (row, word) alone cannot tell
+    apart from the bind itself.
 
-        def f(span):        ->  def f(range):
-        [p for p in xs]     ->  [p for p in xs]  with p == `pattern`
-                                -> `class`, a syntax error
+    So for those seven shapes, this re-derives the real `ast.Name` node
+    directly -- via the same `_names_in_target` helper `_stored_names`
+    itself uses to flatten tuple/list/starred targets, so the *rule* for
+    what counts as a target is not duplicated, only the attribution of
+    where to report it. A `Name`'s own column is exact in the generated
+    Python regardless of what else shares its row, load or bind, same word
+    or different.
 
-    Measured against the stdlib corpus, adding these three took the
-    disagreement with the round-trip sweep's own predicate from 28 files to
-    2 -- and both survivors are the sweep being wrong, not this.
+    Parameters and comprehension targets are bindings `_stored_names` does
+    not report at all (each opens its own scope, correctly not a rebinding
+    for `consecrated`'s purposes) but each already has an exact node of its
+    own -- `ast.arg`, and the comprehension's own `Name` targets.
 
-    Extending `_stored_names` itself was rejected: it would change what
-    Spec II's `consecrated` rejects, for no benefit there.
+    The remaining shapes have no such node: an import alias/target, an
+    exception name, a `match` capture and a `def`/`class` name are all
+    plain strings on their node, not `ast.Name`s, so there is nothing more
+    precise to re-derive. These are delegated to `_stored_names` unchanged,
+    at the statement's (or handler's, or pattern's) own column -- exactly
+    as before. `import`'s aliases are never substituted (Rule 3 protects
+    them), so clause (a) never needs precision there regardless; the other
+    three are compound-statement headers, which Python's grammar forbids
+    joining to anything else on the same source row, so the ambiguity a
+    precise node exists to resolve cannot arise for them. `global`/
+    `nonlocal` share that same lack of a per-name node, but -- unlike
+    those three -- are simple statements a row can otherwise crowd with a
+    load of the same word; this is accepted as a known, unlikely-to-matter
+    gap rather than chased down, same as the other three shapes.
     """
-    yield from _stored_names(node)
-    if isinstance(node, ast.arg):
+    if isinstance(node, ast.Assign):
+        for t in node.targets:
+            yield from ((n.id, n) for n in _names_in_target(t))
+    elif isinstance(node, ast.AugAssign):
+        yield from ((n.id, n) for n in _names_in_target(node.target))
+    elif isinstance(node, ast.AnnAssign) and node.value is not None:
+        yield from ((n.id, n) for n in _names_in_target(node.target))
+    elif isinstance(node, ast.NamedExpr):
+        yield node.target.id, node.target
+    elif isinstance(node, (ast.For, ast.AsyncFor)):
+        yield from ((n.id, n) for n in _names_in_target(node.target))
+    elif isinstance(node, ast.withitem) and node.optional_vars is not None:
+        yield from ((n.id, n) for n in _names_in_target(node.optional_vars))
+    elif isinstance(node, ast.Delete):
+        for t in node.targets:
+            yield from ((n.id, n) for n in _names_in_target(t))
+    elif isinstance(node, ast.arg):
         yield node.arg, node
     elif isinstance(node, ast.comprehension):
         yield from ((n.id, n) for n in _names_in_target(node.target))
     elif isinstance(node, (ast.Global, ast.Nonlocal)):
         yield from ((name, node) for name in node.names)
+    else:
+        # Import/ImportFrom, ExceptHandler, MatchAs/MatchStar/MatchMapping,
+        # and rite/pattern (FunctionDef/AsyncFunctionDef/ClassDef) names --
+        # everything `_stored_names` reports that isn't re-derived above.
+        # A no-op for any other node type `ast.walk` hands in.
+        yield from _stored_names(node)
+
+
+def _py_spans(
+    subs: list[Substitution],
+) -> dict[int, list[tuple[int, int, Substitution]]]:
+    """Per row, each substitution's span in the *generated Python*.
+
+    Mirrors `transform._splice`'s forward pass exactly -- sort by
+    `col_start`, accumulate the same running width delta -- so a binding
+    Name/arg's own column in the generated Python can be tested against
+    these spans to answer "was *this exact occurrence* substituted",
+    rather than merely "does this row contain a substitution to this
+    text somewhere". That distinction is the whole fix: it is what tells
+    a bind apart from an earlier load of the same word, and one target of
+    a tuple assignment apart from another, without assuming anything
+    about the order `ast.walk` or `_bindings` visits them in.
+    """
+    by_row: dict[int, list[Substitution]] = {}
+    for s in subs:
+        by_row.setdefault(s.row, []).append(s)
+
+    spans: dict[int, list[tuple[int, int, Substitution]]] = {}
+    for row, row_subs in by_row.items():
+        row_subs.sort(key=lambda s: s.col_start)
+        delta = 0
+        row_spans: list[tuple[int, int, Substitution]] = []
+        for s in row_subs:
+            py_start = s.col_start + delta
+            py_end = py_start + len(s.text)
+            row_spans.append((py_start, py_end, s))
+            delta += len(s.text) - (s.col_end - s.col_start)
+        spans[row] = row_spans
+    return spans
+
+
+def _substitution_at(
+    spans: dict[int, list[tuple[int, int, Substitution]]], row: int, py_col: int
+) -> Substitution | None:
+    for py_start, py_end, s in spans.get(row, ()):
+        if py_start <= py_col < py_end:
+            return s
+    return None
 
 
 def find_collisions(
@@ -73,25 +162,32 @@ def find_collisions(
 
     Two clauses, because a binding can collide two ways:
 
-    (a) A substitution produced the bound name -- the author wrote `span` and
-        it became `range`. Position comes from the `Substitution` itself,
-        which is already in Liturgy coordinates and exact. Two bindings on
-        one row can share both row and substituted text -- `span, span = 1,
-        2` -- so substitutions are consumed in left-to-right order rather
-        than collapsed by `(row, text)`; `_bindings` yields same-node
-        multi-target bindings in source order, matching that.
+    (a) A substitution produced the bound name -- the author wrote `span`
+        and it became `range`. Where the binding has its own exact node --
+        an `ast.Name` in Store/Del context, or an `ast.arg` -- that node's
+        own column in the generated Python is tested against the
+        substitutions on its row (`_py_spans`/`_substitution_at`), so the
+        exact occurrence is matched regardless of what else -- a load of
+        the same word, a second identical target, an unrelated earlier
+        substitution -- shares the row. The reported word and column come
+        from the matched `Substitution` itself, which is already exact and
+        in Liturgy coordinates. The handful of shapes with no such node
+        (an import alias/target, an exception name, a `match` capture, a
+        `def`/`class` name) fall back to a plain (row, word) lookup, which
+        is safe for them specifically because Python's grammar forbids two
+        of these compound-statement headers sharing one source row.
     (b) The bound name is itself a Liturgy word, surviving unsubstituted
         because an exemption protected it -- `invoke os styled span` binds
         `span`, and every later reference to it becomes `range`. The AST
-        node's own column is a *generated-Python* column -- for `for`/
-        `def`/`class`/`except`/`import` it is only the statement's start
-        (Line is exact regardless), but for a parameter or a `match`
-        capture it is the name's own column, and an earlier substitution on
-        the same row can have shifted it (`rite` -> `def` is one character
-        shorter). Either way it is mapped back to Liturgy coordinates the
-        same two-step way `rewrite._liturgy_source` does: `char_offset` from
-        UTF-8 bytes to characters against the *generated* line, then
-        `SourceMap.to_lit` from generated-Python characters to Liturgy.
+        node's own column is a *generated-Python* column and is mapped
+        back to Liturgy coordinates the same two-step way
+        `rewrite._liturgy_source` does: `char_offset` from UTF-8 bytes to
+        characters against the *generated* line, then `SourceMap.to_lit`
+        from generated-Python characters to Liturgy. This corrects the
+        column even for the statement-start shapes, where it was already
+        usually right, and for a parameter or a `match` capture, where an
+        earlier substitution on the same row can shift it (`rite` -> `def`
+        is one character shorter).
 
     Clause (b) alone is the whole rule for a `.py` file, which has no
     substitutions and no SourceMap -- the AST's own column already is the
@@ -108,14 +204,15 @@ def find_collisions(
         tree = ast.parse(py, filename)
         py_lines = split_lines(py)
         toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
-        subs: dict[tuple[int, str], list] = {}
-        for s in alias_pass(toks):
-            subs.setdefault((s.row, s.text), []).append(s)
+        all_subs = alias_pass(toks)
+        row_spans = _py_spans(all_subs)
+        stmt_subs = {(s.row, s.text): s for s in all_subs}
     else:
         tree = ast.parse(src, filename)
         smap = None
         py_lines = []
-        subs = {}
+        row_spans = {}
+        stmt_subs = {}
 
     lines = split_lines(src)
     found: set[Collision] = set()
@@ -123,19 +220,23 @@ def find_collisions(
     for node in ast.walk(tree):
         for name, at in _bindings(node):
             line = getattr(at, "lineno", 0)
-            queue = subs.get((line, name))
-            sub = queue.pop(0) if queue else None
+            raw_col = getattr(at, "col_offset", 0) or 0
+            py_line = py_lines[line - 1] if 0 <= line - 1 < len(py_lines) else ""
+            py_col = char_offset(py_line, raw_col) if smap is not None else raw_col
+
+            sub = None
+            if smap is not None:
+                if isinstance(at, (ast.Name, ast.arg)):
+                    sub = _substitution_at(row_spans, line, py_col)
+                else:
+                    sub = stmt_subs.get((line, name))
+
             if sub is not None:
                 word = lines[line - 1][sub.col_start : sub.col_end]
                 col = sub.col_start
             elif name in LEXICON:
                 word = name
-                raw_col = getattr(at, "col_offset", 0) or 0
-                if smap is None:
-                    col = raw_col
-                else:
-                    py_line = py_lines[line - 1] if line - 1 < len(py_lines) else ""
-                    col = smap.to_lit(line, char_offset(py_line, raw_col))
+                col = smap.to_lit(line, py_col) if smap is not None else raw_col
             else:
                 continue
             found.add(

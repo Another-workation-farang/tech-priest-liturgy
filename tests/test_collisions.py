@@ -168,6 +168,37 @@ def test_a_duplicate_after_an_earlier_substitution_on_the_same_row():
     ]
 
 
+# --- regressions: a load of the same word must not be mistaken for a bind ---
+def test_a_load_before_a_bind_on_the_same_row_reports_only_the_bind():
+    # A dict keyed by (row, substituted text) alone, consumed in row order,
+    # cannot tell a load from a bind -- it would report the load's column
+    # (7) instead of the actual bind's (14). Matching by the bind's own
+    # position sidesteps the question of order entirely.
+    assert _cols("intone(span); span = 1\n") == [(1, 14, "span", "range")]
+
+
+def test_a_load_before_two_binds_on_the_same_row_reports_both_true_columns():
+    # The load at column 7 must not consume either bind's substitution, and
+    # the two binds (at 14 and 20) must not be conflated with each other or
+    # with the load.
+    assert _cols("intone(span); span, span = 1, 2\n") == [
+        (1, 14, "span", "range"),
+        (1, 20, "span", "range"),
+    ]
+
+
+def test_a_load_after_a_bind_on_the_same_row_reports_only_the_bind():
+    assert _cols("span = span + 1\n") == [(1, 0, "span", "range")]
+
+
+def test_three_binds_on_one_row_all_collide():
+    assert _cols("span, span, span = 1, 2, 3\n") == [
+        (1, 0, "span", "range"),
+        (1, 6, "span", "range"),
+        (1, 12, "span", "range"),
+    ]
+
+
 # --- .py files: clause (b) only ---
 def test_python_bindings_of_liturgy_words_collide():
     src = "span = 5\ndef render(): pass\nx = 1\n"
