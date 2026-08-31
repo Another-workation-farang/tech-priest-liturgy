@@ -6,6 +6,7 @@ import code
 import os
 import sys
 
+from .compiler import compile_litany
 from .loader import install as install_hook
 from .transform import UnfinishedLitany, transform
 
@@ -44,6 +45,12 @@ class LiturgyConsole(code.InteractiveConsole):
 
         if compiled is None:
             return True  # incomplete
+
+        try:
+            compiled = compile_litany(source, filename, mode=symbol)
+        except SyntaxError:
+            self.showsyntaxerror(filename)
+            return False
 
         self.runcode(compiled)
         return False
