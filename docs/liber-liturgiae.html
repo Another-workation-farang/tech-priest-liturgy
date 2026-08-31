@@ -696,6 +696,27 @@ arrives later and elsewhere, when something calls <code>span(10)</code> and
 receives a string. The same holds for <code>measure</code>,
 <code>unseal</code> and <code>hearken</code>.</p>
 
+<p>Two of the three constructs are quiet in the same way, for a different
+reason. A construct word is only a construct in the position its header
+occupies; anywhere else it is an ordinary name, and the carrier pass leaves
+it alone. So <code>litany = 5</code>, <code>rite augur(x):</code> and
+<code>pattern litany:</code> all compile, and the name is yours until the day
+you want the construct on that line:</p>
+
+<div class="code-block"><pre>litany = 5
+augur = compute()
+<span class="kw">rite</span> augur(x):
+    <span class="kw">render</span> x
+<span class="kw">pattern</span> litany:
+    <span class="kw">abide</span></pre></div>
+
+<p>Every line of that compiles. <code>consecrated</code> is the exception
+among the three: it can only ever be a header, so
+<code>consecrated = 5</code> is a loud heresy. Six of the sixty-three words
+are quiet, then — <code>span</code>, <code>measure</code>,
+<code>unseal</code>, <code>hearken</code>, <code>litany</code>,
+<code>augur</code> — and the rest are loud.</p>
+
 <p>Until the <code>augur</code> rite of Chapter IX exists to warn you, this
 is a thing to carry in your head. <code>span</code> in particular is a
 natural name for a range of text, and it is precisely the wrong one.</p>
@@ -731,6 +752,30 @@ see: rebindings, a second <code>consecrated</code> of the same name, a
 it cannot stop — <code>setattr</code>, <code>globals()</code>, assignment
 through the module object, and <code>exec</code> all get through untouched.
 This is enforcement, not a guarantee.</p>
+
+<p>The same boundary explains <code>commune</code>. Enforcement is per
+compilation unit, and every entry at the prompt is its own unit: by the time
+you type <code>PORT = 9</code> the compiler has no record of the
+<code>consecrated PORT = 8080</code> you typed three lines earlier, and the
+rebinding goes through.</p>
+
+<pre class="shell">&gt;&gt;&gt; <span class="kw">consecrated</span> PORT = 8080
+&gt;&gt;&gt; PORT = 9
+&gt;&gt;&gt; intone(PORT)
+9</pre>
+
+<p>Within a single entry — one line, or one block typed across several — the
+rejection is exactly as it is in a file:</p>
+
+<div class="warning"><pre>&gt;&gt;&gt; <span class="kw">consecrated</span> PORT = 8080; PORT = 9
+++ MACHINE CURSE ++
+   File "&lt;console&gt;", line 1
+       consecrated PORT = 8080; PORT = 9
+   TechHeresy: PORT is consecrated and may not be rebound
+++ the machine spirit is displeased ++</pre></div>
+
+<p>A litany is a file. The prompt is a conversation, and a conversation
+remembers values, not declarations.</p>
 </section>
 
 <section id="ch8">

@@ -438,6 +438,26 @@ You have shadowed a builtin. Nothing complains now. The complaint arrives
 later and elsewhere, when something calls `span(10)` and receives a string.
 The same holds for `measure`, `unseal` and `hearken`.
 
+Two of the three constructs are quiet in the same way, for a different
+reason. A construct word is only a construct in the position its header
+occupies; anywhere else it is an ordinary name, and the carrier pass leaves
+it alone. So `litany = 5`, `rite augur(x):` and `pattern litany:` all compile,
+and the name is yours until the day you want the construct on that line:
+
+```
+litany = 5
+augur = compute()
+rite augur(x):
+    render x
+pattern litany:
+    abide
+```
+
+Every line of that compiles. `consecrated` is the exception among the three:
+it can only ever be a header, so `consecrated = 5` is a loud heresy. Six of
+the sixty-three words are quiet, then — `span`, `measure`, `unseal`,
+`hearken`, `litany`, `augur` — and the rest are loud.
+
 Until the `augur` rite of Chapter IX exists to warn you, this is a thing to
 carry in your head. `span` in particular is a natural name for a range of
 text, and it is precisely the wrong one.
@@ -474,6 +494,33 @@ rebindings, a second `consecrated` of the same name, a `consecrated` inside
 a loop body. What the compiler cannot see, it cannot stop — `setattr`,
 `globals()`, assignment through the module object, and `exec` all get
 through untouched. This is enforcement, not a guarantee.
+
+The same boundary explains `commune`. Enforcement is per compilation unit,
+and every entry at the prompt is its own unit: by the time you type `PORT = 9`
+the compiler has no record of the `consecrated PORT = 8080` you typed three
+lines earlier, and the rebinding goes through.
+
+```
+>>> consecrated PORT = 8080
+>>> PORT = 9
+>>> intone(PORT)
+9
+```
+
+Within a single entry — one line, or one block typed across several — the
+rejection is exactly as it is in a file:
+
+```
+>>> consecrated PORT = 8080; PORT = 9
+++ MACHINE CURSE ++
+   File "<console>", line 1
+       consecrated PORT = 8080; PORT = 9
+   TechHeresy: PORT is consecrated and may not be rebound
+++ the machine spirit is displeased ++
+```
+
+A litany is a file. The prompt is a conversation, and a conversation
+remembers values, not declarations.
 
 ---
 

@@ -105,6 +105,9 @@ def statement_starts(significant: list[tokenize.TokenInfo]) -> set[int]:
             head = tok.string
         fresh = False
 
+    # The final ENDMARKER is recorded as a statement start too. Harmless and
+    # unreachable in practice: `carrier_pass` acts only on a NAME token whose
+    # text is a construct keyword, and ENDMARKER is neither.
     return starts
 
 
@@ -115,6 +118,12 @@ def opens_a_block(significant: list[tokenize.TokenInfo], i: int) -> bool:
     requires the line to open a block, and without that check
     `match: litany(3)` -- annotating a variable named `match` -- would be
     read as a construct header. Both halves of the rule are needed.
+
+    M10, noted and left: this answers yes for `augur: int` used as the
+    opening statement of a rite, which is an annotation, not a block. The
+    result is a heresy rather than a silent miscompile ("augur opens a block
+    and takes no arguments"), and the shape is obscure enough not to be worth
+    a second token of lookahead here.
     """
     depth = 0
     for tok in significant[i:]:

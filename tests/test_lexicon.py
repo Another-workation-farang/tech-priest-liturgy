@@ -27,7 +27,15 @@ def test_lexicon_is_bijective():
 
 
 def test_tables_do_not_overlap():
-    keys = [*lexicon.KEYWORDS, *lexicon.SOFTWORDS, *lexicon.CURSES]
+    # T1: NUMERALS belongs here too. LEXICON merges all four with `**`, so a
+    # word appearing in two tables is silently resolved by merge order rather
+    # than reported -- and the numerals were the one table never checked.
+    keys = [
+        *lexicon.KEYWORDS,
+        *lexicon.SOFTWORDS,
+        *lexicon.CURSES,
+        *lexicon.NUMERALS,
+    ]
     assert len(keys) == len(set(keys))
 
 
@@ -91,4 +99,11 @@ def test_reserved_count_is_sixty_three():
 
 
 def test_numerals_do_not_break_bijectivity():
-    assert len(lexicon.INVERSE) == len(lexicon.LEXICON)
+    # M11: this was byte-identical to test_lexicon_is_bijective and so
+    # asserted nothing about numerals at all. The property that actually
+    # matters here is that the numerals survive the inversion -- their
+    # targets are integer literals, not names, and a target colliding with
+    # any other table's would drop one of the two from INVERSE silently.
+    assert lexicon.INVERSE["3"] == "thrice"
+    assert lexicon.INVERSE["2"] == "twice"
+    assert set(lexicon.NUMERALS.values()) <= set(lexicon.INVERSE)
