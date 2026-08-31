@@ -444,15 +444,19 @@ ONE, AND <span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND
 <pre><span class="dim">.. function::</span> <span class="sig">liturgy augur PATH... [--plain]</span>
 
    <span class="ok">READS .LIT AND .PY FILES FOR FAULTS WITHOUT CHANTING THEM. A DIRECTORY IS
-   WALKED. EXACTLY TWO CHECKS, AND NO THIRD: BINDINGS WHOSE NAME IS RESERVED,
-   AND — FOR A .LIT FILE — THAT IT COMPILES, SO augur AND chant CANNOT
-   DISAGREE. IT IS NOT A GENERAL LINTER AND WILL NOT BECOME ONE.</span>
+   WALKED. EXACTLY TWO CHECKS, AND NO THIRD: BINDINGS WHOSE NAME IS ONE OF THE
+   SIXTY WORDS THAT BECOME ANOTHER WORD, AND — FOR A .LIT FILE — THAT IT
+   COMPILES, SO augur AND chant CANNOT DISAGREE. IT IS NOT A GENERAL LINTER
+   AND WILL NOT BECOME ONE.</span>
 
    <span class="field">:param <b>PATH</b>:</span> FILES OR DIRECTORIES TO BE READ.
    <span class="field">:option <b>--plain</b>:</span> ONE file:line:col: LINE PER FINDING, FOR EDITORS AND CI.
    <span class="field">:returns:</span> 0 IF NOTHING WAS REPORTED, 1 IF ANYTHING WAS.
    <span class="field">:silently:</span> <span class="alert">A FINDING SO MARKED SUBSTITUTES TO A NAME, NOT A KEYWORD —
               THE FILE COMPILES AND THE HARM IS DEFERRED.</span>
+   <span class="field">:not checked:</span> THE THREE CONSTRUCT WORDS. THEY ARE NEVER SUBSTITUTED, SO
+                 NOTHING BOUND TO ONE QUIETLY CHANGES MEANING. consecrated IS
+                 STILL CAUGHT, BY THE COMPILE CHECK.
    <span class="field">:unscanned:</span> A DIRECTORY REACHED BY SYMLINK IS NAMED, NOT PASSED OVER.</pre>
 </div>
 
@@ -460,7 +464,7 @@ ONE, AND <span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND
 <span class="dim">$</span> liturgy augur --plain quiet.lit
 quiet.lit:1:1: span is reserved; it becomes range -- silently
 <span class="dim">$</span> liturgy augur --plain imp.lit
-imp.lit:1:1: render is reserved; it becomes return
+imp.lit:1:33: render is reserved; it becomes return
 </pre>
 
 <p class="desc">THE SECOND IS THE SUBTLE ONE. THE THIRD PROHIBITION LEAVES AN INVOCATION'S

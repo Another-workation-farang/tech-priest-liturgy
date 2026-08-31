@@ -459,8 +459,14 @@ the sixty-three words are quiet, then — `span`, `measure`, `unseal`,
 `hearken`, `litany`, `augur` — and the rest are loud.
 
 `span` in particular is a natural name for a range of text, and it is
-precisely the wrong one. This no longer has to be carried in your head:
-`liturgy augur` reports every one of the six, and Chapter XI sets it down.
+precisely the wrong one. Four of the six no longer have to be carried in your
+head: `span`, `measure`, `unseal` and `hearken` each *become* another word,
+and `liturgy augur` reports every binding that does. Chapter XI sets it down.
+
+`litany` and `augur` are not reported, and should not be. A construct word is
+never substituted, so there is nothing it silently becomes — the only hazard
+is the one above, that you may one day want the construct on a line whose name
+you have already spent. That one stays yours to track.
 
 ### Calling is not defining
 
@@ -745,11 +751,17 @@ silence; a reader that quietly does not read a file is worse than no reader.
 
 `augur` makes exactly two.
 
-**Reserved words used as your own names.** A binding collides two ways, and
-both are reported. Either you wrote the reserved word and the substitution
-produced the bound name — `span = ...` becoming `range = ...` — or one of
-Chapter VI's exemptions protected the word from substitution and left you
-bound to it whole.
+**Words that become another word, used as your own names.** A binding
+collides two ways, and both are reported. Either you wrote the reserved word
+and the substitution produced the bound name — `span = ...` becoming
+`range = ...` — or one of Chapter VI's exemptions protected the word from
+substitution and left you bound to it whole.
+
+This check reaches the sixty words that have a Python spelling, not all
+sixty-three. The three construct words are outside it by construction: they
+are never substituted, so no binding of one can quietly come to mean
+something else. `consecrated` is still caught — by the second check, as a
+compile failure — and `litany` and `augur` are genuinely not faults.
 
 **That the litany compiles.** For a `.lit` file, `augur` compiles the source
 after gathering collisions, so a file `augur` calls clean is a file `chant`
@@ -779,9 +791,16 @@ it. This is the subtle one, and it is why `augur` treats an import target as
 a binding like any other:
 
 ```
-$ liturgy augur --plain imp.lit
-imp.lit:1:1: render is reserved; it becomes return
+$ liturgy augur imp.lit
+++ THE OMENS ARE TROUBLED ++
+   imp.lit, line 1
+       within json invoke loads styled render
+                                       ^^^^^^
+   render is reserved; it becomes return
 ```
+
+The caret is the point. Four of the six words on that line are Liturgy's own,
+and only the last of them is yours to have got wrong.
 
 Chapter VI's exemptions govern what is substituted. They say nothing about
 what is safe to be bound to, and the two are not the same question.

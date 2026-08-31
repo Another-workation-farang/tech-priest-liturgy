@@ -136,6 +136,10 @@
   .code-block .string  { color: var(--highlight-color); }
   .code-block .kw      { color: var(--text-primary); font-weight: bold; }
   pre.shell .prompt    { color: var(--text-secondary); }
+  /* A warning box that quotes a whole invocation needs the prompt too, and
+     the alert red must not swallow it -- the command is not the fault. */
+  .warning .prompt     { color: var(--text-secondary); text-shadow: none; }
+  .warning .cmd        { color: var(--text-primary); text-shadow: none; }
 
   .warning {
     color: var(--alert-color);
@@ -728,9 +732,17 @@ are quiet, then — <code>span</code>, <code>measure</code>,
 <code>augur</code> — and the rest are loud.</p>
 
 <p><code>span</code> in particular is a natural name for a range of text,
-and it is precisely the wrong one. This no longer has to be carried in your
-head: <code>liturgy augur</code> reports every one of the six, and Chapter
-XI sets it down.</p>
+and it is precisely the wrong one. Four of the six no longer have to be
+carried in your head: <code>span</code>, <code>measure</code>,
+<code>unseal</code> and <code>hearken</code> each <i>become</i> another
+word, and <code>liturgy augur</code> reports every binding that does.
+Chapter XI sets it down.</p>
+
+<p><code>litany</code> and <code>augur</code> are not reported, and should
+not be. A construct word is never substituted, so there is nothing it
+silently becomes — the only hazard is the one above, that you may one day
+want the construct on a line whose name you have already spent. That one
+stays yours to track.</p>
 
 <h3>Calling is not defining</h3>
 
@@ -996,7 +1008,8 @@ the built verbs of the third spec. None of them runs your litany.
 is source and guards a rite. This is a command-line verb, and it guards a
 file.</p>
 
-<div class="warning"><pre>++ THE OMENS ARE TROUBLED ++
+<div class="warning"><pre><span class="prompt">$</span> <span class="cmd">liturgy augur quiet.lit</span>
+++ THE OMENS ARE TROUBLED ++
    quiet.lit, line 1
        span = "text range"
        ^^^^
@@ -1027,11 +1040,18 @@ that quietly does not read a file is worse than no reader.</p>
 
 <p><code>augur</code> makes exactly two.</p>
 
-<p><b>Reserved words used as your own names.</b> A binding collides two
-ways, and both are reported. Either you wrote the reserved word and the
-substitution produced the bound name — <code>span = ...</code> becoming
-<code>range = ...</code> — or one of Chapter VI's exemptions protected the
-word from substitution and left you bound to it whole.</p>
+<p><b>Words that become another word, used as your own names.</b> A binding
+collides two ways, and both are reported. Either you wrote the reserved word
+and the substitution produced the bound name — <code>span = ...</code>
+becoming <code>range = ...</code> — or one of Chapter VI's exemptions
+protected the word from substitution and left you bound to it whole.</p>
+
+<p>This check reaches the sixty words that have a Python spelling, not all
+sixty-three. The three construct words are outside it by construction: they
+are never substituted, so no binding of one can quietly come to mean
+something else. <code>consecrated</code> is still caught — by the second
+check, as a compile failure — and <code>litany</code> and <code>augur</code>
+are genuinely not faults.</p>
 
 <p><b>That the litany compiles.</b> For a <code>.lit</code> file,
 <code>augur</code> compiles the source after gathering collisions, so a file
@@ -1060,8 +1080,15 @@ syntax error that says nothing about the import that caused it. This is the
 subtle one, and it is why <code>augur</code> treats an import target as a
 binding like any other:</p>
 
-<pre class="shell"><span class="prompt">$</span> liturgy augur --plain imp.lit
-imp.lit:1:1: render is reserved; it becomes return</pre>
+<div class="warning"><pre><span class="prompt">$</span> <span class="cmd">liturgy augur imp.lit</span>
+++ THE OMENS ARE TROUBLED ++
+   imp.lit, line 1
+       within json invoke loads styled render
+                                       ^^^^^^
+   render is reserved; it becomes return</pre></div>
+
+<p>The caret is the point. Four of the six words on that line are Liturgy's
+own, and only the last of them is yours to have got wrong.</p>
 
 <p>Chapter VI's exemptions govern what is substituted. They say nothing
 about what is safe to be bound to, and the two are not the same

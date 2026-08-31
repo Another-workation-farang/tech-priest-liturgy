@@ -159,10 +159,12 @@ ACTUALLY LOADS AND RUNS SOURCE.</p>
 Ave Omnissiah
 </pre>
 
-<p>THE SHARP EDGE IS THAT LITURGY RESERVES MORE WORDS THAN PYTHON DOES, AND SIX
-OF THEM SHADOW SILENTLY RATHER THAN FAILING LOUDLY. <span class="lower amber">liturgy
-augur</span> EXISTS TO FIND THEM — IT READS A LITANY FOR THAT FAULT WITHOUT
-CHANTING IT, AND EXITS NONZERO WHEN IT FINDS ONE.</p>
+<p>THE SHARP EDGE IS THAT LITURGY RESERVES MORE WORDS THAN PYTHON DOES. MOST
+MISUSES FAIL LOUDLY, BUT FOUR — <span class="lower amber">span</span>,
+<span class="lower amber">measure</span>, <span class="lower amber">unseal</span>,
+<span class="lower amber">hearken</span> — SILENTLY SHADOW THE BUILTIN THEY ALIAS AND
+BREAK SOMEWHERE ELSE ENTIRELY. <span class="lower amber">liturgy augur</span> READS A
+LITANY FOR THAT FAULT WITHOUT CHANTING IT, AND EXITS NONZERO WHEN IT FINDS ONE.</p>
 
 <pre>
 <span class="dim">$</span> liturgy augur --plain quiet.lit

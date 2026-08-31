@@ -348,11 +348,19 @@ substitution target is an ordinary name rather than a Python keyword, so the
 file compiles and the damage is deferred. Without it, the collision is loud
 somewhere — still worth reporting, but it will announce itself.
 
-`augur` makes exactly two checks. First, every binding whose name is a
-reserved word, by either route: you wrote the reserved word and it was
-substituted, or an exemption protected the word and you are now bound to it
-unsubstituted. Second, for a `.lit` file, that it actually compiles, so
-`augur` and `chant` cannot disagree about whether a file is well-formed.
+`augur` makes exactly two checks. First, every binding whose name is one of
+the sixty words that become another word, by either route: you wrote the
+reserved word and it was substituted, or an exemption protected the word and
+you are now bound to it unsubstituted. Second, for a `.lit` file, that it
+actually compiles, so `augur` and `chant` cannot disagree about whether a file
+is well-formed.
+
+The three construct words are outside the first check and belong outside it:
+they are never substituted, so a binding of one cannot quietly come to mean
+something else. `consecrated = 5` is caught anyway, by the second check, as a
+compile failure. `litany = 5` and `augur = 6` are reported by neither, because
+neither is a fault — the name is yours until the day you want the construct on
+that line.
 
 It stops there on purpose. There is no line-length rule, no unused-import
 check, no naming convention — `augur` is not a general linter and is not
