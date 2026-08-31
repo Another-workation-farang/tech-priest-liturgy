@@ -1,0 +1,29 @@
+src/liturgy/curse.py
+  s_d162ead593e4de::t_8002bda7ce9c0c 13
+  s_d162ead593e4de::t_82bf2245ba74e3 115-120,124
+src/liturgy/transform.py
+  s_d162ead593e4de::t_ebe47b8d4949f7 325-327
+tests/test_compiler.py
+  s_d162ead593e4de::t_56ec9bedfb1850 138,140-160,163-164
+tests/test_transform.py
+  s_d162ead593e4de::t_a3b85de7c9d4e5 118-136,139-140
+  s_d162ead593e4de::t_068afae3a9834e 137-138
+tests/test_curse.py
+  s_d162ead593e4de::t_bc4ca94167b42d 792-833
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "8d1ba8643641727cf7370304e698b7ccab7d79e6",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
