@@ -1446,6 +1446,22 @@ def test_a_statement_inside_an_augury_is_rejected():
     assert "condition" in str(exc.value)
 
 
+def test_a_nested_rite_may_have_its_own_augury():
+    src = (
+        "rite outer(x):\n"
+        "    augur:\n"
+        "        x > 0\n"
+        "    rite inner(y):\n"
+        "        augur:\n"
+        "            y > 0\n"
+        "        render y\n"
+        "    render inner(x)\n"
+    )
+    assert run(src)["outer"](3) == 3
+    with pytest.raises(ValueError):
+        run(src)["outer"](0)
+
+
 def test_augur_as_a_plain_call_is_untouched():
     # NAMED REGRESSION. Somebody's function, not a construct.
     ns = run("rite augur(n):\n    render n + 1\nresult = augur(1)\n")
@@ -1623,13 +1639,24 @@ def _reject_misplaced_auguries(scope, mkerr) -> None:
             allowed.add(id(body[j]))
             j += 1
 
-    for node in ast.walk(scope):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node is not scope:
-            continue  # its own scope visit handles it
+    def walk(node):
+        # NOT ast.walk: it flattens the tree, so `continue` on a nested rite
+        # skips that node but still yields its children -- and the nested
+        # rite's own legitimate opening augury would be rejected here instead
+        # of being allowed by its own scope visit.
+        if (
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            and node is not scope
+        ):
+            return
         if _is_augur_carrier(node) and id(node) not in allowed:
             if not in_rite:
                 raise mkerr(node, "an augury belongs at the opening of a rite")
             raise mkerr(node, "an augury must be the opening of its rite")
+        for child in ast.iter_child_nodes(node):
+            walk(child)
+
+    walk(scope)
 ```
 
 - [ ] **Step 7: Run the full suite**
@@ -1689,7 +1716,8 @@ def test_every_node_in_the_rewritten_tree_has_a_position(name):
     missing = [
         f"{type(n).__name__}"
         for n in ast.walk(tree)
-        if isinstance(n, (ast.stmt, ast.expr)) and n.lineno is None
+        if isinstance(n, (ast.stmt, ast.expr))
+        and getattr(n, "lineno", None) is None
     ]
     assert not missing, f"nodes without a position: {missing}"
 
@@ -1702,7 +1730,8 @@ def test_no_synthesised_node_claims_a_line_beyond_the_source(name):
     beyond = [
         (type(n).__name__, n.lineno)
         for n in ast.walk(tree)
-        if isinstance(n, (ast.stmt, ast.expr)) and n.lineno > limit
+        if isinstance(n, (ast.stmt, ast.expr))
+        and getattr(n, "lineno", 0) > limit
     ]
     assert not beyond, f"nodes past the end of the source: {beyond}"
 ```
