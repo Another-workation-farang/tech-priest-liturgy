@@ -162,6 +162,20 @@ def _consecrated_carrier(
             "consecrated must be followed by a name",
             "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
         )
+    if name.start[0] != kw.start[0]:
+        # The keyword-swallowing substitution below takes its row from the
+        # keyword and its end column from the name. Across a line
+        # continuation those are two different rows, and the result is a
+        # substitution that reaches off the end of its own line: `_splice`
+        # would silently cut `consecrated \` down to `ecrated \` and the
+        # author would get `SyntaxError: invalid syntax` on text they never
+        # wrote. This is also the one way the carrier pass can break the
+        # line invariant, and `_splice`'s newline guard cannot see it --
+        # it inspects the replacement text, not the span.
+        raise heresy(
+            "consecrated and its name must share a line",
+            "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
+        )
     return [
         # Swallow the keyword and the space after it, keeping indentation.
         Substitution(kw.start[0], kw.start[1], name.start[1], ""),
