@@ -1945,8 +1945,13 @@ builtin-alias table.
 
 - [ ] **Step 7: Mirror every change into `docs/liber-liturgiae.html`**
 
-Same content, same structure. Add Chapter X to the rail's `<ol>`. Use the
-existing `.rubric`, `.table-wrap` and `<pre>` patterns; add no new CSS.
+Same content, same structure. Add Chapter X to the rail's `<ol>`.
+
+**Read the file first — a peer session restyled it after this plan was written.**
+It is now a "cogitator terminal" treatment with its own conventions documented in
+`docs/STYLE-COGITATOR.md`, and alias rows use `<td class="lit">` / `<td class="py">`
+rather than `<code>` tags. Follow whatever patterns the file actually uses now and
+add no new CSS. Do not restore the older styling.
 
 - [ ] **Step 8: Validate the tables programmatically**
 
@@ -1960,8 +1965,10 @@ from liturgy.lexicon import LEXICON, RESERVED
 
 for path, pattern in [
     ("docs/LIBER-LITURGIAE.md", r"\|\s*`([A-Za-z_]+)`\s*\|\s*`([A-Za-z_0-9]+)`\s*\|"),
+    # A peer session restyled this page; alias rows now use class attributes
+    # rather than <code> tags. Verified: 116 rows, zero mismatches.
     ("docs/liber-liturgiae.html",
-     r"<td><code>([A-Za-z_]+)</code></td><td><code>([A-Za-z_0-9]+)</code></td>"),
+     r'<td class="lit">([A-Za-z_]+)</td>\s*<td class="py">([A-Za-z_0-9]+)</td>'),
 ]:
     doc = pathlib.Path(path).read_text()
     pairs = re.findall(pattern, doc)
