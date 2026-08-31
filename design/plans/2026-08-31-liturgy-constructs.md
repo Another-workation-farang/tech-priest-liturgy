@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12+, stdlib only (`tokenize`, `ast`, `token`). pytest.
 
-**Spec:** `docs/superpowers/specs/2026-08-31-liturgy-constructs-design.md`
+**Spec:** `design/specs/2026-08-31-liturgy-constructs-design.md`
 
 ## Global Constraints
 

@@ -39,7 +39,7 @@ Liturgy needs Python 3.12 or later — see [why](#why-python-312) below — and
 has no runtime dependencies of its own.
 
 ```
-$ git clone <url-of-this-repository>
+$ git clone git@github.com:Another-workation-farang/tech-priest-liturgy.git
 $ cd tech-priest-liturgy
 $ python3.12 -m venv .venv
 $ source .venv/bin/activate
@@ -378,6 +378,6 @@ project is exactly the kind of thing worth spelling out instead of leaving
 implicit.
 
 The full design is in
-[`docs/superpowers/specs/2026-08-30-liturgy-core-design.md`](docs/superpowers/specs/2026-08-30-liturgy-core-design.md);
+[`design/specs/2026-08-30-liturgy-core-design.md`](design/specs/2026-08-30-liturgy-core-design.md);
 the task-by-task implementation plan for Core is in
-[`docs/superpowers/plans/2026-08-30-liturgy-core.md`](docs/superpowers/plans/2026-08-30-liturgy-core.md).
+[`design/plans/2026-08-30-liturgy-core.md`](design/plans/2026-08-30-liturgy-core.md).

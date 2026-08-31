@@ -128,6 +128,9 @@
   td.note { color: var(--text-secondary); text-transform: uppercase; }
   .table-scroll { overflow-x: auto; }
 
+  nav { margin: 12px 0; }
+  nav a { display: inline-block; margin-right: 2ch; }
+
   a { color: var(--highlight-color); text-decoration: underline; }
   a:focus-visible, summary:focus-visible {
     outline: 1px solid var(--highlight-color);
@@ -154,6 +157,12 @@
 <span class="dim">THE RITES OF THE MACHINE TONGUE, SET DOWN FOR ADEPTS OF THE SECOND CLASS</span></pre>
 <pre class="rule">================================================================================</pre>
 
+<nav>
+  <a href="index.html">[ INDEX ]</a>
+  <a href="liber-liturgiae.html">[ THE FULL TOME ]</a>
+  <a href="https://github.com/Another-workation-farang/tech-priest-liturgy">[ SOURCE ]</a>
+</nav>
+
 <pre>
 <span class="dim">.. module::</span> liturgy
    <span class="dim">:synopsis:</span> A SUPERSET OF PYTHON WHOSE SURFACE SYNTAX IS THE RITUAL TONGUE.
@@ -171,7 +180,7 @@
 &gt;&gt; TOKENIZING .LIT SOURCE VIA CPYTHON TOKENIZER...   [<span class="ok">SUCCESS</span>]
 &gt;&gt; ALIASING RITUAL SPELLINGS TO PYTHON SPELLINGS...  [<span class="ok">38/38 KEYWORDS</span>]
 &gt;&gt; COLUMN-LEVEL SOURCE MAP RETAINED...               [<span class="ok">EXACT</span>]
-&gt;&gt; IMPORT HOOK sys.meta_path REGISTRATION...         [<span class="ok">ONLINE</span>]
+&gt;&gt; IMPORT HOOK sys.path_hooks REGISTRATION...        [<span class="ok">ONLINE</span>]
 &gt;&gt; MACHINE SPIRIT COMMUNION...                       [<span class="amber">ATTENDING</span>]
 </pre>
 
@@ -239,7 +248,55 @@ STATEMENT'S OWN KEYWORDS ARE TOUCHED. THUS
 
 <section>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
-<h2><pre>[III] FUNCTION PARAMETERS &amp; LITANIES</pre></h2>
+<h2><pre>[III] THE GREATER RITES — CONSTRUCTS</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<p class="desc">THREE CONSTRUCTS PYTHON CANNOT EXPRESS. EACH DESUGARS INTO SELF-CONTAINED
+GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
+<span class="lower amber">noospheric</span>, WAS CUT RATHER THAN BEND THAT RULE.</p>
+
+<pre>
+<span class="dim">.. construct::</span> consecrated NAME = VALUE
+   <span class="ok">A BINDING THAT MAY NOT BE REBOUND. PYTHON HAS NO CONSTANTS, ONLY THE
+   ALL-CAPS HONOUR SYSTEM. REBINDING IS REJECTED AT COMPILE TIME WITHIN THE
+   DECLARING SCOPE, AS IS A SECOND CONSECRATION OF THE SAME NAME AND ONE
+   PLACED INSIDE A LOOP.</span>
+   <span class="dim">:limit:</span> <span class="alert">WHAT THE COMPILER CANNOT SEE IT CANNOT STOP — setattr, globals(),
+             ASSIGNMENT THROUGH THE MODULE OBJECT AND exec ALL PASS.
+             THIS IS ENFORCEMENT, NOT A GUARANTEE.</span>
+
+<span class="dim">.. construct::</span> litany(ATTEMPTS, resting=SECONDS, curse=EXCEPTION):
+   <span class="ok">A BLOCK RE-CHANTED ON NAMED FAILURES. THE FIRST ARGUMENT IS TOTAL
+   ATTEMPTS, NOT RETRIES, AND IS EVALUATED EXACTLY ONCE.</span>
+   <span class="dim">:curse:</span> REQUIRED AND KEYWORD-ONLY. NOTHING IS CAUGHT IMPLICITLY — A RETRY
+           THAT CATCHES EVERYTHING WOULD RE-ATTEMPT A PatternMismatch.
+   <span class="dim">:resting:</span> OPTIONAL. OMITTED, NO TIMING CODE IS EMITTED AT ALL.
+   <span class="alert">:forbidden:</span> cease AND persist AT THE LITANY'S OWN LEVEL — THEY WOULD BIND
+               TO THE INVISIBLE RETRY LOOP. INSIDE A REAL LOOP IN THE BODY
+               THEY ARE THE AUTHOR'S OWN AND PASS UNTOUCHED.
+
+<span class="dim">.. construct::</span> augur:
+   <span class="ok">CONDITIONS READ BEFORE A RITE'S BODY RUNS, ONE PER LINE, VALID ONLY AT
+   THE OPENING OF A RITE. A CONTRACT, NOT AN ASSERTION — IT DESUGARS TO A
+   REAL if/raise AND SURVIVES python -O.</span>
+   <span class="dim">:raises ImpureOffering:</span> WITH THE <b>LITURGY</b> SOURCE OF THE FAILED
+                           CONDITION QUOTED, NOT THE GENERATED PYTHON.
+</pre>
+
+<pre>
+<span class="dim">$</span> liturgy chant constructs.lit
+++ 6 / 2 is 3.0 ++
+++ the omens forbid it -- b != 0 ++
+++ attempts: 3 ++
+</pre>
+
+<p class="desc">SIXTY-THREE WORDS ARE RESERVED IN TOTAL: THIRTY-EIGHT RITES, FIVE BUILTINS,
+FIFTEEN CURSES, TWO NUMERALS AND THREE CONSTRUCTS.</p>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[IV] FUNCTION PARAMETERS &amp; LITANIES</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <div class="directive">
@@ -257,7 +314,8 @@ STATEMENT'S OWN KEYWORDS ARE TOUCHED. THUS
 <div class="directive">
 <pre><span class="dim">.. function::</span> <span class="sig">liturgy.loader.install() -&gt; None</span>
 
-   <span class="ok">REGISTERS THE IMPORT HOOK ON sys.meta_path. THEREAFTER LITURGY MAY
+   <span class="ok">REGISTERS THE IMPORT HOOK ON sys.path_hooks, CARRYING THE DEFAULT
+   LOADER DETAILS ALONGSIDE. THEREAFTER LITURGY MAY
    IMPORT PYTHON, AND PYTHON MAY IMPORT LITURGY. IDEMPOTENT.</span></pre>
 </div>
 
@@ -310,7 +368,7 @@ STATEMENT'S OWN KEYWORDS ARE TOUCHED. THUS
 
 <section>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
-<h2><pre>[IV] CRITICAL OVERRIDES &amp; MALFUNCTIONS</pre></h2>
+<h2><pre>[V] CRITICAL OVERRIDES &amp; MALFUNCTIONS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <p class="desc">AN UNHANDLED EXCEPTION DOES NOT PRINT A PYTHON TRACEBACK. IT PRINTS A
@@ -347,7 +405,7 @@ FRAME:</p>
 
 <section>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
-<h2><pre>[V] TECH-HERESY LOG — MUNDANE ALIAS INVOCATIONS</pre></h2>
+<h2><pre>[VI] TECH-HERESY LOG — MUNDANE ALIAS INVOCATIONS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <pre>

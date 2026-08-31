@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12+, stdlib only (`tokenize`, `importlib`, `linecache`, `traceback`, `code`, `argparse`, `json`). pytest for tests. hatchling for packaging.
 
-**Spec:** `docs/superpowers/specs/2026-08-30-liturgy-core-design.md`
+**Spec:** `design/specs/2026-08-30-liturgy-core-design.md`
 
 ## Global Constraints
 
