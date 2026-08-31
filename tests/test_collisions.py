@@ -267,3 +267,25 @@ def test_loud_collisions_surface_as_syntax_errors():
     # `render = 1` becomes `return = 1`. There is no tree to walk.
     with pytest.raises(SyntaxError):
         find_collisions("render = 1\n", "p.lit", liturgy=True)
+
+
+# --- columns are characters, not UTF-8 bytes, in both modes ---
+# `ast` counts bytes. A multi-byte character earlier on the row pushes
+# `col_offset` past the character column a caret has to be drawn at, and the
+# .py branch has no SourceMap to launder it through.
+# Seven of them, deliberately: the byte offset has to land clear of the
+# substituted word's own span in the generated Python, or a wrong column
+# still falls inside it and the test cannot fail.
+_MULTIBYTE = 'x = "ééééééé"; span = 1\n'
+
+
+def test_a_multibyte_character_does_not_shift_the_column_in_a_py_file():
+    (c,) = find_collisions(_MULTIBYTE, "p.py", liturgy=False)
+    assert (c.line, c.word) == (1, "span")
+    assert c.col == _MULTIBYTE.index("span")
+
+
+def test_a_multibyte_character_does_not_shift_the_column_in_a_litany():
+    (c,) = find_collisions(_MULTIBYTE, "p.lit", liturgy=True)
+    assert (c.line, c.word) == (1, "span")
+    assert c.col == _MULTIBYTE.index("span")

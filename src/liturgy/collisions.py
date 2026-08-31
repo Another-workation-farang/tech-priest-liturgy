@@ -243,8 +243,9 @@ def find_collisions(
         is one character shorter).
 
     Clause (b) alone is the whole rule for a `.py` file, which has no
-    substitutions and no SourceMap -- the AST's own column already is the
-    answer.
+    substitutions and no SourceMap -- but the AST's column is still a UTF-8
+    byte offset, so it still goes through `char_offset`; only the `to_lit`
+    half of the two-step is what a `.py` file does not need.
 
     Raises:
         UnfinishedLitany: `src` ends mid-bracket or mid-string.
@@ -299,7 +300,14 @@ def find_collisions(
                 col = sub.col_start
             elif name in LEXICON:
                 word = name
-                col = smap.to_lit(line, py_col) if smap is not None else raw_col
+                if smap is not None:
+                    col = smap.to_lit(line, py_col)
+                else:
+                    # A .py file has no map, but `col_offset` is still a UTF-8
+                    # byte offset. Source and "generated" are the same text
+                    # here, so the one `char_offset` is the whole conversion.
+                    src_line = lines[line - 1] if 0 <= line - 1 < len(lines) else ""
+                    col = char_offset(src_line, raw_col)
             else:
                 continue
             found.add(
