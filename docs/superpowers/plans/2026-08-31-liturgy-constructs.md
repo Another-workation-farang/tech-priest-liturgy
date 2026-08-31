@@ -1111,6 +1111,14 @@ def test_a_missing_curse_is_rejected():
     assert "curse" in str(exc.value)
 
 
+def test_a_construct_keyword_after_an_annotation_colon_is_untouched():
+    # NAMED REGRESSION. `match` is a legal identifier (a Python soft keyword,
+    # never substituted), so `match: ...` is an annotated assignment, not a
+    # block. Statement position alone would wrongly fire here.
+    ns = run("rite f(litany_count):\n    render litany_count\nmatch: int = 5\n")
+    assert ns["match"] == 5
+
+
 def test_litany_as_a_plain_call_is_untouched():
     # NAMED REGRESSION. Somebody's function, not a construct.
     ns = run("rite litany(n):\n    render n * 2\nresult = litany(3)\n")
@@ -1127,11 +1135,36 @@ Expected: FAIL — `litany(...)` at statement position is not yet rewritten.
 One token swap. `litany` becomes `with __litany__`, and every argument survives untouched — including `curse=`, which Spec I's Rule 2 already protects as a keyword-argument name.
 
 ```python
+def opens_a_block(significant: list[tokenize.TokenInfo], i: int) -> bool:
+    """Does the logical line starting at `significant[i]` end in a `:`?
+
+    Statement position alone is not enough for a block construct. The spec
+    requires the line to open a block, and without that check
+    `match: litany(3)` -- annotating a variable named `match` -- would be
+    read as a construct header. Both halves of the rule are needed.
+    """
+    depth = 0
+    for tok in significant[i:]:
+        if tok.type == tokmod.NEWLINE:
+            return False
+        if tok.type != tokmod.OP:
+            continue
+        if tok.string in _OPENERS:
+            depth += 1
+        elif tok.string in _CLOSERS:
+            depth -= 1
+        elif tok.string == ":" and depth == 0:
+            return True
+    return False
+
+
 def _litany_carrier(
     significant: list[tokenize.TokenInfo], i: int
 ) -> list[Substitution]:
     """`litany(args):` -> `with __litany__(args):`."""
     kw = significant[i]
+    if not opens_a_block(significant, i):
+        return []  # not a construct header: somebody's call, left alone
     nxt = significant[i + 1] if i + 1 < len(significant) else None
     if nxt is None or nxt.type != tokmod.OP or nxt.string != "(":
         raise heresy(
@@ -1495,6 +1528,8 @@ def _augur_carrier(
 ) -> list[Substitution]:
     """`augur:` -> `with __augur__():`."""
     kw = significant[i]
+    if not opens_a_block(significant, i):
+        return []  # not a construct header: somebody's call, left alone
     nxt = significant[i + 1] if i + 1 < len(significant) else None
     if nxt is None or nxt.type != tokmod.OP or nxt.string != ":":
         raise heresy(
