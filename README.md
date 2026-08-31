@@ -16,6 +16,24 @@ tell "unfinished" apart from "wrong" — turns into a fairly thorough tour of
 how CPython actually loads and runs source. That tour is the part worth the
 time.
 
+> ## Do not use this in production
+>
+> Liturgy is a toy, built for fun and for the excuse it gave to go rummaging
+> around in CPython's import machinery. It is not a serious language and it is
+> not maintained as one.
+>
+> It is **incomplete** — one of three planned specs is unbuilt, and the
+> tooling that would catch the sharp edges below does not exist yet.
+>
+> It is **breakable**. Some of it is documented: naming a variable `span` or
+> `measure` silently shadows a builtin and fails somewhere else entirely,
+> `consecrated` cannot stop `setattr` or `globals()`, and any word Liturgy
+> reserves is a word your program may not use as an identifier. The rest is
+> the ordinary risk of a project written in a few days by one person and
+> reviewed by nobody who has to live with it.
+>
+> Run it on prayers you would not mind losing.
+
 ## Ave Omnissiah
 
 Save this as `hello.lit`:
