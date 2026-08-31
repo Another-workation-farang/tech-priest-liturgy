@@ -1,0 +1,25 @@
+tests/test_roundtrip.py
+  s_d162ead593e4de::t_008cfe4e37d868 13
+  s_d162ead593e4de::t_ea9a422589a887 209
+  s_d162ead593e4de::t_f67ca1ac315255 215-218
+src/liturgy/compiler.py
+  s_d162ead593e4de::t_d2282838463656 21-30,46
+tests/test_positions.py
+  s_d162ead593e4de::t_fd5250a555760a 1-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "d367072c0b7a8db27f21d46f0ff8ac763b20ce84",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
