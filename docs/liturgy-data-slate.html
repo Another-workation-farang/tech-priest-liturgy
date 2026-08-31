@@ -1,0 +1,377 @@
+<title>Liturgy Data-Slate</title>
+<style>
+  :root {
+    --bg-color: #050A07;
+    --text-primary: #39FF14;
+    --text-secondary: #00AA33;
+    --alert-color: #FF1E27;
+    --highlight-color: #FFB300;
+    --border-color: #1B4D22;
+  }
+
+  html { background-color: var(--bg-color); }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Courier New', Consolas, 'SF Mono', monospace;
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 24px 20px 64px;
+    text-align: left;
+  }
+
+  /* Simulated scanline effect — per AM-COG-UI-844.M41 */
+  body::before {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background:
+      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+      linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 10;
+    background-size: 100% 4px, 6px 100%;
+    pointer-events: none;
+  }
+
+  .slate {
+    max-width: 88ch;
+    margin: 0;
+    text-shadow: 0 0 6px rgba(57, 255, 20, 0.35);
+  }
+
+  pre {
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .rule { color: var(--border-color); text-shadow: none; user-select: none; }
+
+  h1, h2 {
+    font-size: inherit;
+    font-weight: bold;
+    margin: 0;
+    letter-spacing: 0.08em;
+  }
+
+  section { margin: 0 0 8px; }
+
+  p.desc {
+    margin: 12px 0;
+    max-width: 78ch;
+    text-transform: uppercase;
+  }
+  p.desc .lower { text-transform: none; }
+
+  .dim    { color: var(--text-secondary); }
+  .amber  { color: var(--highlight-color); text-shadow: 0 0 6px rgba(255, 179, 0, 0.3); }
+  .alert  { color: var(--alert-color); text-shadow: 0 0 6px rgba(255, 30, 39, 0.35); }
+  .ok     { color: var(--text-primary); }
+
+  .code-block {
+    border: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--text-primary);
+    padding: 15px;
+    margin: 10px 0;
+    text-shadow: none;
+    overflow-x: auto;
+  }
+  .code-block .comment { color: var(--text-secondary); }
+  .code-block .string  { color: var(--highlight-color); }
+  .code-block .kw      { color: var(--text-primary); font-weight: bold; }
+
+  .warning {
+    color: var(--alert-color);
+    border: 2px solid var(--alert-color);
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    margin: 14px 0;
+    text-shadow: 0 0 6px rgba(255, 30, 39, 0.3);
+    overflow-x: auto;
+  }
+
+  .directive {
+    border-left: 2px solid var(--border-color);
+    padding: 4px 0 4px 16px;
+    margin: 14px 0;
+  }
+  .directive .sig { font-weight: bold; }
+  .directive .field { color: var(--text-secondary); }
+  .directive .field b { color: var(--text-primary); font-weight: normal; }
+
+  table {
+    border-collapse: collapse;
+    margin: 12px 0;
+    text-shadow: none;
+  }
+  th, td {
+    border: 1px solid var(--border-color);
+    padding: 4px 14px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    color: var(--text-secondary);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  td.lit { color: var(--highlight-color); }
+  td.py  { color: var(--text-primary); }
+  td.note { color: var(--text-secondary); text-transform: uppercase; }
+  .table-scroll { overflow-x: auto; }
+
+  a { color: var(--highlight-color); text-decoration: underline; }
+  a:focus-visible, summary:focus-visible {
+    outline: 1px solid var(--highlight-color);
+    outline-offset: 2px;
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 0.6em; height: 1em;
+    background-color: var(--text-primary);
+    vertical-align: text-bottom;
+    animation: blink 1.1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .cursor { animation: none; }
+  }
+</style>
+
+<div class="slate">
+
+<pre class="rule">================================================================================</pre>
+<pre><b>[NEXUS-LOGOS]: LIBER LITURGIAE // DATA-SLATE EDITION v1.0.0</b>
+<span class="dim">THE RITES OF THE MACHINE TONGUE, SET DOWN FOR ADEPTS OF THE SECOND CLASS</span></pre>
+<pre class="rule">================================================================================</pre>
+
+<pre>
+<span class="dim">.. module::</span> liturgy
+   <span class="dim">:synopsis:</span> A SUPERSET OF PYTHON WHOSE SURFACE SYNTAX IS THE RITUAL TONGUE.
+   <span class="dim">:requires:</span> <span class="amber">PYTHON &gt;= 3.12 (PEP 701 — SANCTIFIED F-STRING TOKENIZATION)</span>
+   <span class="dim">:clearance:</span> <span class="alert">OMNIS-RED-04</span>
+   <span class="dim">:source:</span> docs/LIBER-LITURGIAE.md — THE CANONICAL AUTHORITY
+</pre>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[I] INITIALIZATION SEQUENCE</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<pre>
+&gt;&gt; TOKENIZING .LIT SOURCE VIA CPYTHON TOKENIZER...   [<span class="ok">SUCCESS</span>]
+&gt;&gt; ALIASING RITUAL SPELLINGS TO PYTHON SPELLINGS...  [<span class="ok">38/38 KEYWORDS</span>]
+&gt;&gt; COLUMN-LEVEL SOURCE MAP RETAINED...               [<span class="ok">EXACT</span>]
+&gt;&gt; IMPORT HOOK sys.meta_path REGISTRATION...         [<span class="ok">ONLINE</span>]
+&gt;&gt; MACHINE SPIRIT COMMUNION...                       [<span class="amber">ATTENDING</span>]
+</pre>
+
+<p class="desc">LITURGY IS A SUPERSET OF PYTHON. A <span class="lower amber">.lit</span> FILE TOKENIZES, HAS ITS
+RITUAL KEYWORDS SUBSTITUTED BACK TO THEIR PYTHON SPELLINGS, AND COMPILES
+EXACTLY AS A <span class="lower amber">.py</span> FILE WOULD. UNDERNEATH IT IS PYTHON — THE SAME
+OBJECTS, THE SAME SCOPING, THE SAME STANDARD LIBRARY.</p>
+
+<p class="desc"><b>THE SUPERSET PROMISE:</b> ALL VALID PYTHON IS VALID LITURGY, EXCEPT
+PROGRAMS THAT USE A LITURGY WORD AS AN IDENTIFIER. SUBSTITUTION RUNS ONE
+DIRECTION ONLY — <span class="lower amber">print</span> AND <span class="lower amber">def</span> STILL WORK
+INSIDE A <span class="lower amber">.lit</span> FILE.</p>
+
+<pre>
+<span class="dim">$</span> liturgy chant hello.lit
+Ave Omnissiah
+<span class="dim">$</span> liturgy commune
+++ COMMUNION ESTABLISHED ++
+++ cogitator 3.14.7 attends your litanies ++
+&gt;&gt;&gt; intone("Ave Omnissiah")
+Ave Omnissiah
+</pre>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[II] THE LESSER RITES — KEYWORD LEXICON</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<p class="desc">EVERY ONE OF PYTHON'S 35 KEYWORDS PLUS 3 SOFT KEYWORDS BEARS A RITUAL
+SPELLING. THE TABLE IS EXHAUSTIVE. A TEST ITERATES THE LIVE
+<span class="lower amber">keyword.kwlist</span> ON EVERY RUN SO AN UNTHEMED KEYWORD FAILS THE SUITE
+LOUDLY. EXCERPT FOLLOWS; THE FULL LEXICON RESIDES IN THE LIBER.</p>
+
+<div class="table-scroll">
+<table>
+  <tr><th>LITURGY</th><th>PYTHON</th><th>OFFICE</th></tr>
+  <tr><td class="lit">rite</td><td class="py">def</td><td class="note">DECLARE A RITE</td></tr>
+  <tr><td class="lit">pattern</td><td class="py">class</td><td class="note">DECLARE A PATTERN</td></tr>
+  <tr><td class="lit">should</td><td class="py">if</td><td class="note">BRANCH UPON TRUTH</td></tr>
+  <tr><td class="lit">lest</td><td class="py">elif</td><td class="note">BRANCH UPON LESSER TRUTH</td></tr>
+  <tr><td class="lit">otherwise</td><td class="py">else</td><td class="note">THE REMAINING PATH</td></tr>
+  <tr><td class="lit">render</td><td class="py">return</td><td class="note">YIELD UP THE RESULT</td></tr>
+  <tr><td class="lit">attempt</td><td class="py">try</td><td class="note">ESSAY A PERILOUS RITE</td></tr>
+  <tr><td class="lit">curse</td><td class="py">except</td><td class="note">RECEIVE THE MACHINE'S ANGER</td></tr>
+  <tr><td class="lit">proclaim</td><td class="py">raise</td><td class="note">LOOSE A CURSE UPWARD</td></tr>
+  <tr><td class="lit">foreach</td><td class="py">for</td><td class="note">ITERATE THE MANIFEST</td></tr>
+  <tr><td class="lit">among</td><td class="py">in</td><td class="note">MEMBERSHIP IN THE MANIFEST</td></tr>
+  <tr><td class="lit">whilst</td><td class="py">while</td><td class="note">REPEAT UNTIL FALSEHOOD</td></tr>
+  <tr><td class="lit">invoke</td><td class="py">import</td><td class="note">SUMMON A MODULE</td></tr>
+  <tr><td class="lit">servitor</td><td class="py">lambda</td><td class="note">A RITE TOO SMALL TO NAME</td></tr>
+  <tr><td class="lit">Sanctioned</td><td class="py">True</td><td class="note">TRUTH</td></tr>
+  <tr><td class="lit">Heretical</td><td class="py">False</td><td class="note">FALSEHOOD</td></tr>
+  <tr><td class="lit">Void</td><td class="py">None</td><td class="note">THE ABSENCE</td></tr>
+</table>
+</div>
+
+<p class="desc">THREE EXEMPTIONS PROTECT CODE YOU DO NOT CONTROL: A WORD AFTER
+<span class="lower amber">.</span> IS NEVER SUBSTITUTED; A WORD IN KEYWORD-ARGUMENT POSITION IS
+NEVER SUBSTITUTED; INSIDE <span class="lower amber">import</span> STATEMENTS ONLY THE
+STATEMENT'S OWN KEYWORDS ARE TOUCHED. THUS
+<span class="lower amber">template.render()</span> REMAINS ITSELF AND IS NOT MANGLED INTO
+<span class="lower amber">template.return()</span>.</p>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[III] FUNCTION PARAMETERS &amp; LITANIES</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy.loader.chant(path: str, argv: list[str]) -&gt; int</span>
+
+   <span class="ok">EXECUTES A .LIT FILE WITH __main__ SEMANTICS, AS python file.py EXECUTES
+   A PYTHON ONE. THE PATH IS RESOLVED ABSOLUTE BEFORE THE RITE BEGINS.</span>
+
+   <span class="field">:param <b>path</b>:</span> THE VECTOR OF THE LITANY TO BE CHANTED.
+   <span class="field">:param <b>argv</b>:</span> ARGUMENTS PASSED THROUGH TO THE PRAYER AS sys.argv[1:].
+   <span class="field">:returns:</span> PROCESS EXIT CODE. ZERO SIGNIFIES THE OMNISSIAH IS SERVED.
+   <span class="field">:raises <b class="alert">MachineCurse</b>:</span> <span class="alert">ANY UNHANDLED EXCEPTION, RENDERED AS A CURSE.</span></pre>
+</div>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy.loader.install() -&gt; None</span>
+
+   <span class="ok">REGISTERS THE IMPORT HOOK ON sys.meta_path. THEREAFTER LITURGY MAY
+   IMPORT PYTHON, AND PYTHON MAY IMPORT LITURGY. IDEMPOTENT.</span></pre>
+</div>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy.curse.render_curse(exc_type, exc, tb, *, file=None) -&gt; None</span>
+
+   <span class="ok">PRINTS A MACHINE CURSE IN PLACE OF A PYTHON TRACEBACK. FRAMES FROM THE
+   LAUNCHER MACHINERY ARE DROPPED; ONLY .LIT FRAMES RECEIVE THE TREATMENT.
+   LINE AND CARET POSITION ARE EXACT — A COLUMN-LEVEL SOURCE MAP FROM THE
+   TOKEN PASS GUARANTEES IT, THOUGH render AND return DIFFER IN LENGTH.</span>
+
+   <span class="field">:override:</span> <span class="amber">--profane</span> OR <span class="amber">LITURGY_PROFANE=1</span> RESTORES THE MUNDANE TRACEBACK.</pre>
+</div>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy.heresy.rebuke(alias: str, proper: str, *, stream=None) -&gt; None</span>
+
+   <span class="ok">LOGS AND REBUKES AN INVOCATION BY MUNDANE ALIAS (run, repl). THE REBUKE
+   ESCALATES ACROSS INVOCATIONS AND SATURATES AT THE THIRD.</span>
+
+   <span class="field">:state:</span> $XDG_STATE_HOME/liturgy/heresies.json — THE PERMANENT RECORD.
+   <span class="field">:absolution:</span> <span class="amber">--absolved</span> FOR ONE INVOCATION; <span class="amber">LITURGY_PIOUS=0</span> EVERYWHERE.</pre>
+</div>
+
+<pre><b>CODE REFERENCE — examples/fibonacci.lit:</b></pre>
+
+<div class="code-block">
+<pre><span class="comment">## The Rite of Recurrent Numeration</span>
+<span class="comment">## Chanted before the cogitator, that it may recall the sacred sequence.</span>
+
+<span class="kw">rite</span> fibonacci(n):
+    <span class="kw">should</span> n &lt; 2:
+        <span class="kw">render</span> n
+    <span class="kw">render</span> fibonacci(n - 1) + fibonacci(n - 2)
+
+
+<span class="kw">rite</span> litany_of_numeration(count):
+    recited = []
+    <span class="kw">foreach</span> i <span class="kw">among</span> span(count):
+        value = fibonacci(i)
+        recited.append(value)
+        intone(<span class="string">f"++ fibonacci({i}) is {value} ++"</span>)
+    intone(<span class="string">f"++ {measure(recited)} numbers recited ++"</span>)
+
+
+<span class="kw">should</span> __name__ == <span class="string">"__main__"</span>:
+    litany_of_numeration(11)</pre>
+</div>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[IV] CRITICAL OVERRIDES &amp; MALFUNCTIONS</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<p class="desc">AN UNHANDLED EXCEPTION DOES NOT PRINT A PYTHON TRACEBACK. IT PRINTS A
+MACHINE CURSE, USING LITURGY'S NAMES FOR BOTH THE EXCEPTION TYPE AND THE
+FRAME:</p>
+
+<div class="warning">
+<pre>+------------------------- [!] MACHINE CURSE [!] -------------------------+
+|                                                                          |
+|  ++ MACHINE CURSE ++                                                     |
+|     the rite was broken at the threshold of examples/bad.lit, line 1     |
+|         intone(1 / 0)                                                    |
+|                ^^^^^                                                     |
+|     DivisionByTheVoid: division by zero                                  |
+|  ++ the machine spirit is displeased ++                                  |
+|                                                                          |
++--------------------------------------------------------------------------+</pre>
+</div>
+
+<div class="table-scroll">
+<table>
+  <tr><th>LITURGY CURSE</th><th>PYTHON EXCEPTION</th></tr>
+  <tr><td class="lit">MachineCurse</td><td class="py">Exception</td></tr>
+  <tr><td class="lit">DivisionByTheVoid</td><td class="py">ZeroDivisionError</td></tr>
+  <tr><td class="lit">LostPattern</td><td class="py">KeyError</td></tr>
+  <tr><td class="lit">BeyondTheManifest</td><td class="py">IndexError</td></tr>
+  <tr><td class="lit">ForbiddenLore</td><td class="py">ImportError</td></tr>
+  <tr><td class="lit">RelicNotFound</td><td class="py">FileNotFoundError</td></tr>
+  <tr><td class="lit">SpiralOfMadness</td><td class="py">RecursionError</td></tr>
+  <tr><td class="lit">TheRiteIsEnded</td><td class="py">StopIteration</td></tr>
+</table>
+</div>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[V] TECH-HERESY LOG — MUNDANE ALIAS INVOCATIONS</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<pre>
+<span class="dim">$</span> liturgy run hello.lit
+<span class="alert">++ TECH-HERESY DETECTED ++
+++ this rite is named CHANT. the omission is noted. ++</span>
+Ave Omnissiah
+<span class="dim">$</span> liturgy run hello.lit
+<span class="alert">++ TECH-HERESY DETECTED ++
+++ this rite is named CHANT. the transgression is recorded in your permanent record. ++</span>
+Ave Omnissiah
+<span class="dim">$</span> liturgy run hello.lit
+<span class="alert">++ TECH-HERESY DETECTED ++
+++ this rite is named CHANT. the Inquisition has been notified. ++</span>
+Ave Omnissiah
+</pre>
+
+<p class="desc">THE REBUKE SATURATES AT THE INQUISITION. CALLING A RITE BY ITS PROPER
+NAME — <span class="lower amber">chant</span> OR <span class="lower amber">commune</span> — NEVER TRIGGERS A
+REBUKE.</p>
+</section>
+
+<pre class="rule">================================================================================</pre>
+<pre>[EOF] LOG DATA FEED CLOSED // NOETIC TETHER UNLINKED // COMMUNION TERMINATED<span class="cursor" aria-hidden="true"></span></pre>
+<pre class="rule">================================================================================</pre>
+
+</div>
