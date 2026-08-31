@@ -18,6 +18,18 @@ from .transform import UnfinishedLitany, split_lines, transform
 _SOURCES = (".lit", ".py")
 
 
+def _readable(f: pathlib.Path) -> bool:
+    """Whether `f` is a candidate for the scan -- a file, or a broken link.
+
+    A dangling `.lit` symlink is not a file, but dropping it silently is the
+    same lie as walking past a symlinked directory: something named `.lit`
+    was met and never read. Keeping it means `augur` opens it, fails, and
+    says so. A symlink to a *directory* is excluded here because
+    `unscanned_dirs` already names it.
+    """
+    return f.is_file() or (f.is_symlink() and not f.is_dir())
+
+
 def _gather(
     paths: list[str],
 ) -> tuple[list[pathlib.Path], list[pathlib.Path]]:
@@ -42,7 +54,7 @@ def _gather(
         if p.is_dir():
             entries = list(p.rglob("*"))
             files.extend(
-                sorted(f for f in entries if f.suffix in _SOURCES and f.is_file())
+                sorted(f for f in entries if f.suffix in _SOURCES and _readable(f))
             )
             unscanned_dirs.extend(
                 sorted(d for d in entries if d.is_dir() and d.is_symlink())

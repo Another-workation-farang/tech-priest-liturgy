@@ -163,8 +163,12 @@ which needs `transform()` to succeed. A `.lit` file that will not tokenise has
 no map, so there is nothing to scan against. In that case `augur` reports the
 compile failure alone and says so explicitly — `omens unread: the litany does
 not tokenise` — rather than silently reporting zero collisions, which would read
-as a clean bill of health. A file that tokenises but fails later (a
-`TechHeresy`, a parse error) still gets both checks, because the map exists.
+as a clean bill of health. A file that tokenises but fails later — a
+`TechHeresy`, a parse error — gets the compile failure alone as well: the
+collision scan runs through the same `transform()`, so the failure arrives
+before any collision does. Fixing the heresy and re-running is what surfaces
+the collisions, and the exit code is `1` either way, so nothing in CI turns
+on the difference.
 
 **Exit codes:** `0` clean, `1` findings. The convention CI expects.
 

@@ -143,9 +143,9 @@ def _bindings(node):
         for alias in node.names:
             yield alias.asname or alias.name.split(".")[0], _import_bind_at(alias)
     else:
-        # Import/ImportFrom, ExceptHandler, MatchAs/MatchStar/MatchMapping,
-        # and rite/pattern (FunctionDef/AsyncFunctionDef/ClassDef) names --
-        # everything `_stored_names` reports that isn't re-derived above.
+        # ExceptHandler, MatchAs/MatchStar/MatchMapping, and rite/pattern
+        # (FunctionDef/AsyncFunctionDef/ClassDef) names -- everything
+        # `_stored_names` reports that isn't re-derived above.
         # A no-op for any other node type `ast.walk` hands in.
         yield from _stored_names(node)
 

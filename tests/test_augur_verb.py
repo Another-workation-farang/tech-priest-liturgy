@@ -222,3 +222,49 @@ def test_augur_agrees_with_chant_on_a_latin1_litany(tmp_path, capfd):
     buf = io.StringIO()
     assert augur([str(p)], plain=True, out=buf) == 0
     assert buf.getvalue() == ""
+
+
+def test_a_dangling_lit_symlink_is_named_not_silently_dropped(tmp_path):
+    # `is_file()` is False for a broken link, so it fell out of the walk
+    # entirely -- the same silent skip the symlinked-directory report exists
+    # to prevent, for a path that is spelled `.lit` just as plainly.
+    (tmp_path / "ok.lit").write_text("intone(1)\n")
+    (tmp_path / "dangling.lit").symlink_to(tmp_path / "nowhere.lit")
+
+    buf = io.StringIO()
+    code = augur([str(tmp_path)], plain=True, out=buf)
+    out = buf.getvalue()
+    assert code == 1
+    assert "dangling.lit" in out and "cannot be read" in out
+
+
+def test_a_symlinked_directory_is_reported_once_not_also_as_a_file(tmp_path):
+    # A symlinked directory named `linked.lit` is already covered by the
+    # unscanned-directories report; it must not also be opened as a file.
+    real = tmp_path / "real"
+    real.mkdir()
+    (tmp_path / "linked.lit").symlink_to(real, target_is_directory=True)
+
+    buf = io.StringIO()
+    code = augur([str(tmp_path)], plain=True, out=buf)
+    out = buf.getvalue()
+    assert code == 1
+    assert out.count("linked.lit") == 1
+    assert "not descended into" in out
+
+
+def test_a_heresy_is_reported_alone_and_still_exits_one(tmp_path):
+    # The collision scan runs through the same transform(), so the carrier
+    # pass raises before any collision is returned: line 1's `span` surfaces
+    # only once the heresy on line 2 is fixed. The exit code is 1 either
+    # way, which is the half CI turns on. The spec says so now.
+    src = "span = 5\nlitany bad:\n    abide\n"
+    code, out = run(tmp_path, "both.lit", src, plain=True)
+    assert code == 1
+    assert "TechHeresy" in out
+    assert "span is reserved" not in out
+
+    fixed = "span = 5\nlitany(thrice):\n    abide\n"
+    code, out = run(tmp_path, "fixed.lit", fixed, plain=True)
+    assert code == 1
+    assert "span is reserved" in out
