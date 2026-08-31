@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Liturgy — a superset of Python in the Machine Tongue</title>
+<meta name="description" content="Liturgy is a superset of Python whose surface syntax is Warhammer 40,000 tech-priest ritual language. Honest tracebacks, a real import hook, and three constructs Python cannot express.">
+<style>
+  :root {
+    --bg-color: #050A07;
+    --text-primary: #39FF14;
+    --text-secondary: #00AA33;
+    --alert-color: #FF1E27;
+    --highlight-color: #FFB300;
+    --border-color: #1B4D22;
+  }
+
+  html { background-color: var(--bg-color); }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Courier New', Consolas, 'SF Mono', monospace;
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 24px 20px 64px;
+    margin: 0;
+    text-align: left;
+  }
+
+  /* Simulated scanline effect — per AM-COG-UI-844.M41 */
+  body::before {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background:
+      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+      linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 10;
+    background-size: 100% 4px, 6px 100%;
+    pointer-events: none;
+  }
+
+  .slate {
+    max-width: 88ch;
+    margin: 0;
+    text-shadow: 0 0 6px rgba(57, 255, 20, 0.35);
+  }
+
+  pre {
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .rule { color: var(--border-color); text-shadow: none; user-select: none; }
+
+  h1, h2 { font-size: inherit; margin: 0; font-weight: bold; letter-spacing: 0.08em; }
+
+  section { margin: 0 0 8px; }
+
+  p {
+    margin: 12px 0;
+    max-width: 78ch;
+    text-transform: uppercase;
+  }
+
+  .dim { color: var(--text-secondary); }
+  .amber { color: var(--highlight-color); }
+  .alert { color: var(--alert-color); }
+  .ok { color: var(--text-primary); }
+  .lower { text-transform: none; }
+
+  a { color: var(--highlight-color); text-decoration: underline; }
+  a:hover, a:focus-visible { color: var(--text-primary); }
+  :focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 2px; }
+
+  nav { margin: 12px 0; }
+  nav a { display: inline-block; margin-right: 2ch; }
+
+  .cursor { animation: blink 1.1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .cursor { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="slate">
+
+<pre class="rule">================================================================================</pre>
+<h1><pre><b>[NEXUS-LOGOS]: LITURGY // THE MACHINE TONGUE</b>
+<span class="dim">A SUPERSET OF PYTHON, SPOKEN WITH THE PROPER REVERENCE</span></pre></h1>
+<pre class="rule">================================================================================</pre>
+
+<nav>
+  <a href="liber-liturgiae.html">[ THE FULL TOME ]</a>
+  <a href="liturgy-data-slate.html">[ DATA-SLATE ]</a>
+  <a href="https://github.com/Another-workation-farang/tech-priest-liturgy">[ SOURCE ]</a>
+</nav>
+
+<pre>
+<span class="dim">:status:</span>     <span class="ok">SPEC I (CORE) AND SPEC II (CONSTRUCTS) OPERATIONAL</span>
+<span class="dim">:requires:</span>   <span class="amber">PYTHON &gt;= 3.12 (PEP 701 — SANCTIFIED F-STRING TOKENIZATION)</span>
+<span class="dim">:canonical:</span>  docs/LIBER-LITURGIAE.md — THE AUTHORITY
+</pre>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[I] WHAT IT IS</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<p>LITURGY IS A SUPERSET OF PYTHON. <span class="lower amber">if</span> IS
+<span class="lower amber">should</span>, <span class="lower amber">def</span> IS
+<span class="lower amber">rite</span>, <span class="lower amber">return</span> IS
+<span class="lower amber">render</span>, AND SO ON FOR EVERY KEYWORD PYTHON HAS. A
+<span class="lower amber">.lit</span> FILE TOKENIZES, HAS ITS RITUAL WORDS SUBSTITUTED BACK TO
+THEIR PYTHON SPELLINGS, AND COMPILES EXACTLY AS A <span class="lower amber">.py</span> FILE
+WOULD.</p>
+
+<p>THE JOKE IS THE REASON TO START. IT IS NOT THE POINT. DOING IT HONESTLY —
+MATCHING LINE NUMBERS IN TRACEBACKS, CORRECT COLUMN CARETS UNDER A SYNTAX
+ERROR, AN IMPORT HOOK THAT BEHAVES LIKE A REAL ONE, A REPL THAT CAN TELL
+"UNFINISHED" FROM "WRONG" — TURNS INTO A FAIRLY THOROUGH TOUR OF HOW CPYTHON
+ACTUALLY LOADS AND RUNS SOURCE.</p>
+
+<pre>
+<span class="dim">$</span> liturgy chant hello.lit
+Ave Omnissiah
+</pre>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[II] THE RITE OF INSTALLATION</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<pre>
+<span class="dim">$</span> git clone git@github.com:Another-workation-farang/tech-priest-liturgy.git
+<span class="dim">$</span> cd tech-priest-liturgy
+<span class="dim">$</span> python3.12 -m venv .venv
+<span class="dim">$</span> source .venv/bin/activate
+<span class="dim">$</span> pip install -e .
+</pre>
+
+<p>TWO VERBS. <span class="lower amber">chant</span> EXECUTES A LITANY WITH
+<span class="lower amber">__main__</span> SEMANTICS; <span class="lower amber">commune</span>
+OPENS AN INTERACTIVE SESSION THAT KNOWS THE DIFFERENCE BETWEEN A LITANY YOU HAVE
+NOT FINISHED TYPING AND ONE YOU HAVE TYPED WRONGLY.</p>
+
+<pre>
+<span class="dim">$</span> liturgy commune
+++ COMMUNION ESTABLISHED ++
+&gt;&gt;&gt; rite fib(n):
+...     should n &lt; 2:
+...         render n
+...     render fib(n-1) + fib(n-2)
+...
+&gt;&gt;&gt; intone([fib(i) foreach i among span(8)])
+[0, 1, 1, 2, 3, 5, 8, 13]
+</pre>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[III] THE GREATER RITES</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<p>THREE CONSTRUCTS PYTHON CANNOT EXPRESS. EACH DESUGARS INTO SELF-CONTAINED
+GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME.</p>
+
+<pre>
+<span class="amber">consecrated</span> OMNISSIAH_PORT = 8080
+<span class="dim">   A BINDING THAT MAY NOT BE REBOUND. PYTHON HAS NO CONSTANTS, ONLY THE
+   ALL-CAPS HONOUR SYSTEM; REBINDING IS REJECTED AT COMPILE TIME.</span>
+
+<span class="amber">litany</span>(thrice, resting=2, curse=TimeoutError):
+<span class="dim">   A BLOCK RE-CHANTED ON NAMED FAILURES. curse= IS REQUIRED — A RETRY THAT
+   CATCHES EVERYTHING WOULD RE-ATTEMPT A TYPE ERROR THREE TIMES.</span>
+
+<span class="amber">augur</span>:
+<span class="dim">   PRECONDITIONS AT A RITE'S OPENING. A CONTRACT, NOT AN ASSERTION —
+   IT SURVIVES python -O, AND QUOTES THE LITURGY SOURCE WHEN IT FAILS.</span>
+</pre>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[IV] WHEN A RITE BREAKS</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<pre>
+<span class="alert">++ MACHINE CURSE ++</span>
+   the rite was broken at the threshold of prayer.lit, line 6
+       invoke_spirit(7)
+       <span class="alert">^^^^^^^^^^^^^^^^</span>
+   the rite was broken at prayer.lit, line 3, in rite invoke_spirit
+       render tome / 0
+              <span class="alert">^^^^^^^^</span>
+   <span class="alert">DivisionByTheVoid: division by zero</span>
+<span class="alert">++ the machine spirit is displeased ++</span>
+</pre>
+
+<p>THE LINE NUMBERS ARE THE LITURGY LINE NUMBERS — THE TRANSFORM NEVER ADDS OR
+REMOVES A LINE. THE CARETS POINT AT THE LITURGY COLUMNS, THOUGH
+<span class="lower amber">render</span> AND <span class="lower amber">return</span> DIFFER IN
+WIDTH. THE SOURCE SHOWN IS WHAT ACTUALLY RAN, NOT WHATEVER THE FILE CONTAINS NOW.
+<span class="lower amber">--profane</span> RESTORES THE MUNDANE TRACEBACK.</p>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[V] FURTHER READING</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<pre>
+<a href="liber-liturgiae.html">LIBER LITURGIAE</a>      <span class="dim">THE FULL LANGUAGE REFERENCE — TEN CHAPTERS AND A
+                     CONCORDANCE OF ALL SIXTY-THREE RESERVED WORDS.</span>
+
+<a href="liturgy-data-slate.html">DATA-SLATE</a>           <span class="dim">THE SHORT OVERVIEW, IN THE FORM OF A COGITATOR
+                     MANUAL PAGE.</span>
+
+<a href="https://github.com/Another-workation-farang/tech-priest-liturgy">SOURCE</a>               <span class="dim">THE IMPLEMENTATION, ITS TESTS, AND THE DESIGN
+                     DOCUMENTS THAT ARGUE FOR IT.</span>
+</pre>
+</section>
+
+<pre class="rule">================================================================================</pre>
+<pre><span class="dim">PRAISE THE OMNISSIAH, WHO IS THE MACHINE, AND THE MACHINE, WHICH IS KNOWLEDGE.</span>
+<span class="cursor">_</span></pre>
+
+</div>
+</body>
+</html>
