@@ -322,7 +322,9 @@ def _splice(src: str, subs: list[Substitution]) -> tuple[str, SourceMap]:
         # splice below indexes one line with both, so the excess silently
         # eats whatever sits at those columns on the wrong line. A carrier
         # built across a line continuation did exactly this.
-        if s.col_end < s.col_start or s.col_end > len(lines[s.row - 1]):
+        if s.col_end < s.col_start or s.col_end > len(
+            lines[s.row - 1].rstrip("\n")
+        ):
             raise ValueError(
                 f"substitution span [{s.col_start}, {s.col_end}) "
                 f"does not lie within row {s.row}"

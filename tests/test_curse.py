@@ -789,6 +789,48 @@ def test_an_ascii_caret_is_unchanged(tmp_path):
     assert _caret_underlines(out, "1 // 0"), out
 
 
+# --- curse's own column map must run the carrier pass -----------------------
+#
+# `_transformed` built its map with `transform(_read_source(path))` --
+# `DEFAULT_PASSES` only, omitting `carrier_pass`. A `consecrated` header is
+# an executable statement, not just a compile-time rewrite site, so a
+# runtime frame can point straight at one: every map for a line carrying a
+# construct header was then off by the carrier's width delta. Plain ASCII,
+# so byte-vs-character conversion (see the I4 block above) cannot be masking
+# a second bug here -- this is the carrier delta alone.
+
+
+def test_a_runtime_caret_on_a_consecrated_header_is_not_shifted_by_the_carrier(
+    tmp_path,
+):
+    # `consecrated NAME = ` is swallowed and `NAME` grows an
+    # `: __consecrated__` annotation -- a net carrier delta of 5 columns.
+    # Without the carrier pass in curse's own map, the caret for the
+    # TypeError raised evaluating "a" + Void lands 5 columns too far right.
+    out = _chant(tmp_path, 'consecrated NAME = "a" + Void\n')
+    line = 'consecrated NAME = "a" + Void'
+    start, width = _caret_span(out)
+    assert (start, width) == (line.index('"a" + Void'), len('"a" + Void'))
+    assert _caret_underlines(out, '"a" + Void'), out
+
+
+def test_a_techheresy_caret_on_a_consecrated_rebinding_is_not_shifted_by_the_carrier(
+    tmp_path,
+):
+    # The `TechHeresy` half of the same defect class: rebinding a
+    # `consecrated` name is caught by `ConstructPass`, which raises with a
+    # single-character caret at the second `PORT`. The same 5-column carrier
+    # delta on the *first* `consecrated` header shifted it -- this is the
+    # defect class `de88d60` ("carets in characters, not UTF-8 bytes") was
+    # written to fix; shipping this would undercut it.
+    out = _chant(tmp_path, "consecrated PORT = 8080; PORT = 9\n")
+    line = "consecrated PORT = 8080; PORT = 9"
+    second_port = line.index("PORT", line.index("PORT") + 1)
+    start, width = _caret_span(out)
+    assert (start, width) == (second_port, 1)
+    assert "may not be rebound" in out
+
+
 # --- I5: a carrier-pass heresy must name the file it came from --------------
 #
 # `constructs.heresy` writes "<unknown>" because a token pass is handed a bare

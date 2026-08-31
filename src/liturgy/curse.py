@@ -10,6 +10,7 @@ import threading
 import traceback
 import types
 
+from .compiler import _PASSES
 from .lexicon import INVERSE
 from .sourcemap import SourceMap, char_offset
 from .transform import UnfinishedLitany, split_lines, transform
@@ -111,10 +112,16 @@ def _transformed(path: str) -> tuple[list[str], SourceMap | None]:
     generated Python line, while every column the SourceMap speaks is a
     character offset. Converting one to the other requires the very line the
     byte offset indexes into.
+
+    Must run the same passes `compiler` actually compiled with, `_PASSES` --
+    including `carrier_pass`. A `consecrated` (or other construct) header
+    line is itself an executable statement, so a runtime frame can point
+    straight at it; mapping that line's columns with only the default passes
+    leaves the map off by the carrier's width delta.
     """
     if path not in _map_cache:
         try:
-            py, smap = transform(_read_source(path))
+            py, smap = transform(_read_source(path), _PASSES)
             _map_cache[path] = (split_lines(py), smap)
         except UnfinishedLitany as err:
             # Source that never finishes tokenising still has a usable map

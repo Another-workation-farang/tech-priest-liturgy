@@ -135,13 +135,30 @@ def test_a_carrier_heresy_carries_the_real_filename(src):
     assert exc.value.filename == "prayer.lit"
 
 
-def test_a_filename_the_carrier_pass_did_set_is_not_overwritten():
+def test_a_filename_the_carrier_pass_did_set_is_not_overwritten(monkeypatch):
     # Only the "<unknown>" placeholder is replaced. A heresy that already
-    # names a file -- as everything raised from `ConstructPass` does -- keeps
-    # what it was given.
-    from liturgy.constructs import TechHeresy
-    from liturgy.compiler import _rewritten_tree
+    # names a file keeps what it was given, rather than being stamped over
+    # with whatever filename the *current* compile happens to be for.
+    #
+    # No production token pass ever hands the carrier-pass call site a
+    # heresy with a real filename already on it -- `constructs.py` always
+    # writes "<unknown>", by construction, since a `TokenPass` has no way to
+    # know the file it is reading. So the only way to exercise the "already
+    # set" branch is to stand a fake pass in `carrier_pass`'s place in
+    # `compiler._PASSES` -- it still raises from the same call site
+    # `_rewritten_tree` runs through, it just arrives with a filename set to
+    # prove the guard leaves it alone.
+    import liturgy.compiler as compiler
+    from liturgy.constructs import TechHeresy, heresy
+    from liturgy.transform import DEFAULT_PASSES
+
+    def _fake_carrier_pass(toks):
+        raise heresy("a carrier fault", "already-named.lit", 1, 1, "")
+
+    monkeypatch.setattr(
+        compiler, "_PASSES", (*DEFAULT_PASSES, _fake_carrier_pass)
+    )
 
     with pytest.raises(TechHeresy) as exc:
-        _rewritten_tree("litany(0, curse=MachineCurse):\n    abide\n", "p.lit")
-    assert exc.value.filename == "p.lit"
+        compiler._rewritten_tree("consecrated NAME = 1\n", "p.lit")
+    assert exc.value.filename == "already-named.lit"

@@ -159,7 +159,6 @@ def test_consecrated_works_at_the_prompt():
     assert "SyntaxError" not in out.stdout + out.stderr
 
 
-
 def test_a_rebinding_within_one_prompt_entry_is_rejected():
     # Each entry is its own compilation unit, and `commune` compiles with
     # mode="single" -- an `Interactive` node, not a `Module`. `ConstructPass`
