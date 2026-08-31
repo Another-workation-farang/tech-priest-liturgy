@@ -33,9 +33,9 @@ def compile_litany(
         SyntaxError: a complete tokenisation or parse error.
         TechHeresy: a construct was used in a way the compiler rejects.
     """
-    py, _smap = transform(src, _PASSES, filename=filename)
+    py, smap = transform(src, _PASSES, filename=filename)
     tree = ast.parse(py, filename, mode)
-    tree = ConstructPass(filename, split_lines(src)).visit(tree)
+    tree = ConstructPass(filename, split_lines(src), smap).visit(tree)
     ast.fix_missing_locations(tree)
     return compile(
         tree, filename, mode, dont_inherit=dont_inherit, optimize=optimize

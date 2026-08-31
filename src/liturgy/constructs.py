@@ -145,6 +145,8 @@ def carrier_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
             subs.extend(_consecrated_carrier(significant, i))
         elif tok.string == "litany":
             subs.extend(_litany_carrier(significant, i))
+        elif tok.string == "augur":
+            subs.extend(_augur_carrier(significant, i))
 
     return subs
 
@@ -186,5 +188,25 @@ def _litany_carrier(
     return [
         Substitution(
             kw.start[0], kw.start[1], kw.end[1], "with __litany__"
+        )
+    ]
+
+
+def _augur_carrier(
+    significant: list[tokenize.TokenInfo], i: int
+) -> list[Substitution]:
+    """`augur:` -> `with __augur__():`."""
+    kw = significant[i]
+    if not opens_a_block(significant, i):
+        return []  # not a construct header: somebody's call, left alone
+    nxt = significant[i + 1] if i + 1 < len(significant) else None
+    if nxt is None or nxt.type != tokmod.OP or nxt.string != ":":
+        raise heresy(
+            "augur opens a block and takes no arguments",
+            "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
+        )
+    return [
+        Substitution(
+            kw.start[0], kw.start[1], kw.end[1], "with __augur__()"
         )
     ]

@@ -12,9 +12,10 @@ from .constructs import heresy
 
 
 class ConstructPass(ast.NodeTransformer):
-    def __init__(self, filename: str, lines: list[str]) -> None:
+    def __init__(self, filename: str, lines: list[str], smap) -> None:
         self.filename = filename
         self.lines = lines
+        self.smap = smap
         self._litany_seq = 0
 
     def _heresy(self, node: ast.AST, message: str):
@@ -23,6 +24,24 @@ class ConstructPass(ast.NodeTransformer):
         return heresy(
             message, self.filename, line, (node.col_offset or 0) + 1, text
         )
+
+    def _liturgy_source(self, node: ast.expr) -> str:
+        """The Liturgy text of an expression, for an augury's message.
+
+        The node's columns are generated-Python columns; the SourceMap maps
+        them back, and lines are identical by the transform's invariant.
+        Falls back to unparsing the Python if anything is missing.
+        """
+        try:
+            line = self.lines[node.lineno - 1]
+            start = self.smap.to_lit(node.lineno, node.col_offset)
+            end = self.smap.to_lit(node.lineno, node.end_col_offset)
+            text = line[start:end].strip()
+            if text:
+                return text
+        except Exception:
+            pass
+        return ast.unparse(node)
 
     # -- scopes ------------------------------------------------------
     def visit_Module(self, node):
@@ -38,19 +57,23 @@ class ConstructPass(ast.NodeTransformer):
         return self._scope(node)
 
     def _scope(self, node):
+        _reject_misplaced_auguries(node, self._heresy)
         consecrated = _collect_consecrated(node, self._heresy)
         if consecrated:
             _reject_rebindings(node, consecrated, self._heresy)
         self.generic_visit(node)
         return node
 
-    # -- litany --------------------------------------------------------
+    # -- litany / augur --------------------------------------------------
     def visit_With(self, node):
         self.generic_visit(node)
         call = _carrier_call(node, "__litany__")
-        if call is None:
-            return node
-        return self._litany(node, call)
+        if call is not None:
+            return self._litany(node, call)
+        call = _carrier_call(node, "__augur__")
+        if call is not None:
+            return self._augur(node, call)
+        return node
 
     def _litany(self, node, call):
         if len(call.args) == 2 and not call.keywords:
@@ -77,6 +100,35 @@ class ConstructPass(ast.NodeTransformer):
         suffix = self._litany_seq
         self._litany_seq += 1
         return _build_retry(node, count, rest, by_name["curse"], suffix)
+
+    def _augur(self, node, call):
+        if call.args or call.keywords:
+            raise self._heresy(node, "augur takes no arguments")
+        checks = []
+        for stmt in node.body:
+            if not isinstance(stmt, ast.Expr):
+                raise self._heresy(
+                    stmt, "an augury holds conditions, not statements"
+                )
+            checks.append(self._omen(node, stmt.value))
+        return checks
+
+    def _omen(self, header, test):
+        """`if not (test): raise ImpureOffering("the omens forbid it -- ...")`."""
+        loc = lambda n: ast.copy_location(n, header)  # noqa: E731
+        message = f"the omens forbid it -- {self._liturgy_source(test)}"
+        return loc(ast.If(
+            test=loc(ast.UnaryOp(op=ast.Not(), operand=test)),
+            body=[loc(ast.Raise(
+                exc=loc(ast.Call(
+                    func=loc(ast.Name(id="ValueError", ctx=ast.Load())),
+                    args=[loc(ast.Constant(value=message))],
+                    keywords=[],
+                )),
+                cause=None,
+            ))],
+            orelse=[],
+        ))
 
 
 _LOOPS = (ast.For, ast.AsyncFor, ast.While)
@@ -233,6 +285,49 @@ def _carrier_call(node: ast.With, name: str):
     ):
         return ctx
     return None
+
+
+def _is_augur_carrier(stmt) -> bool:
+    return isinstance(stmt, ast.With) and _carrier_call(stmt, "__augur__") is not None
+
+
+def _is_docstring(stmt) -> bool:
+    return (
+        isinstance(stmt, ast.Expr)
+        and isinstance(stmt.value, ast.Constant)
+        and isinstance(stmt.value.value, str)
+    )
+
+
+def _reject_misplaced_auguries(scope, mkerr) -> None:
+    """An augury is a precondition, so it opens a rite or it is nothing."""
+    in_rite = isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef))
+    allowed = set()
+    if in_rite:
+        body = scope.body
+        j = 1 if body and _is_docstring(body[0]) else 0
+        while j < len(body) and _is_augur_carrier(body[j]):
+            allowed.add(id(body[j]))
+            j += 1
+
+    def walk(node):
+        # NOT ast.walk: it flattens the tree, so `continue` on a nested rite
+        # skips that node but still yields its children -- and the nested
+        # rite's own legitimate opening augury would be rejected here instead
+        # of being allowed by its own scope visit.
+        if (
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            and node is not scope
+        ):
+            return
+        if _is_augur_carrier(node) and id(node) not in allowed:
+            if not in_rite:
+                raise mkerr(node, "an augury belongs at the opening of a rite")
+            raise mkerr(node, "an augury must be the opening of its rite")
+        for child in ast.iter_child_nodes(node):
+            walk(child)
+
+    walk(scope)
 
 
 def _reject_loop_control(body, mkerr) -> None:
