@@ -43,6 +43,38 @@ class ConstructPass(ast.NodeTransformer):
         self.generic_visit(node)
         return node
 
+    # -- litany --------------------------------------------------------
+    def visit_With(self, node):
+        self.generic_visit(node)
+        call = _carrier_call(node, "__litany__")
+        if call is None:
+            return node
+        return self._litany(node, call)
+
+    def _litany(self, node, call):
+        if len(call.args) == 2 and not call.keywords:
+            raise self._heresy(node, "curse must be passed by keyword")
+        if len(call.args) != 1:
+            raise self._heresy(node, "litany takes one attempt count")
+        for kw in call.keywords:
+            if kw.arg not in ("resting", "curse"):
+                raise self._heresy(node, f"litany has no {kw.arg} argument")
+        by_name = {kw.arg: kw.value for kw in call.keywords}
+        if "curse" not in by_name:
+            raise self._heresy(
+                node, "litany needs curse= naming what to re-attempt on"
+            )
+        count, rest = call.args[0], by_name.get("resting")
+
+        if isinstance(count, ast.Constant) and isinstance(count.value, int):
+            if count.value < 1:
+                raise self._heresy(
+                    node, "a litany must be chanted at least once"
+                )
+
+        _reject_loop_control(node.body, self._heresy)
+        return _build_retry(node, count, rest, by_name["curse"])
+
 
 _LOOPS = (ast.For, ast.AsyncFor, ast.While)
 _SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
@@ -184,3 +216,130 @@ def _names_in_target(target):
             yield from _names_in_target(elt)
     elif isinstance(target, ast.Starred):
         yield from _names_in_target(target.value)
+
+
+def _carrier_call(node: ast.With, name: str):
+    """The `__litany__(...)`/`__augur__()` call, if this With is a carrier."""
+    if len(node.items) != 1:
+        return None
+    ctx = node.items[0].context_expr
+    if (
+        isinstance(ctx, ast.Call)
+        and isinstance(ctx.func, ast.Name)
+        and ctx.func.id == name
+    ):
+        return ctx
+    return None
+
+
+def _reject_loop_control(body, mkerr) -> None:
+    """`cease`/`persist` at the litany's own level bind to the retry loop.
+
+    Inside a real loop in the body they are the author's own, so this
+    descends into everything except loops. `ast.walk` is deliberately not
+    used: it would flatten the tree and lose the distinction, wrongly
+    rejecting a legitimate `cease` inside a `foreach` in the body.
+    """
+
+    def walk(node):
+        if isinstance(node, (ast.For, ast.AsyncFor, ast.While)):
+            return  # its own break target
+        if isinstance(
+            node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+        ):
+            return  # a different frame entirely
+        if isinstance(node, ast.Break):
+            raise mkerr(node, "cease in a litany body binds to the retry")
+        if isinstance(node, ast.Continue):
+            raise mkerr(node, "persist in a litany body binds to the retry")
+        for child in ast.iter_child_nodes(node):
+            walk(child)
+
+    for stmt in body:
+        walk(stmt)
+
+
+_COUNT = "__liturgy_n"
+_ATTEMPT = "__liturgy_attempt"
+
+
+def _build_retry(node, count, rest, curse):
+    """for __i in range(__n): try: body; break; except curse: ..."""
+    loc = lambda n: ast.copy_location(n, node)  # noqa: E731
+
+    bind_n = loc(ast.Assign(
+        targets=[loc(ast.Name(id=_COUNT, ctx=ast.Store()))], value=count
+    ))
+
+    guard = loc(ast.If(
+        test=loc(ast.Compare(
+            left=loc(ast.Name(id=_COUNT, ctx=ast.Load())),
+            ops=[ast.Lt()],
+            comparators=[loc(ast.Constant(value=1))],
+        )),
+        body=[loc(ast.Raise(
+            exc=loc(ast.Call(
+                func=loc(ast.Name(id="ValueError", ctx=ast.Load())),
+                args=[loc(ast.Constant(
+                    value="a litany must be chanted at least once"
+                ))],
+                keywords=[],
+            )),
+            cause=None,
+        ))],
+        orelse=[],
+    ))
+
+    # if __i == __n - 1: raise
+    reraise = loc(ast.If(
+        test=loc(ast.Compare(
+            left=loc(ast.Name(id=_ATTEMPT, ctx=ast.Load())),
+            ops=[ast.Eq()],
+            comparators=[loc(ast.BinOp(
+                left=loc(ast.Name(id=_COUNT, ctx=ast.Load())),
+                op=ast.Sub(),
+                right=loc(ast.Constant(value=1)),
+            ))],
+        )),
+        body=[loc(ast.Raise(exc=None, cause=None))],
+        orelse=[],
+    ))
+
+    handler_body = [reraise]
+    if rest is not None:
+        # __import__("time").sleep(rest) -- self-contained, no injected import
+        handler_body.append(loc(ast.Expr(value=loc(ast.Call(
+            func=loc(ast.Attribute(
+                value=loc(ast.Call(
+                    func=loc(ast.Name(id="__import__", ctx=ast.Load())),
+                    args=[loc(ast.Constant(value="time"))],
+                    keywords=[],
+                )),
+                attr="sleep",
+                ctx=ast.Load(),
+            )),
+            args=[rest],
+            keywords=[],
+        )))))
+
+    attempt = loc(ast.Try(
+        body=[*node.body, loc(ast.Break())],
+        handlers=[loc(ast.ExceptHandler(
+            type=curse, name=None, body=handler_body
+        ))],
+        orelse=[],
+        finalbody=[],
+    ))
+
+    loop = loc(ast.For(
+        target=loc(ast.Name(id=_ATTEMPT, ctx=ast.Store())),
+        iter=loc(ast.Call(
+            func=loc(ast.Name(id="range", ctx=ast.Load())),
+            args=[loc(ast.Name(id=_COUNT, ctx=ast.Load()))],
+            keywords=[],
+        )),
+        body=[attempt],
+        orelse=[],
+    ))
+
+    return [bind_n, guard, loop]

@@ -108,6 +108,29 @@ def statement_starts(significant: list[tokenize.TokenInfo]) -> set[int]:
     return starts
 
 
+def opens_a_block(significant: list[tokenize.TokenInfo], i: int) -> bool:
+    """Does the logical line starting at `significant[i]` end in a `:`?
+
+    Statement position alone is not enough for a block construct. The spec
+    requires the line to open a block, and without that check
+    `match: litany(3)` -- annotating a variable named `match` -- would be
+    read as a construct header. Both halves of the rule are needed.
+    """
+    depth = 0
+    for tok in significant[i:]:
+        if tok.type == tokmod.NEWLINE:
+            return False
+        if tok.type != tokmod.OP:
+            continue
+        if tok.string in _OPENERS:
+            depth += 1
+        elif tok.string in _CLOSERS:
+            depth -= 1
+        elif tok.string == ":" and depth == 0:
+            return True
+    return False
+
+
 def carrier_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
     """Rewrite construct headers, in place, into parseable Python."""
     significant = [t for t in toks if t.type not in _INSIGNIFICANT]
@@ -120,6 +143,8 @@ def carrier_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
             continue
         if tok.string == "consecrated":
             subs.extend(_consecrated_carrier(significant, i))
+        elif tok.string == "litany":
+            subs.extend(_litany_carrier(significant, i))
 
     return subs
 
@@ -142,4 +167,24 @@ def _consecrated_carrier(
             name.start[0], name.start[1], name.end[1],
             f"{name.string}: __consecrated__",
         ),
+    ]
+
+
+def _litany_carrier(
+    significant: list[tokenize.TokenInfo], i: int
+) -> list[Substitution]:
+    """`litany(args):` -> `with __litany__(args):`."""
+    kw = significant[i]
+    if not opens_a_block(significant, i):
+        return []  # not a construct header: somebody's call, left alone
+    nxt = significant[i + 1] if i + 1 < len(significant) else None
+    if nxt is None or nxt.type != tokmod.OP or nxt.string != "(":
+        raise heresy(
+            "litany takes a parenthesised attempt count",
+            "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
+        )
+    return [
+        Substitution(
+            kw.start[0], kw.start[1], kw.end[1], "with __litany__"
+        )
     ]
