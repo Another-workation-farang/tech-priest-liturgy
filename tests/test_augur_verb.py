@@ -146,3 +146,74 @@ def test_a_symlinked_top_level_directory_is_scanned_normally(tmp_path):
     code = augur([str(linked)], out=buf)
     assert code == 1
     assert "bad.lit" in buf.getvalue()
+
+
+# --- Encoding: augur must read a file the way chant and the import path
+# read it. `read_text(encoding="utf-8")` did not, and UnicodeDecodeError is
+# a ValueError, so it escaped an `-> int` contract as well.
+
+
+def test_a_latin1_source_with_a_coding_cookie_is_read_not_crashed_on(tmp_path):
+    p = tmp_path / "cookie.py"
+    p.write_bytes(b'# -*- coding: latin-1 -*-\nx = "caf\xe9"\nspan = 1\n')
+    buf = io.StringIO()
+    code = augur([str(p)], plain=True, out=buf)
+    out = buf.getvalue()
+    assert code == 1
+    assert "span is reserved" in out
+    assert "cannot be decoded" not in out
+
+
+def test_an_undecodable_file_does_not_end_the_walk(tmp_path):
+    # aaa/zzz bracket the bad file alphabetically, so a scan that stops on
+    # the first unreadable file reports aaa and never reaches zzz.
+    (tmp_path / "aaa.py").write_text("span = 1\n")
+    (tmp_path / "mmm.py").write_bytes(b'x = "\xff\xfe"\n')
+    (tmp_path / "zzz.py").write_text("span = 2\n")
+    buf = io.StringIO()
+    code = augur([str(tmp_path)], plain=True, out=buf)
+    out = buf.getvalue()
+    assert code == 1
+    assert "aaa.py:1:1: span is reserved" in out
+    assert "zzz.py:1:1: span is reserved" in out
+    assert "mmm.py" in out and "cannot be decoded" in out
+
+
+def test_a_bom_reports_the_real_collision_not_a_fabricated_syntax_error(tmp_path):
+    # read_text leaves the BOM in the string and the parser rejects it as a
+    # non-printable character; decode_source strips it, as every other
+    # reader of this file does.
+    p = tmp_path / "bom.py"
+    p.write_bytes(b"\xef\xbb\xbfspan = 1\n")
+    buf = io.StringIO()
+    code = augur([str(p)], plain=True, out=buf)
+    out = buf.getvalue()
+    assert code == 1
+    assert "span is reserved" in out
+    assert "SyntaxError" not in out
+
+
+def test_augur_agrees_with_chant_on_a_bom_prefixed_litany(tmp_path, capfd):
+    from liturgy.loader import chant
+
+    p = tmp_path / "bom.lit"
+    p.write_bytes(b'\xef\xbb\xbfintone("ave")\n')
+    assert chant(str(p), []) == 0
+    assert capfd.readouterr().out == "ave\n"
+
+    buf = io.StringIO()
+    assert augur([str(p)], plain=True, out=buf) == 0
+    assert buf.getvalue() == ""
+
+
+def test_augur_agrees_with_chant_on_a_latin1_litany(tmp_path, capfd):
+    from liturgy.loader import chant
+
+    p = tmp_path / "cookie.lit"
+    p.write_bytes(b'# -*- coding: latin-1 -*-\nintone("caf\xe9")\n')
+    assert chant(str(p), []) == 0
+    assert capfd.readouterr().out == "café\n"
+
+    buf = io.StringIO()
+    assert augur([str(p)], plain=True, out=buf) == 0
+    assert buf.getvalue() == ""

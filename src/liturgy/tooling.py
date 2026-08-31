@@ -76,11 +76,22 @@ def augur(paths: list[str], *, plain: bool = False, out=None) -> int:
         )
 
     for path in files:
+        # decode_source, not read_text(encoding="utf-8"): a BOM or a PEP 263
+        # `coding:` cookie must be honoured exactly as `chant`, `transcribe`
+        # and the import path honour it, or augur invents faults of its own
+        # reading -- a stripped BOM reported as an invalid character, a
+        # latin-1 cookie as a crash -- and stops agreeing with chant.
+        # UnicodeDecodeError is a ValueError, not an OSError: caught here
+        # rather than left to escape an `-> int` contract and end the walk.
         try:
-            src = path.read_text(encoding="utf-8")
+            src = importlib.util.decode_source(path.read_bytes())
         except OSError as err:
             troubled = True
             _emit_bare(path, f"cannot be read: {err.strerror}", plain=plain, out=out)
+            continue
+        except (SyntaxError, UnicodeDecodeError, LookupError) as err:
+            troubled = True
+            _emit_bare(path, f"cannot be decoded: {err}", plain=plain, out=out)
             continue
 
         liturgy = path.suffix == ".lit"
