@@ -209,6 +209,32 @@ def test_clean_python_has_no_collisions():
     assert words("x = 1\nimport os\n", liturgy=False) == []
 
 
+# --- constructs: the carrier pass must run too, or a construct header (still
+# raw, un-rewritten Python without it) looks like a syntax error to
+# `ast.parse` before any collision can be found -- on ordinary, correct code.
+def test_a_consecrated_header_is_not_mistaken_for_a_syntax_error():
+    assert words("consecrated PORT = 8080\nintone(PORT)\n") == []
+
+
+def test_a_litany_header_is_not_mistaken_for_a_syntax_error():
+    src = "calls = []\nlitany(thrice, curse=MotiveFailure):\n    calls.append(1)\n"
+    assert words(src) == []
+
+
+def test_an_augur_construct_header_is_not_mistaken_for_a_syntax_error():
+    src = (
+        "rite divide(a, b):\n"
+        "    augur:\n"
+        "        b be nay Void\n"
+        "    render a / b\n"
+    )
+    assert words(src) == []
+
+
+def test_a_collision_is_still_found_alongside_a_construct_header():
+    assert words("consecrated PORT = 8080\nspan = 1\n") == [(2, "span", "range")]
+
+
 # --- failure modes ---
 def test_source_that_does_not_tokenise_raises():
     # The caller decides what to do; there is no map to scan against.

@@ -12,18 +12,38 @@ from .transform import UnfinishedLitany, split_lines
 _SOURCES = (".lit", ".py")
 
 
-def _gather(paths: list[str]) -> list[pathlib.Path]:
-    """Files to read, expanding directories to the sources we understand."""
-    out: list[pathlib.Path] = []
+def _gather(
+    paths: list[str],
+) -> tuple[list[pathlib.Path], list[pathlib.Path]]:
+    """Files to read, expanding directories to the sources we understand.
+
+    Returns `(files, unscanned_dirs)`. `rglob` lists a symlinked directory
+    itself but does not descend into it -- true through this project's 3.12
+    floor; the glob methods only grew a `recurse_symlinks` keyword in 3.13.
+    So a `.lit`/`.py` file reachable only through one is invisible to a
+    plain walk, and reporting the tree clean without a word about it would
+    be the one thing a linter must not do: claiming to have read what it
+    never saw. Each such directory is named instead, in `unscanned_dirs`,
+    so the caller can say so rather than silently skip it. (The path the
+    caller names directly is never itself skipped this way, symlink or not
+    -- `rglob` walks *from* it regardless; the gap is only for a symlinked
+    directory met partway through the walk.)
+    """
+    files: list[pathlib.Path] = []
+    unscanned_dirs: list[pathlib.Path] = []
     for raw in paths:
         p = pathlib.Path(raw)
         if p.is_dir():
-            out.extend(
-                sorted(f for f in p.rglob("*") if f.suffix in _SOURCES and f.is_file())
+            entries = list(p.rglob("*"))
+            files.extend(
+                sorted(f for f in entries if f.suffix in _SOURCES and f.is_file())
+            )
+            unscanned_dirs.extend(
+                sorted(d for d in entries if d.is_dir() and d.is_symlink())
             )
         else:
-            out.append(p)
-    return out
+            files.append(p)
+    return files, unscanned_dirs
 
 
 def _report(path, line, src_line, col, width, message, *, out) -> None:
@@ -40,7 +60,16 @@ def augur(paths: list[str], *, plain: bool = False, out=None) -> int:
     out = out if out is not None else sys.stdout
     troubled = False
 
-    for path in _gather(paths):
+    files, unscanned_dirs = _gather(paths)
+
+    for d in unscanned_dirs:
+        troubled = True
+        _emit_bare(
+            d, "symlinked directory: not descended into, not scanned",
+            plain=plain, out=out,
+        )
+
+    for path in files:
         try:
             src = path.read_text(encoding="utf-8")
         except OSError as err:

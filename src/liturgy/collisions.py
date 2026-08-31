@@ -12,6 +12,8 @@ import keyword
 import tokenize
 from dataclasses import dataclass
 
+from .compiler import _PASSES
+from .constructs import carrier_pass
 from .lexicon import LEXICON
 from .rewrite import _names_in_target, _stored_names
 from .sourcemap import char_offset
@@ -147,10 +149,26 @@ def _py_spans(
 
 
 def _substitution_at(
-    spans: dict[int, list[tuple[int, int, Substitution]]], row: int, py_col: int
+    spans: dict[int, list[tuple[int, int, Substitution]]],
+    row: int,
+    py_col: int,
+    reportable: set[int],
 ) -> Substitution | None:
+    """The substitution covering `py_col`, if it is one clause (a) can use.
+
+    `spans` is built from every pass's substitutions together (`_py_spans`
+    needs the carrier pass's contribution too, or its column delta on a row
+    the carrier pass also touches would disagree with the real generated
+    Python). But only an `alias_pass` substitution is ever a LEXICON word
+    turning into another LEXICON word -- a carrier substitution's own text
+    (`""`, `"with __litany__"`, `NAME: __consecrated__`, ...) is not a
+    reserved word and must never be reported as one. `reportable` holds
+    `id()` of the substitutions that came from `alias_pass`, so a carrier
+    substitution can still occupy a span here (to keep the delta right)
+    without ever being handed back as a match.
+    """
     for py_start, py_end, s in spans.get(row, ()):
-        if py_start <= py_col < py_end:
+        if py_start <= py_col < py_end and id(s) in reportable:
             return s
     return None
 
@@ -200,19 +218,29 @@ def find_collisions(
             it as a compile failure rather than a collision.
     """
     if liturgy:
-        py, smap = transform(src, filename=filename)
+        # The same passes `compiler` compiles with (`_PASSES`, not the
+        # alias pass alone) -- a construct header (`consecrated`, `litany`,
+        # `augur`) is still raw, un-rewritten Python without the carrier
+        # pass, and `ast.parse` below would reject it as a syntax error on
+        # ordinary correct code, never reaching the compile step that is
+        # meant to be the one place augur can disagree with chant.
+        py, smap = transform(src, _PASSES, filename=filename)
         tree = ast.parse(py, filename)
         py_lines = split_lines(py)
         toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
-        all_subs = alias_pass(toks)
+        alias_subs = alias_pass(toks)
+        carrier_subs = carrier_pass(toks)
+        all_subs = alias_subs + carrier_subs
         row_spans = _py_spans(all_subs)
-        stmt_subs = {(s.row, s.text): s for s in all_subs}
+        reportable = {id(s) for s in alias_subs}
+        stmt_subs = {(s.row, s.text): s for s in alias_subs}
     else:
         tree = ast.parse(src, filename)
         smap = None
         py_lines = []
         row_spans = {}
         stmt_subs = {}
+        reportable = set()
 
     lines = split_lines(src)
     found: set[Collision] = set()
@@ -227,7 +255,7 @@ def find_collisions(
             sub = None
             if smap is not None:
                 if isinstance(at, (ast.Name, ast.arg)):
-                    sub = _substitution_at(row_spans, line, py_col)
+                    sub = _substitution_at(row_spans, line, py_col, reportable)
                 else:
                     sub = stmt_subs.get((line, name))
 

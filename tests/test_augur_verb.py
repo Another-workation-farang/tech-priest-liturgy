@@ -52,6 +52,44 @@ def test_a_litany_that_does_not_tokenise_says_the_omens_are_unread(tmp_path):
     assert "omens unread" in out
 
 
+def test_a_consecrated_construct_used_correctly_passes(tmp_path):
+    # Regression: find_collisions used to transform with the alias pass
+    # alone, so a construct header was still raw Python and ast.parse
+    # rejected it -- augur failed on ordinary, correct code.
+    code, out = run(tmp_path, "ok.lit", "consecrated PORT = 8080\nintone(PORT)\n")
+    assert code == 0
+
+
+def test_a_litany_construct_used_correctly_passes(tmp_path):
+    src = "calls = []\nlitany(thrice, curse=MotiveFailure):\n    calls.append(1)\n"
+    code, out = run(tmp_path, "ok.lit", src)
+    assert code == 0
+
+
+def test_an_augur_construct_used_correctly_passes(tmp_path):
+    # The Spec II `augur` construct, not the verb under test here.
+    src = (
+        "rite divide(a, b):\n"
+        "    augur:\n"
+        "        b be nay Void\n"
+        "    render a / b\n"
+    )
+    code, out = run(tmp_path, "ok.lit", src)
+    assert code == 0
+
+
+def test_a_consecrated_rebinding_reports_the_real_heresy(tmp_path):
+    # Once find_collisions runs the carrier pass, this reaches compile_litany
+    # and surfaces the real TechHeresy at its true line -- not a generic
+    # SyntaxError at line 1.
+    src = "consecrated PORT = 8080\nintone(PORT)\nPORT = 99\n"
+    code, out = run(tmp_path, "bad.lit", src)
+    assert code == 1
+    assert "TechHeresy" in out
+    assert "consecrated and may not be rebound" in out
+    assert ", line 3" in out
+
+
 def test_a_python_file_is_scanned_for_transcribability(tmp_path):
     code, out = run(tmp_path, "legacy.py", "span = 5\n")
     assert code == 1
@@ -76,3 +114,35 @@ def test_a_missing_path_is_an_error_not_a_pass(tmp_path):
     buf = io.StringIO()
     assert augur([str(tmp_path / "nope.lit")], out=buf) == 1
     assert "nope.lit" in buf.getvalue()
+
+
+def test_a_symlinked_subdirectory_is_named_not_silently_skipped(tmp_path):
+    # rglob lists a symlinked directory but does not descend into it, so a
+    # .lit file reachable only that way is invisible to a plain walk.
+    # Reporting the tree clean regardless would be a linter lying about
+    # what it read.
+    real = tmp_path / "real"
+    real.mkdir()
+    (real / "bad.lit").write_text("span = 1\n")
+    (tmp_path / "linked").symlink_to(real, target_is_directory=True)
+
+    buf = io.StringIO()
+    code = augur([str(tmp_path)], out=buf)
+    out = buf.getvalue()
+    assert code == 1
+    assert "linked" in out and "symlink" in out.lower()
+
+
+def test_a_symlinked_top_level_directory_is_scanned_normally(tmp_path):
+    # The gap is only for a symlink met partway through a walk -- the path
+    # the caller names directly is always walked from, symlink or not.
+    real = tmp_path / "real"
+    real.mkdir()
+    (real / "bad.lit").write_text("span = 1\n")
+    linked = tmp_path / "linked"
+    linked.symlink_to(real, target_is_directory=True)
+
+    buf = io.StringIO()
+    code = augur([str(linked)], out=buf)
+    assert code == 1
+    assert "bad.lit" in buf.getvalue()
