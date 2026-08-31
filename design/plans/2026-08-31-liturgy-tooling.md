@@ -528,7 +528,7 @@ from __future__ import annotations
 import pathlib
 import sys
 
-from .collisions import Collision, find_collisions
+from .collisions import find_collisions
 from .compiler import compile_litany
 from .transform import UnfinishedLitany, split_lines
 
@@ -914,16 +914,23 @@ def test_it_leaves_other_directories_alone(tmp_path):
 
 
 def test_it_does_not_follow_symlinks(tmp_path):
-    (tmp_path / "prayer.lit").write_text("intone(1)\n")
-    outside = tmp_path.parent / "outside_pycache"
-    outside.mkdir(exist_ok=True)
+    # The symlink must be NAMED __pycache__: rglob matches on name, so a
+    # link called anything else is never yielded and the guard under test
+    # is never reached.
+    project = tmp_path / "forge"
+    project.mkdir()
+    (project / "prayer.lit").write_text("intone(1)\n")
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
     (outside / "precious.pyc").write_bytes(b"\x00")
     try:
-        (tmp_path / "link").symlink_to(outside, target_is_directory=True)
+        (project / "__pycache__").symlink_to(outside, target_is_directory=True)
     except OSError:
         pytest.skip("symlinks unavailable")
-    assert purge(root=str(tmp_path), out=io.StringIO()) == 0
-    assert (outside / "precious.pyc").exists()
+
+    assert purge(root=str(project), out=io.StringIO()) == 0
+    assert (outside / "precious.pyc").exists(), "followed a symlink"
+    assert (project / "__pycache__").is_symlink(), "removed the link itself"
 
 
 def test_heresies_clears_the_state_file(tmp_path, monkeypatch):
