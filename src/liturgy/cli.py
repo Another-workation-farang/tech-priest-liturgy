@@ -22,7 +22,6 @@ RESERVED_VERBS = frozenset(
         "consecrate",
         "purge",
         "anoint",
-        "transcribe",
     }
 )
 
@@ -59,6 +58,10 @@ def _build_parser() -> argparse.ArgumentParser:
         "--plain", action="store_true",
         help="emit file:line:col: messages for editors and CI",
     )
+
+    p_trans = verbs.add_parser("transcribe", help="render Python into Liturgy")
+    p_trans.add_argument("source")
+    p_trans.add_argument("-o", "--out", dest="dest", default=None)
     return parser
 
 
@@ -91,6 +94,11 @@ def main(argv: list[str] | None = None) -> int:
         from .tooling import augur
 
         return augur(args.paths, plain=args.plain)
+
+    if args.verb == "transcribe":
+        from .tooling import transcribe
+
+        return transcribe(args.source, args.dest)
 
     # The only other verb: the subparser is required, so argparse has already
     # rejected anything else.

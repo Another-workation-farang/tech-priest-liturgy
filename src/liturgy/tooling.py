@@ -7,7 +7,8 @@ import sys
 
 from .collisions import find_collisions
 from .compiler import compile_litany
-from .transform import UnfinishedLitany, split_lines
+from .reverse import to_liturgy
+from .transform import UnfinishedLitany, split_lines, transform
 
 _SOURCES = (".lit", ".py")
 
@@ -127,3 +128,59 @@ def _emit_bare(path, message, *, line: int = 1, plain: bool, out) -> None:
         print(f"{path}:{line}:1: {message}", file=out)
     else:
         _report(path, line, "", 0, 0, message, out=out)
+
+
+def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
+    """Render a Python file into Liturgy. 0 written, 1 refused."""
+    out = out if out is not None else sys.stdout
+    path = pathlib.Path(source)
+
+    try:
+        src = path.read_text(encoding="utf-8")
+    except OSError as err:
+        print(f"++ CANNOT TRANSCRIBE: {path} {err.strerror} ++", file=out)
+        return 1
+
+    try:
+        collisions = find_collisions(src, str(path), liturgy=False)
+    except SyntaxError as err:
+        print(
+            f"++ CANNOT TRANSCRIBE: {type(err).__name__} at line {err.lineno} ++",
+            file=out,
+        )
+        return 1
+
+    if collisions:
+        print(
+            f"++ CANNOT TRANSCRIBE: {len(collisions)} "
+            f"COLLISION{'S' if len(collisions) != 1 else ''} ++",
+            file=out,
+        )
+        for c in collisions:
+            print(
+                f"  {path}:{c.line}  {c.word:<12} -> reserved ({c.target})",
+                file=out,
+            )
+        print("rename these, then chant again", file=out)
+        return 1
+
+    litany = to_liturgy(src)
+
+    # Verify before writing. This is the round-trip property test applied to
+    # one real file: if the output does not transform back to the input, the
+    # output is wrong and must not reach disk claiming otherwise.
+    try:
+        back, _ = transform(litany, filename=str(path))
+    except SyntaxError:
+        back = None
+    if back != src:
+        print("++ CANNOT TRANSCRIBE: the output does not round-trip ++", file=out)
+        print("   this is a fault in Liturgy, not in your source", file=out)
+        return 1
+
+    if dest is None:
+        print(litany, end="", file=out)
+    else:
+        pathlib.Path(dest).write_text(litany, encoding="utf-8")
+        print(f"++ {len(split_lines(litany))} lines transcribed ++", file=out)
+    return 0
