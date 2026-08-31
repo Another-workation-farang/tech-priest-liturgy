@@ -201,17 +201,27 @@ def _liturgy_word_as_identifier(toks) -> bool:
     Nor is a Liturgy word in *keyword-argument* position at a call site --
     Rule 2 exists to protect `increment_count(thrice=3)`, mirroring Rule 1.
     That is narrower than "NAME immediately followed by `=` at paren depth
-    greater than zero": the same shape is a real binding, not a load, when
-    the enclosing parens are a `def`'s parameter list or lambda's parameter
-    region (`def f(twice=3)`, `lambda twice=3: twice`) -- those must stay
-    flagged, so a bracket stack tracks which open paren is a def's own, and
-    a small depth-matched stack tracks an active `lambda ...:` header,
-    which has no brackets of its own at all.
+    greater than zero" in two ways, both mirroring Rule 2 in `transform.py`:
+
+    - The same shape is a real binding, not a load, when the enclosing
+      parens are a `def`'s parameter list or lambda's parameter region
+      (`def f(twice=3)`, `lambda twice=3: twice`) -- those must stay
+      flagged, so a bracket stack tracks which open bracket is a def's own,
+      and a small depth-matched stack tracks an active `lambda ...:`
+      header, which has no brackets of its own at all.
+    - PEP 701 f-string debug syntax (`f"{thrice=}"`) tokenizes the exact
+      same NAME-then-`=` shape one bracket deep, because an f-string's `{`
+      is its own OP token indistinguishable from a call's `(` by depth
+      alone. The bracket stack carries each bracket's own character for
+      exactly this: the kwarg exemption requires the *innermost* open
+      bracket to be a real `(`, which an f-string's `{` and a dict/set
+      literal's `{` (or a subscript's `[`) never are.
     """
     sig = [t for t in toks if t.type not in TRIVIAL]
     depth = 0
-    # One entry per currently-open bracket; True only for a `def`'s own `(`.
-    bracket_is_params: list[bool] = []
+    # One entry per currently-open bracket: (its character, whether it is a
+    # `def`'s own `(`).
+    bracket_stack: list[tuple[str, bool]] = []
     # Depths at which an unclosed `lambda ...:` parameter list is active.
     lambda_param_depths: list[int] = []
 
@@ -228,12 +238,12 @@ def _liturgy_word_as_identifier(toks) -> bool:
                 and prev2.type == tokenize.NAME
                 and prev2.string == "def"
             )
-            bracket_is_params.append(is_def_params)
+            bracket_stack.append((tok.string, is_def_params))
             depth += 1
             continue
         if tok.type == tokenize.OP and tok.string in ")]}":
-            if bracket_is_params:
-                bracket_is_params.pop()
+            if bracket_stack:
+                bracket_stack.pop()
             depth = max(0, depth - 1)
             continue
 
@@ -260,12 +270,14 @@ def _liturgy_word_as_identifier(toks) -> bool:
         if after_dot:
             continue
 
-        in_param_list = (bracket_is_params and bracket_is_params[-1]) or (
+        in_param_list = (bracket_stack and bracket_stack[-1][1]) or (
             lambda_param_depths and lambda_param_depths[-1] == depth
         )
         nxt = sig[i + 1] if i + 1 < len(sig) else None
         is_kwarg_name = (
             depth > 0
+            and bracket_stack
+            and bracket_stack[-1][0] == "("
             and nxt is not None
             and nxt.type == tokenize.OP
             and nxt.string == "="

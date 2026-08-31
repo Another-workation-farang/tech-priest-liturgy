@@ -14,6 +14,17 @@ def test_augur_agrees_with_the_sweeps_skip_predicate(capsys):
     The predicates are written differently: the sweep scans tokens, augur
     walks bindings. Where they disagree, one of them is wrong, and this is
     the only place that would notice.
+
+    That equivalence holds for *bindings*, which is the only shape the
+    corpus currently contains. It is not universal: a bare Load of a
+    Liturgy word (`d = {thrice: 1}`, `a[thrice:1]`) still breaks the round
+    trip -- the sweep is correct to flag it -- but binds nothing, so augur
+    (which reports bindings only) correctly does not. Both predicates
+    would be right on their own narrower question in that case, and
+    neither should change to "fix" it. If this assertion ever fails on a
+    file that turns out to be a bare load rather than a binding, that is
+    not automatically a regression in either predicate -- check which
+    question is actually being asked before touching either.
     """
     files = _corpus()
     assert len(files) >= CORPUS_FLOOR, "corpus discovery is broken"
@@ -64,3 +75,34 @@ def test_augur_and_sweep_agree_on_kwarg_vs_parameter_default(src, should_be_flag
     flagged = bool(find_collisions(src, "<test>", liturgy=False))
     assert flagged is should_be_flagged
     assert skipped is should_be_flagged
+
+
+# --- Regression: PEP 701 f-string debug syntax is not a kwarg -------------
+#
+# `f"{thrice=}"` tokenizes NAME then a bare `=` one bracket deep, exactly
+# the shape the kwarg exemption looks for -- but the enclosing bracket is
+# an f-string's `{`, not a call's `(`. A version of the exemption keyed on
+# depth alone (rather than the innermost bracket's own character) wrongly
+# exempts it, and the round trip genuinely breaks: `to_liturgy` then
+# `transform` turns `f"{thrice=}"` into `f"{3=}"`, a different program.
+#
+# This is a bare Load, not a binding (see the docstring above), so augur
+# correctly does *not* flag it -- only the sweep predicate is asserted on
+# here, not agreement between the two.
+@pytest.mark.parametrize(
+    "src",
+    [
+        'x = f"{thrice=}"\n',
+        'f = lambda x=f"{thrice=}": x\n',
+    ],
+    ids=["f-string debug at statement level", "f-string debug in a lambda default"],
+)
+def test_sweep_flags_fstring_debug_syntax_as_a_reserved_word(src):
+    toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
+    assert _liturgy_word_as_identifier(toks) is True
+
+
+def test_sweep_still_exempts_a_plain_call_site_kwarg():
+    # Guards against a fix that "solves" the above by flagging everything.
+    toks = list(tokenize.generate_tokens(io.StringIO("f(thrice=3)\n").readline))
+    assert _liturgy_word_as_identifier(toks) is False
