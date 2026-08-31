@@ -1,3 +1,4 @@
+import importlib.util
 import io
 
 import pytest
@@ -136,3 +137,45 @@ def test_crlf_line_endings_are_preserved_in_the_output(tmp_path):
     # bare \n (which also matches the \n half of \r\n) against \r\n pairs
     # catches a partial conversion that the exact-bytes check might not.
     assert written.count(b"\r\n") == written.count(b"\n")
+
+
+def test_a_latin1_destination_is_written_in_latin1_not_utf8(tmp_path):
+    # The cookie says latin-1, so "café" must survive on disk as the single
+    # 0xe9 byte latin-1 uses, not the two-byte UTF-8 sequence. Asserting the
+    # decoded string alone cannot see this bug -- both encodings decode
+    # back to the same text -- only the raw bytes on disk can.
+    src = tmp_path / "legacy.py"
+    src.write_bytes(b"# -*- coding: latin-1 -*-\nx = \"caf\xe9\"\n")
+    dest = tmp_path / "out.lit"
+    buf = io.StringIO()
+    code = transcribe(str(src), str(dest), out=buf)
+    assert code == 0
+    written = dest.read_bytes()
+    assert b"caf\xe9" in written
+    assert b"caf\xc3\xa9" not in written  # the UTF-8 mis-encoding
+    assert importlib.util.decode_source(written) == (
+        "# -*- coding: latin-1 -*-\nx = \"café\"\n"
+    )
+
+
+def test_a_bom_destination_keeps_the_bom(tmp_path):
+    src = tmp_path / "legacy.py"
+    src.write_bytes(b"\xef\xbb\xbfx = 1\n")
+    dest = tmp_path / "out.lit"
+    buf = io.StringIO()
+    code = transcribe(str(src), str(dest), out=buf)
+    assert code == 0
+    written = dest.read_bytes()
+    assert written.startswith(b"\xef\xbb\xbf")
+    assert importlib.util.decode_source(written) == "x = 1\n"
+
+
+def test_a_plain_utf8_destination_is_unchanged(tmp_path):
+    # Regression guard: no cookie, no BOM -- the common case must keep
+    # writing exactly as before.
+    dest = tmp_path / "out.lit"
+    code, out = run(tmp_path, "print(len(x))\n", dest=str(dest))
+    assert code == 0
+    written = dest.read_bytes()
+    assert not written.startswith(b"\xef\xbb\xbf")
+    assert written == b"intone(measure(x))\n"

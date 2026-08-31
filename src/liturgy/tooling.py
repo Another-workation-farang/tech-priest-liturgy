@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import pathlib
 import sys
+import tokenize
 
 from .collisions import find_collisions
 from .compiler import compile_litany
@@ -148,6 +150,21 @@ def _newline_style(raw: bytes) -> str:
     return "\r\n" if b"\r\n" in raw else "\n"
 
 
+def _source_encoding(raw: bytes) -> str:
+    """The encoding named by `raw`'s BOM or PEP 263 `coding:` cookie.
+
+    `decode_source` already runs `tokenize.detect_encoding` internally to
+    decide how to decode `raw`; calling it again here is cheap (it only
+    reads the first two lines) and returns the same name, so the
+    destination can be written back in the encoding the source actually
+    declared -- 'utf-8-sig' for a BOM, the cookie's name otherwise --
+    instead of always UTF-8. Same rule as `_newline_style`: transcribe
+    preserves the file's physical properties and changes only the words.
+    """
+    encoding, _ = tokenize.detect_encoding(io.BytesIO(raw).readline)
+    return encoding
+
+
 def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
     """Render a Python file into Liturgy. 0 written, 1 refused."""
     out = out if out is not None else sys.stdout
@@ -165,6 +182,7 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
     # a bogus SyntaxError or crashing outright.
     try:
         src = importlib.util.decode_source(raw)
+        encoding = _source_encoding(raw)
     except (SyntaxError, UnicodeDecodeError, LookupError) as err:
         print(f"++ CANNOT TRANSCRIBE: {path} cannot be decoded: {err} ++", file=out)
         return 1
@@ -212,14 +230,49 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
 
     if dest is None:
         print(output, end="", file=out)
-    else:
-        try:
-            pathlib.Path(dest).write_bytes(output.encode("utf-8"))
-        except OSError as err:
-            print(
-                f"++ CANNOT TRANSCRIBE: cannot write {dest}: {err.strerror} ++",
-                file=out,
-            )
-            return 1
-        print(f"++ {len(split_lines(litany))} lines transcribed ++", file=out)
+        return 0
+
+    # Encode in the source's own declared encoding, not always UTF-8: a
+    # destination that carries the source's `coding:` cookie forward
+    # verbatim (we never touch it -- it lives in a comment) but is written
+    # in a different encoding is corrupt for every reader that honours that
+    # cookie, this project's own loader included. This is not a case the
+    # substitutions can trigger -- every reserved word is ASCII -- but
+    # refuse rather than raise if it ever did.
+    try:
+        payload = output.encode(encoding)
+    except (LookupError, UnicodeEncodeError) as err:
+        print(
+            f"++ CANNOT TRANSCRIBE: cannot encode the output as {encoding}: "
+            f"{err} ++",
+            file=out,
+        )
+        return 1
+
+    # A second, byte-level round-trip: decode the exact bytes about to be
+    # written the way a consumer honouring the destination's own cookie
+    # would -- our loader, or CPython itself -- and confirm they still say
+    # what we mean to write, i.e. `litany` (compared, not `output`, since
+    # `decode_source` normalises newlines the same way it did for `src`).
+    # The text-level check above compares `back` against `src`, neither of
+    # which ever touches an encoding, so it cannot see bytes that are wrong
+    # for the encoding their own cookie declares; this can.
+    try:
+        byte_roundtrip = importlib.util.decode_source(payload)
+    except (SyntaxError, UnicodeDecodeError, LookupError):
+        byte_roundtrip = None
+    if byte_roundtrip != litany:
+        print("++ CANNOT TRANSCRIBE: the output does not round-trip ++", file=out)
+        print("   this is a fault in Liturgy, not in your source", file=out)
+        return 1
+
+    try:
+        pathlib.Path(dest).write_bytes(payload)
+    except OSError as err:
+        print(
+            f"++ CANNOT TRANSCRIBE: cannot write {dest}: {err.strerror} ++",
+            file=out,
+        )
+        return 1
+    print(f"++ {len(split_lines(litany))} lines transcribed ++", file=out)
     return 0
