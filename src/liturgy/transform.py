@@ -127,10 +127,18 @@ def _walk_tokens(
         # worse: a spuriously-set in_import makes Rule 3 suppress every
         # Liturgy word for the rest of the line, so some shapes fail
         # silently rather than loudly.
+        # The colon counts only at bracket depth zero: a one-liner compound
+        # statement (`should x: invoke json`) does start a new statement
+        # after its colon, but a dict key's or a slice's colon does not --
+        # `{1: invoke}` used to set in_import here, and Rule 3 then
+        # suppressed every substitution for the rest of the logical line.
         at_stmt_start = (
             prev is None
             or prev.type == tokmod.NEWLINE
-            or (prev.type == tokmod.OP and prev.string in (";", ":"))
+            or (
+                prev.type == tokmod.OP
+                and (prev.string == ";" or (prev.string == ":" and depth == 0))
+            )
         )
         if at_stmt_start and is_import_start(tok, target):
             in_import = True
@@ -300,6 +308,57 @@ def _unfinished_litany(
     )
     exc.sourcemap = smap
     return exc
+
+
+def name_the_substitution(
+    err: SyntaxError, src: str, py: str, smap: SourceMap
+) -> None:
+    """Append the substitution a SyntaxError points into to its message.
+
+    `twice = 1` compiles to `2 = 1` and dies with "cannot assign to
+    literal" -- true, and unintelligible without knowing that `twice`
+    *became* a literal. When the error's caret sits inside a substitution
+    span, say so: `... (twice is Liturgy for 2)`. The caret mapping in
+    `curse` places the blame; this names it.
+
+    The caret does not always sit *inside* the culprit: `render = 1`
+    becomes `return = 1`, and CPython's caret lands on the `=`. So a span
+    the caret merely *abuts* -- nearest to its left, nothing but
+    whitespace between -- is named too, and nothing further: a span
+    somewhere else on the line is as likely to be innocent as guilty.
+
+    `err.offset` must already count characters, as the parser's own
+    SyntaxErrors do (unlike `ast.col_offset`). A caller holding a
+    byte-counted offset -- a tree-compile failure -- normalises the error
+    first; see `compiler.compile_litany`. Mutates `err.msg` in place; does
+    nothing when no span qualifies or the span did not change the text.
+    """
+    if isinstance(err, IndentationError):
+        # No substitution can cause one: the transform never adds, removes
+        # or re-indents a line. The caret of an indentation error points at
+        # whatever token begins the mis-laid line -- naming that token's
+        # substitution would blame an innocent.
+        return
+    if not err.lineno or not err.offset or err.offset < 1:
+        return
+    col0 = err.offset - 1
+    lit_lines, py_lines = split_lines(src), split_lines(py)
+    if err.lineno > len(lit_lines) or err.lineno > len(py_lines):
+        return
+    py_line = py_lines[err.lineno - 1]
+
+    span = smap.span_at(err.lineno, col0)
+    if span is None:
+        before = smap.span_before(err.lineno, col0)
+        if before is not None and not py_line[before.py_end : col0].strip():
+            span = before
+    if span is None:
+        return
+
+    word = lit_lines[err.lineno - 1][span.lit_start : span.lit_end]
+    target = py_line[span.py_start : span.py_end]
+    if word and target and word != target and err.msg:
+        err.msg = f"{err.msg} ({word} is Liturgy for {target})"
 
 
 def _splice(src: str, subs: list[Substitution]) -> tuple[str, SourceMap]:

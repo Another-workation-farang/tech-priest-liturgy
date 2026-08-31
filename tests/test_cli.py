@@ -104,6 +104,7 @@ def test_an_unknown_verb_is_rejected(prayer):
     assert "invalid choice" in out.stderr
 
 
-def test_the_global_flags_say_where_they_must_go():
-    out = run_cli(["--help"])
-    assert "must come before the verb" in out.stdout
+def test_the_global_flags_are_offered_on_the_verbs_too():
+    out = run_cli(["chant", "--help"])
+    assert "--absolved" in out.stdout
+    assert "--profane" in out.stdout

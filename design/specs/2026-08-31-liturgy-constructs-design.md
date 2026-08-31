@@ -94,6 +94,15 @@ Annotated assignments and `with` blocks are the carriers because both parse,
 both are trivially addressable as AST nodes, and `__consecrated__`/`__litany__`
 /`__augur__` are names nobody writes by accident.
 
+*(Correction, post-review: "nobody writes by accident" was not enough. A
+program that does write one — deliberately or via generated code — was
+indistinguishable from a carrier, and `with __litany__(...) styled x:` was
+silently rewritten into the retry loop, losing its binding. The carrier names,
+and the `__liturgy_` bookkeeping prefix, are now reserved outright: the
+carrier pass rejects any user-written occurrence outside attribute position
+with a loud heresy, `augur` reports a `.py` binding one, and `transcribe`
+compiles its output as a backstop.)*
+
 ### Why `litany`'s header is call-shaped
 
 A prose header — `litany thrice, resting 2, curse TimeoutError:` — needs a real

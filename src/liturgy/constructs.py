@@ -31,6 +31,26 @@ _BLOCK_OPENERS = frozenset(
 )
 
 
+# The names the carrier pass writes into the generated Python, and the
+# prefix `rewrite._build_retry` mints its bookkeeping under. They appear in
+# no lexicon table, but the AST pass recognises carriers by exactly these
+# spellings -- a litany that wrote one itself would be indistinguishable
+# from a carrier and silently rewritten (a `with __litany__(...) styled x:`
+# lost its binding this way). They are the machine's own; using one is loud.
+#
+# One authority: the substitution texts below and `rewrite`'s carrier
+# matching both use these constants, and MACHINE_NAMES is built from them,
+# so a fourth construct cannot be added without its carrier name joining
+# the reserved set.
+CONSECRATED_CARRIER = "__consecrated__"
+LITANY_CARRIER = "__litany__"
+AUGUR_CARRIER = "__augur__"
+MACHINE_NAMES: frozenset[str] = frozenset(
+    {CONSECRATED_CARRIER, LITANY_CARRIER, AUGUR_CARRIER}
+)
+MACHINE_PREFIX = "__liturgy_"
+
+
 class TechHeresy(SyntaxError):
     """A construct used in a way the compiler rejects.
 
@@ -119,11 +139,12 @@ def opens_a_block(significant: list[tokenize.TokenInfo], i: int) -> bool:
     `match: litany(3)` -- annotating a variable named `match` -- would be
     read as a construct header. Both halves of the rule are needed.
 
-    M10, noted and left: this answers yes for `augur: int` used as the
-    opening statement of a rite, which is an annotation, not a block. The
-    result is a heresy rather than a silent miscompile ("augur opens a block
-    and takes no arguments"), and the shape is obscure enough not to be worth
-    a second token of lookahead here.
+    This deliberately answers yes for an annotation like `litany: int` --
+    an annotation colon is a depth-zero colon like any other -- so the
+    carriers themselves disambiguate: `_litany_carrier` and
+    `_augur_carrier` each check what follows the keyword before treating
+    the line as a header, and an annotation of a construct-named variable
+    is left as the author's own (the M10 shape, since resolved there).
     """
     depth = 0
     for tok in significant[i:]:
@@ -140,11 +161,37 @@ def opens_a_block(significant: list[tokenize.TokenInfo], i: int) -> bool:
     return False
 
 
+def is_machine_name(name: str) -> bool:
+    """Is `name` one the generated code claims for itself?
+
+    The dunder gate goes first: this runs once per NAME token of every
+    compile, and almost no token starts with two underscores.
+    """
+    return name.startswith("__") and (
+        name in MACHINE_NAMES or name.startswith(MACHINE_PREFIX)
+    )
+
+
 def carrier_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
     """Rewrite construct headers, in place, into parseable Python."""
     significant = [t for t in toks if t.type not in _INSIGNIFICANT]
     starts = statement_starts(significant)
     subs: list[Substitution] = []
+
+    # Before anything is rewritten: a machine name spelled by the author.
+    # Only attribute position is spared, on Rule 1's reasoning -- another
+    # module's attributes are its own affair, and `_carrier_call` only ever
+    # matches a bare Name anyway.
+    for i, tok in enumerate(significant):
+        if tok.type != tokmod.NAME or not is_machine_name(tok.string):
+            continue
+        prev = significant[i - 1] if i else None
+        if prev is not None and prev.type == tokmod.OP and prev.string == ".":
+            continue
+        raise heresy(
+            f"{tok.string} is the machine's own name",
+            "<unknown>", tok.start[0], tok.start[1] + 1, tok.line,
+        )
 
     for i in sorted(starts):
         tok = significant[i]
@@ -190,7 +237,7 @@ def _consecrated_carrier(
         Substitution(kw.start[0], kw.start[1], name.start[1], ""),
         Substitution(
             name.start[0], name.start[1], name.end[1],
-            f"{name.string}: __consecrated__",
+            f"{name.string}: {CONSECRATED_CARRIER}",
         ),
     ]
 
@@ -200,9 +247,20 @@ def _litany_carrier(
 ) -> list[Substitution]:
     """`litany(args):` -> `with __litany__(args):`."""
     kw = significant[i]
+    nxt = significant[i + 1] if i + 1 < len(significant) else None
+    if nxt is not None and nxt.type == tokmod.OP and nxt.string == ":":
+        after = significant[i + 2] if i + 2 < len(significant) else None
+        if after is not None and after.type != tokmod.NEWLINE:
+            # `litany: int = 5` -- an annotation of a variable named
+            # litany, which is the author's own name until the construct
+            # is wanted on the line. The construct's argument list cannot
+            # begin with `:`.
+            return []
+        # A bare `litany:` is the construct missing its count, not an
+        # annotation of nothing; keep the targeted heresy rather than
+        # leaving Python to report bare "invalid syntax".
     if not opens_a_block(significant, i):
         return []  # not a construct header: somebody's call, left alone
-    nxt = significant[i + 1] if i + 1 < len(significant) else None
     if nxt is None or nxt.type != tokmod.OP or nxt.string != "(":
         raise heresy(
             "litany takes a parenthesised attempt count",
@@ -210,7 +268,7 @@ def _litany_carrier(
         )
     return [
         Substitution(
-            kw.start[0], kw.start[1], kw.end[1], "with __litany__"
+            kw.start[0], kw.start[1], kw.end[1], f"with {LITANY_CARRIER}"
         )
     ]
 
@@ -218,18 +276,30 @@ def _litany_carrier(
 def _augur_carrier(
     significant: list[tokenize.TokenInfo], i: int
 ) -> list[Substitution]:
-    """`augur:` -> `with __augur__():`."""
+    """`augur:` -> `with __augur__():`.
+
+    The construct is exactly `augur:` with nothing after the colon: its
+    conditions stand one per line beneath. `augur: int` -- a colon with
+    anything after it -- is an annotation of a variable named augur, and
+    is left alone here. Where that leniency would hide a botched one-line
+    augury -- a bare annotation, no value, anywhere a block augury would
+    be judged -- `rewrite._reject_misplaced_auguries` rejects it loudly;
+    an annotation *with* a value is unmistakably the author's own.
+    """
     kw = significant[i]
+    nxt = significant[i + 1] if i + 1 < len(significant) else None
+    if nxt is not None and nxt.type == tokmod.OP and nxt.string == ":":
+        after = significant[i + 2] if i + 2 < len(significant) else None
+        if after is not None and after.type != tokmod.NEWLINE:
+            return []  # an annotation: the colon does not end the line
+        return [
+            Substitution(
+                kw.start[0], kw.start[1], kw.end[1], f"with {AUGUR_CARRIER}()"
+            )
+        ]
     if not opens_a_block(significant, i):
         return []  # not a construct header: somebody's call, left alone
-    nxt = significant[i + 1] if i + 1 < len(significant) else None
-    if nxt is None or nxt.type != tokmod.OP or nxt.string != ":":
-        raise heresy(
-            "augur opens a block and takes no arguments",
-            "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
-        )
-    return [
-        Substitution(
-            kw.start[0], kw.start[1], kw.end[1], "with __augur__()"
-        )
-    ]
+    raise heresy(
+        "augur opens a block and takes no arguments",
+        "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
+    )

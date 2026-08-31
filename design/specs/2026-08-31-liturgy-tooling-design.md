@@ -144,7 +144,11 @@ of a private twin, which makes that test stronger rather than weaker.
 liturgy augur [--plain] PATH...
 ```
 
-Accepts files or directories, recursing for `.lit` and `.py`.
+Accepts files or directories, recursing for `.lit` and `.py`. *(Refined
+post-review: the walk prunes dot-directories, `__pycache__` and anything
+holding a `pyvenv.cfg` — a vendored virtual environment drowned real findings
+— while a directory named directly is always read, and overlapping arguments
+report each finding once.)*
 
 It checks exactly two things, and does not grow into a general linter. Unused
 imports, shadowed names, complexity — that is ruff's job, ruff is better at it,

@@ -609,7 +609,10 @@ permitted. It is not encouraged.</p>
 <pre class="shell"><span class="prompt">$</span> liturgy --profane chant prayer.lit</pre>
 
 <p>Renders an ordinary Python traceback. <code>LITURGY_PROFANE=1</code>
-does the same.</p>
+does the same. The flag is accepted before or after the verb — with one
+caveat inherited from <code>python file.py</code> itself: anything after
+<code>chant</code>'s file belongs to the litany, so for <code>chant</code>
+the flag goes before the filename.</p>
 </section>
 
 <section id="ch6">
@@ -652,7 +655,10 @@ substituted, so <code>func(intone=True)</code> does not silently become
 <p>The rule makes one exception, for the f-string debug form. In
 <code>f"{measure=}"</code> the <code>=</code> is not a keyword argument, so
 substitution proceeds and the value is printed as <code>f"{len=}"</code>
-intends.</p>
+intends. Note that this means the label in the output is the generated
+Python's — <code>f"{measure(x)=}"</code> prints <code>len(x)=2</code> —
+because an f-string fixes its debug text at compile time, after
+substitution.</p>
 
 <h3>The third: within an invocation</h3>
 
@@ -687,14 +693,20 @@ minute.</p>
 
 <div class="code-block"><pre><span class="kw">render</span> = compute()</pre></div>
 
-<pre class="shell"><span class="alert">SyntaxError: invalid syntax</span></pre>
+<pre class="shell"><span class="alert">SyntaxError: invalid syntax (render is Liturgy for return)</span></pre>
+
+<p>The parenthesis is the curse renderer's doing: when a syntax error points
+into — or hard against — a word a substitution produced, the word is named,
+so the message describes the litany rather than the Python it became.</p>
 
 <h3>The quiet ones</h3>
 
-<p>Two of the builtin aliases fail quietly instead, and these are the ones
-to know. <code>span</code> and <code>measure</code> translate to
-<code>range</code> and <code>len</code> — which are names, not keywords, so
-assigning to them is legal Python:</p>
+<p>Eight of the substituted words fail quietly instead, and these are the
+ones to know. The five builtin aliases — <code>intone</code>,
+<code>measure</code>, <code>span</code>, <code>unseal</code>,
+<code>hearken</code> — translate to <code>print</code>, <code>len</code>,
+<code>range</code>, <code>open</code> and <code>input</code>, which are
+names, not keywords, so assigning to them is legal Python:</p>
 
 <div class="code-block"><pre>span = <span class="string">"text range"</span>
 intone(span)</pre></div>
@@ -707,13 +719,20 @@ is:</p>
 
 <p>You have shadowed a builtin. Nothing complains now. The complaint
 arrives later and elsewhere, when something calls <code>span(10)</code> and
-receives a string. The same holds for <code>measure</code>,
-<code>unseal</code> and <code>hearken</code>.</p>
+receives a string.</p>
 
-<p>Two of the three constructs are quiet in the same way, for a different
+<p>The three soft-keyword aliases are quiet the same way:
+<code>discern</code>, <code>wherein</code> and <code>archetype</code> become
+<code>match</code>, <code>case</code> and <code>type</code>, which are
+ordinary identifiers anywhere they are not heading their own statement. So
+<code>discern = 5</code> compiles, runs, and has quietly bound the name
+<code>match</code>.</p>
+
+<p>Two of the three constructs are quiet too, for a different
 reason. A construct word is only a construct in the position its header
 occupies; anywhere else it is an ordinary name, and the carrier pass leaves
-it alone. So <code>litany = 5</code>, <code>rite augur(x):</code> and
+it alone. So <code>litany = 5</code>, <code>litany: int = 5</code>,
+<code>rite augur(x):</code> and
 <code>pattern litany:</code> all compile, and the name is yours until the day
 you want the construct on that line:</p>
 
@@ -726,23 +745,46 @@ augur = compute()
 
 <p>Every line of that compiles. <code>consecrated</code> is the exception
 among the three: it can only ever be a header, so
-<code>consecrated = 5</code> is a loud heresy. Six of the sixty-three words
-are quiet, then — <code>span</code>, <code>measure</code>,
-<code>unseal</code>, <code>hearken</code>, <code>litany</code>,
-<code>augur</code> — and the rest are loud.</p>
+<code>consecrated = 5</code> is a loud heresy. One spelling of
+<code>augur</code> is refused as well: a bare, valueless annotation —
+<code>augur: b != 0</code> — reads exactly like a one-line augury wherever
+it stands, and treating it as the annotation it technically is would check
+nothing. An augury's conditions belong on the lines beneath
+<code>augur:</code>, and the heresy says so; an annotation <i>with</i> a
+value (<code>augur: int = 5</code>) is unmistakably yours and compiles. Ten
+of the sixty-three words are quiet, then — the five builtins, the three soft
+keywords, <code>litany</code>, <code>augur</code> — and the rest are
+loud.</p>
 
 <p><code>span</code> in particular is a natural name for a range of text,
-and it is precisely the wrong one. Four of the six no longer have to be
-carried in your head: <code>span</code>, <code>measure</code>,
-<code>unseal</code> and <code>hearken</code> each <i>become</i> another
-word, and <code>liturgy augur</code> reports every binding that does.
-Chapter XI sets it down.</p>
+and it is precisely the wrong one. Eight of the ten no longer have to be
+carried in your head: the builtins and the soft keywords each <i>become</i>
+another word, and <code>liturgy augur</code> reports every binding that
+does. Chapter XI sets it down.</p>
 
 <p><code>litany</code> and <code>augur</code> are not reported, and should
 not be. A construct word is never substituted, so there is nothing it
 silently becomes — the only hazard is the one above, that you may one day
 want the construct on a line whose name you have already spent. That one
 stays yours to track.</p>
+
+<h3>The machine's own names</h3>
+
+<p>Three names appear in no table and are reserved all the same:
+<code>__consecrated__</code>, <code>__litany__</code> and
+<code>__augur__</code> — the private carriers the construct pass writes into
+the generated Python — along with every name beginning
+<code>__liturgy_</code>, which the retry loop mints its bookkeeping under. A
+litany that spoke one would be indistinguishable from the machinery itself,
+so speaking one anywhere but after a dot is a loud heresy:</p>
+
+<div class="code-block"><pre>x = __litany__</pre></div>
+
+<pre class="shell"><span class="alert">TechHeresy: __litany__ is the machine's own name</span></pre>
+
+<p>Chapter XI's verbs know them too: <code>augur</code> reports a
+<code>.py</code> file that binds one, and <code>transcribe</code> refuses to
+render such a file, because the litany it would write cannot chant.</p>
 
 <h3>Calling is not defining</h3>
 
@@ -757,7 +799,7 @@ declaration is not in attribute position:</p>
 <div class="warning"><pre>   the rite was ill-written at template.lit, line 2
        rite render(self):
             ^^^^^^
-   SyntaxError: invalid syntax</pre></div>
+   SyntaxError: invalid syntax (render is Liturgy for return)</pre></div>
 
 <p>Calling <code>t.render()</code> is fine. Naming a rite
 <code>render</code> is not. If you must implement an interface whose method
@@ -792,10 +834,16 @@ rejection is exactly as it is in a file:</p>
 
 <div class="warning"><pre>&gt;&gt;&gt; <span class="kw">consecrated</span> PORT = 8080; PORT = 9
 ++ MACHINE CURSE ++
-   File "&lt;console&gt;", line 1
+   the rite was ill-written at &lt;commune:1&gt;, line 1
        consecrated PORT = 8080; PORT = 9
+                                ^
    TechHeresy: PORT is consecrated and may not be rebound
 ++ the machine spirit is displeased ++</pre></div>
+
+<p>(<code>&lt;commune:1&gt;</code> numbers the prompt entry. Every entry
+keeps its own recorded source, which is what lets a curse — this one, or a
+runtime failure in a rite defined many entries ago — quote the Liturgy that
+was actually typed.)</p>
 
 <p>A litany is a file. The prompt is a conversation, and a conversation
 remembers values, not declarations.</p>
@@ -941,17 +989,21 @@ enforcement does not reach.</p>
 and if it raises one of the exceptions named by <code>curse=</code>, runs it
 again — up to <code>count</code> <b>total attempts</b>, not
 <code>count</code> retries. <code>curse=</code> is required and must be
-passed by keyword; there is no spelling of <code>litany</code> that catches
+passed by keyword — spelled out, not smuggled in through a <code>**</code>
+expansion; there is no spelling of <code>litany</code> that catches
 everything, on the view that a retry block silently swallowing an exception
 it was never told about is worse than no retry block at all.
 <code>resting=</code> is optional. Left out, a litany moves to its next
 attempt with no pause and generates no timing code whatsoever. Exhausting
 every attempt re-raises the last failure, unchanged.</p>
 
-<p><code>count</code> is evaluated exactly once, however it is spelled — a
-bare <code>thrice</code>, a variable, or a call. A count below one is
-rejected: at compile time when it is written as a literal, at run time when
-it is computed.</p>
+<p><code>count</code> and <code>resting</code> are each evaluated exactly
+once, however they are spelled — a bare <code>thrice</code>, a variable, or
+a call — and each is guarded the same two-tier way: a count below one, or a
+negative resting, is rejected at compile time when written as a literal and
+at run time when computed. The run-time check fires before the first
+attempt, so a bad value is its own loud fault rather than something an outer
+<code>curse</code> mistakes for the body failing again.</p>
 
 <p><code>cease</code> and <code>persist</code> written directly in a
 litany's own body are rejected at compile time, because they would bind to
@@ -969,13 +1021,18 @@ as expected.</p>
     <span class="kw">render</span> a / b</pre></div>
 
 <p><code>augur:</code> opens a rite — after its docstring if it has one,
-never after any other statement — with one bare condition per line. Each
+never after any other statement — with one bare condition per line, the
+<code>augur:</code> itself standing alone on its own. Each
 condition is checked before the rite's own body runs. The first one that is
 false raises <code>ImpureOffering</code>, with a message that quotes the
 <i>Liturgy</i> source of that condition, not the compiled Python it became:
 <code>the omens forbid it -- b != 0</code>. Anything in the block that is
-not a bare condition — an assignment, a call kept for its side effect — is
-rejected at compile time; an augury holds conditions, not statements.</p>
+not a bare condition is rejected at compile time: a statement of any kind, a
+constant (a docstring is not a condition), a walrus assignment. A call is
+accepted, and its <i>truth</i> is the omen — <code>augur:</code> over
+<code>seen.append(x)</code> fails every time, because <code>append</code>
+renders Void. The augury judges the value of what you wrote; it cannot know
+what you meant to check.</p>
 
 <p>It is a contract, not an assertion, and the distinction is load-bearing:
 it survives <code>chant</code>ing under <code>-O</code>, where a Python
@@ -1031,10 +1088,19 @@ loudly somewhere; a finding with it is one that will not.</p>
 <p>Arguments may be files or directories, and a directory is walked for
 <code>.lit</code> and <code>.py</code> files — <code>augur</code> reads
 plain Python too, because a <code>.py</code> file in a Liturgy project is a
-file whose names a litany may one day import. The exit status is 0 when
+file whose names a litany may one day import. The walk prunes the usual
+noise: names beginning with a dot, <code>__pycache__</code>, and any
+directory holding a <code>pyvenv.cfg</code> — a vendored virtual environment
+would otherwise drown real findings under every third-party <code>.py</code>
+that binds <code>render</code> or <code>span</code>. A directory named
+directly as an argument is always read, hidden or not: naming it is asking.
+Arguments that overlap report each finding once. The exit status is 0 when
 nothing was reported and 1 when anything was. A directory reached through a
-symlink is named in the report rather than passed over in silence; a reader
-that quietly does not read a file is worse than no reader.</p>
+symlink, or a hidden <code>.lit</code>/<code>.py</code> file inside a walked
+directory, is named in the report rather than passed over in silence — a
+reader that quietly does not read a file is worse than no reader. (A
+symlinked directory the walk would prune anyway, a symlinked
+<code>.venv</code> say, is pruned as quietly as a real one.)</p>
 
 <h3>The two checks, and no third</h3>
 
@@ -1051,7 +1117,10 @@ sixty-three. The three construct words are outside it by construction: they
 are never substituted, so no binding of one can quietly come to mean
 something else. <code>consecrated</code> is still caught — by the second
 check, as a compile failure — and <code>litany</code> and <code>augur</code>
-are genuinely not faults.</p>
+are genuinely not faults. The machine's own carrier names (Chapter VII) are
+within it: they have no Python spelling to become, but a <code>.py</code>
+file that binds one is a file no litany can import by that name, and the
+finding says so.</p>
 
 <p><b>That the litany compiles.</b> For a <code>.lit</code> file,
 <code>augur</code> compiles the source after gathering collisions, so a file
@@ -1124,6 +1193,17 @@ rename these, then chant again</pre></div>
 <p>That is the same rule <code>augur</code> reports, computed by the same
 code, so the two verbs cannot drift apart about what counts as a
 collision.</p>
+
+<p>The last line of defence is broader than the collision rule: the output
+is compiled before anything is written or printed. A Python program only the
+compile can catch — one that binds a bare <code>consecrated</code>, or
+speaks one of the machine's own names in a position the binding scan does
+not see — is refused as one no litany can express:</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy transcribe cons.py
+<span class="alert">++ CANNOT TRANSCRIBE: the output would not chant ++
+   line 1: consecrated must be followed by a name</span>
+rewrite or rename what it names, then transcribe again</pre>
 
 <p>The same rule is applied a second time, to the Liturgy about to be
 written. Transcription can introduce a collision the Python never had —

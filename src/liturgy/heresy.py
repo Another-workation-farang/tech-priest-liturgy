@@ -26,31 +26,40 @@ def _bump(alias: str) -> int:
 
     Note: concurrent writes may lose increments (count race accepted on
     cosmetic escalation counter). Write is atomic (via temp + rename).
+
+    Two read failures are told apart. A file that exists but holds garbage
+    is overwritten -- nothing in it was recoverable anyway. A file that
+    could not be *read* (a transient permission or I/O fault) may be
+    perfectly intact, so nothing is written back over the counts that were
+    never seen; the rebuke escalates from a fresh count for this run only.
     """
+    data: dict = {}
+    persist = True
     try:
         path = state_path()
         if path.exists():
             data = json.loads(path.read_text())
-        else:
-            data = {}
-        # Verify data is a dict and can be processed safely.
         if not isinstance(data, dict):
             data = {}
-        # Coerce the value safely; treat anything non-numeric or negative as absent.
-        try:
-            current = int(data.get(alias, 0))
-            if current < 0:
-                current = 0
-        except (TypeError, ValueError):
-            current = 0
-        count = current + 1
+    except OSError:
+        data, persist = {}, False
     # JSONDecodeError is a ValueError, so it needs no entry of its own.
-    except (OSError, TypeError, ValueError, AttributeError):
-        # Corruption or I/O error; start fresh.
+    except (TypeError, ValueError, AttributeError):
         data = {}
-        count = 1
 
+    # Coerce the value safely; treat anything non-numeric or negative as
+    # absent.
+    try:
+        current = int(data.get(alias, 0))
+        if current < 0:
+            current = 0
+    except (TypeError, ValueError):
+        current = 0
+    count = current + 1
     data[alias] = count
+
+    if not persist:
+        return count
 
     # Atomic write: temp file then replace.
     try:

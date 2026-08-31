@@ -63,14 +63,52 @@ class SourceMap:
                 cum.append(total)
             self._cum[line] = cum
 
-    def to_lit(self, line: int, col: int) -> int:
-        """Map a column in generated Python back to the .lit column."""
+    def _locate(self, line: int, col: int) -> tuple[list[Span], int] | None:
+        """This line's spans and the index of the last one starting <= col.
+
+        The shared prologue of every lookup below; one home for the bisect
+        convention, so a change to how `freeze` indexes spans lands once.
+        Returns None when the line has no spans; the index may be -1 when
+        `col` precedes them all.
+        """
         spans = self._spans.get(line)
         if not spans:
+            return None
+        return spans, bisect_right(self._starts[line], col) - 1
+
+    def to_lit(self, line: int, col: int) -> int:
+        """Map a column in generated Python back to the .lit column."""
+        found = self._locate(line, col)
+        if found is None:
             return col
-        i = bisect_right(self._starts[line], col) - 1
+        spans, i = found
         if i < 0:
             return col
         if col < spans[i].py_end:
             return spans[i].lit_start
         return col + self._cum[line][i]
+
+    def span_at(self, line: int, col: int) -> Span | None:
+        """The substitution span covering generated-Python column `col`.
+
+        Lets an error renderer answer "did a substitution put this word
+        here" -- a syntax error pointing into one is best explained by
+        naming the source word, not only by moving the caret.
+        """
+        found = self._locate(line, col)
+        if found is None:
+            return None
+        spans, i = found
+        if i >= 0 and col < spans[i].py_end:
+            return spans[i]
+        return None
+
+    def span_before(self, line: int, col: int) -> Span | None:
+        """The nearest substitution span ending at or before `col`."""
+        found = self._locate(line, col)
+        if found is None:
+            return None
+        spans, i = found
+        if i >= 0 and spans[i].py_end <= col:
+            return spans[i]
+        return None
