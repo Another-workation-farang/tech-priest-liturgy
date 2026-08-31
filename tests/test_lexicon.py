@@ -27,7 +27,15 @@ def test_lexicon_is_bijective():
 
 
 def test_tables_do_not_overlap():
-    keys = [*lexicon.KEYWORDS, *lexicon.SOFTWORDS, *lexicon.CURSES]
+    # T1: NUMERALS belongs here too. LEXICON merges all four with `**`, so a
+    # word appearing in two tables is silently resolved by merge order rather
+    # than reported -- and the numerals were the one table never checked.
+    keys = [
+        *lexicon.KEYWORDS,
+        *lexicon.SOFTWORDS,
+        *lexicon.CURSES,
+        *lexicon.NUMERALS,
+    ]
     assert len(keys) == len(set(keys))
 
 
@@ -60,3 +68,42 @@ def test_every_curse_target_is_a_real_exception_class(lit, target):
     cls = getattr(builtins, target, None)
     assert isinstance(cls, type), f"{target!r} is not a builtin"
     assert issubclass(cls, BaseException)
+
+
+def test_numerals_substitute_to_integer_literals():
+    assert lexicon.NUMERALS == {"twice": "2", "thrice": "3"}
+
+
+@pytest.mark.parametrize("lit,target", sorted(lexicon.NUMERALS.items()))
+def test_every_numeral_target_is_a_decimal_integer(lit, target):
+    assert target.isdigit(), f"{lit} -> {target} is not an integer literal"
+
+
+def test_numerals_are_in_the_lexicon():
+    # They substitute like any other alias, everywhere -- `x = thrice` is `x = 3`.
+    assert lexicon.LEXICON["thrice"] == "3"
+
+
+def test_construct_keywords_map_to_no_python_word():
+    # They are recognised by the carrier pass, not substituted by the alias pass.
+    assert not (lexicon.CONSTRUCT_KEYWORDS & set(lexicon.LEXICON))
+
+
+def test_reserved_is_the_union_of_every_taken_word():
+    assert lexicon.RESERVED == set(lexicon.LEXICON) | lexicon.CONSTRUCT_KEYWORDS
+
+
+def test_reserved_count_is_sixty_three():
+    # 38 keywords + 5 builtins + 15 curses + 2 numerals + 3 constructs.
+    assert len(lexicon.RESERVED) == 63
+
+
+def test_numerals_do_not_break_bijectivity():
+    # M11: this was byte-identical to test_lexicon_is_bijective and so
+    # asserted nothing about numerals at all. The property that actually
+    # matters here is that the numerals survive the inversion -- their
+    # targets are integer literals, not names, and a target colliding with
+    # any other table's would drop one of the two from INVERSE silently.
+    assert lexicon.INVERSE["3"] == "thrice"
+    assert lexicon.INVERSE["2"] == "twice"
+    assert set(lexicon.NUMERALS.values()) <= set(lexicon.INVERSE)

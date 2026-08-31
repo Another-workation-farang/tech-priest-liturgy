@@ -2,12 +2,34 @@
 
 Line numbers need no mapping: the token pass preserves lines exactly, so
 line N of the Python is line N of the Liturgy. Only columns move.
+
+Every column here is a *character* offset. `char_offset` is the door
+everything from `ast` and `traceback` has to come through first, since
+those two count bytes.
 """
 
 from __future__ import annotations
 
 from bisect import bisect_right
 from dataclasses import dataclass, field
+
+
+def char_offset(line: str, byte_offset: int) -> int:
+    """Convert a UTF-8 byte offset to a character offset within `line`.
+
+    `ast.col_offset`/`end_col_offset` and `traceback`'s `colno`/`end_colno`
+    all count UTF-8 bytes; everything else here -- `tokenize`, string
+    slicing, `SourceMap` -- counts characters. A multi-byte character
+    earlier on the line would otherwise skew every later column, so a byte
+    offset must be converted against the very line it indexes into (the
+    *generated Python* line, not the Liturgy one) before `to_lit` sees it.
+
+    An empty `line` means "no text to measure against"; the offset is
+    returned unchanged rather than collapsed to zero.
+    """
+    if not line:
+        return byte_offset
+    return len(line.encode("utf-8")[:byte_offset].decode("utf-8", "ignore"))
 
 
 @dataclass(frozen=True, slots=True)

@@ -142,6 +142,15 @@ treated as a considered act rather than a reflex:
 | `unseal` | `open` |
 | `hearken` | `input` |
 
+### Numerals
+
+Two spelled-out numbers, useful chiefly as a `litany`'s attempt count:
+
+| Liturgy | Python |
+|---|---|
+| `twice` | `2` |
+| `thrice` | `3` |
+
 ### Exceptions
 
 Built-in exception types get names too, both for `curse ... styled` (Python's
@@ -165,6 +174,82 @@ exception's type:
 | `UnknownInvocation` | `NameError` |
 | `MotiveFailure` | `RuntimeError` |
 | `RiteUnwritten` | `NotImplementedError` |
+
+## The three constructs
+
+Spec II adds three things Python has no name for. Save this as
+`constructs.lit`:
+
+```
+consecrated MAX_ATTEMPTS = 3
+
+
+rite divide(a, b):
+    augur:
+        b be nay Void
+        b != 0
+    render a / b
+
+
+rite flaky(attempts):
+    attempts.append(1)
+    proclaim MotiveFailure("the spirit is silent")
+
+
+rite main():
+    intone(f"++ 6 / 2 is {divide(6, 2)} ++")
+
+    attempt:
+        divide(1, 0)
+    curse ImpureOffering styled omen:
+        intone(f"++ {omen} ++")
+
+    seen = []
+    attempt:
+        litany(MAX_ATTEMPTS, resting=0, curse=MotiveFailure):
+            flaky(seen)
+    curse MotiveFailure:
+        intone(f"++ attempts: {measure(seen)} ++")
+
+
+should __name__ == "__main__":
+    main()
+```
+
+```
+$ liturgy chant constructs.lit
+++ 6 / 2 is 3.0 ++
+++ the omens forbid it -- b != 0 ++
+++ attempts: 3 ++
+```
+
+`consecrated NAME = value` is a binding the compiler will not let you
+rebind: a second assignment, a second `consecrated` of the same name, and a
+`consecrated` inside a loop body are all rejected at compile time. The
+limitation is real and worth stating plainly: what the compiler cannot see,
+it cannot stop. `setattr`, `globals()`, assignment through the module
+object, and `exec` all get through. This is enforcement, not a guarantee.
+
+`litany(thrice, resting=2, curse=TimeoutError):` re-chants its body when it
+raises. The first argument is the *total* number of attempts, not the number
+of retries. `curse=` names what to catch and is required and keyword-only,
+so nothing is caught by accident; `resting=` is optional and, left out,
+pauses for nothing between attempts. `cease`/`persist` written at the
+litany's own level are rejected at compile time — they would bind to the
+retry loop the construct generates, not anything you wrote — but the same
+words inside a real loop in the body are fine.
+
+`augur:` is a set of bare conditions, one per line, allowed only at the
+opening of a rite (a docstring may come first). It is a contract, not an
+assertion — it survives `-O` — and a failing condition raises
+`ImpureOffering` with a message that quotes the *Liturgy* source of the
+condition that failed, not the compiled Python. It is not a
+Liturgy-specific exception class because the no-runtime rule holds here too:
+generated code imports nothing from Liturgy.
+
+A fourth construct, `noospheric` — a process-wide registry — was designed
+alongside these three but cut rather than built: it is a service locator,
+and with no runtime, it had nowhere clean to live.
 
 ## Heresy: calling the rite by its mundane name
 
@@ -271,15 +356,11 @@ requires Python >= 3.12.
 
 ## What's not built yet
 
-This is Spec I of three — Core. It gets you alias-only Liturgy: writing,
-running, and debugging `.lit` files with an honest import hook and honest
-tracebacks. Two more specs are designed but not implemented:
+This is Spec I and II of three — Core and Constructs. Spec I gets you
+alias-only Liturgy: writing, running, and debugging `.lit` files with an
+honest import hook and honest tracebacks. Spec II adds the three constructs
+above. One more spec is designed but not implemented:
 
-- **Spec II — constructs.** An AST-level pass adding four things Python has
-  no name for: `consecrated` (a constant that is actually enforced, not just
-  a naming convention), `litany` (a retry block), `augur` (precondition
-  contracts on a rite's arguments), and `noospheric` (a process-wide
-  registry).
 - **Spec III — tooling.** A CLI verb surface: `augur` (lint), `prove` (test
   runner), `sanctify` (formatter), `transcribe` (translate plain Python into
   Liturgy), plus `forge`, `consecrate`, `purge`, and `anoint`. Core already

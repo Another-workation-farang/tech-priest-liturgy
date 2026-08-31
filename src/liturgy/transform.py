@@ -316,6 +316,19 @@ def _splice(src: str, subs: list[Substitution]) -> tuple[str, SourceMap]:
             raise ValueError(
                 f"substitution would add a line: {s.text!r} at row {s.row}"
             )
+        # The other way to break it, which the check above cannot see: a span
+        # whose columns come from two different rows. Nothing in the text
+        # gives it away -- the replacement may be the empty string -- but the
+        # splice below indexes one line with both, so the excess silently
+        # eats whatever sits at those columns on the wrong line. A carrier
+        # built across a line continuation did exactly this.
+        if s.col_end < s.col_start or s.col_end > len(
+            lines[s.row - 1].rstrip("\n")
+        ):
+            raise ValueError(
+                f"substitution span [{s.col_start}, {s.col_end}) "
+                f"does not lie within row {s.row}"
+            )
         by_line.setdefault(s.row, []).append(s)
 
     for row, row_subs in by_line.items():

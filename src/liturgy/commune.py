@@ -6,6 +6,7 @@ import code
 import os
 import sys
 
+from .compiler import _PASSES, compile_litany
 from .loader import install as install_hook
 from .transform import UnfinishedLitany, transform
 
@@ -19,7 +20,11 @@ FAREWELL = "++ communion ended. the Omnissiah is served. ++"
 class LiturgyConsole(code.InteractiveConsole):
     def runsource(self, source, filename="<commune>", symbol="single"):
         try:
-            py, _smap = transform(source)
+            # _PASSES, not the default: the alias pass alone leaves every
+            # construct header unparseable, so the incompleteness probe
+            # below would report `consecrated PORT = 8080` as a syntax
+            # error and compile_litany would never be reached.
+            py, _smap = transform(source, _PASSES)
         except UnfinishedLitany:
             # Unterminated bracket or string: not an error, just unfinished.
             # transform() reports this as a SyntaxError subclass so file
@@ -44,6 +49,12 @@ class LiturgyConsole(code.InteractiveConsole):
 
         if compiled is None:
             return True  # incomplete
+
+        try:
+            compiled = compile_litany(source, filename, mode=symbol)
+        except SyntaxError:
+            self.showsyntaxerror(filename)
+            return False
 
         self.runcode(compiled)
         return False

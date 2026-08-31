@@ -10,8 +10,9 @@ import threading
 import traceback
 import types
 
+from .compiler import _PASSES
 from .lexicon import INVERSE
-from .sourcemap import SourceMap
+from .sourcemap import SourceMap, char_offset
 from .transform import UnfinishedLitany, split_lines, transform
 
 BANNER_OPEN = "++ MACHINE CURSE ++"
@@ -35,7 +36,9 @@ _PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 # IndentationError, PermissionError -- to the least informative word we have.
 _CATCH_ALL_ANCESTORS = frozenset({"Exception", "BaseException", "object"})
 
-_map_cache: dict[str, SourceMap | None] = {}
+# The generated Python and its column map, cached together: rendering a
+# caret needs both. See `_transformed`.
+_map_cache: dict[str, tuple[list[str], SourceMap | None]] = {}
 
 # The exact source compiled for a given path, recorded at the moment of
 # compilation by the loader and by chant(). This is the only place the truly
@@ -101,19 +104,45 @@ def _read_source(path: str) -> str:
         return fh.read()
 
 
-def _map_for(path: str) -> SourceMap | None:
-    """Lazily build the column map. Only needed when rendering a curse."""
+def _transformed(path: str) -> tuple[list[str], SourceMap | None]:
+    """The generated Python and its column map. Lazy; only a curse needs it.
+
+    Both come from one `transform`, and both are needed to place a caret:
+    `traceback` reports `colno`/`end_colno` as UTF-8 *byte* offsets into the
+    generated Python line, while every column the SourceMap speaks is a
+    character offset. Converting one to the other requires the very line the
+    byte offset indexes into.
+
+    Must run the same passes `compiler` actually compiled with, `_PASSES` --
+    including `carrier_pass`. A `consecrated` (or other construct) header
+    line is itself an executable statement, so a runtime frame can point
+    straight at it; mapping that line's columns with only the default passes
+    leaves the map off by the carrier's width delta.
+    """
     if path not in _map_cache:
         try:
-            _map_cache[path] = transform(_read_source(path))[1]
+            py, smap = transform(_read_source(path), _PASSES)
+            _map_cache[path] = (split_lines(py), smap)
         except UnfinishedLitany as err:
             # Source that never finishes tokenising still has a usable map
             # for everything before the failure -- which is where the caret
-            # for that very failure belongs.
-            _map_cache[path] = err.sourcemap
+            # for that very failure belongs. The generated text does not
+            # survive on the exception; `char_offset` reads an empty line as
+            # "nothing to measure against" and passes the offset through.
+            _map_cache[path] = ([], err.sourcemap)
         except Exception:
-            _map_cache[path] = None
+            _map_cache[path] = ([], None)
     return _map_cache[path]
+
+
+def _map_for(path: str) -> SourceMap | None:
+    return _transformed(path)[1]
+
+
+def _py_line_for(path: str, lineno: int) -> str:
+    """The generated-Python line `traceback`'s byte columns index into."""
+    lines = _transformed(path)[0]
+    return lines[lineno - 1] if 1 <= lineno <= len(lines) else ""
 
 
 def _line_for(path: str, lineno: int) -> str:
@@ -231,7 +260,13 @@ def _render_lit_frame(frame: traceback.FrameSummary, out: list[str]) -> None:
     smap = _map_for(frame.filename)
     if smap is None or frame.colno is None:
         return
-    start = smap.to_lit(frame.lineno, frame.colno)
+    # colno/end_colno are UTF-8 byte offsets into the *generated Python*
+    # line, so they have to be converted against that line -- not the
+    # Liturgy one -- before the SourceMap, which counts characters, sees
+    # them. Without this a single multi-byte character earlier on the line
+    # slides the caret right by its extra bytes, or off the end entirely.
+    py_line = _py_line_for(frame.filename, frame.lineno)
+    start = smap.to_lit(frame.lineno, char_offset(py_line, frame.colno))
     if frame.end_lineno is not None and frame.end_lineno != frame.lineno:
         # end_colno is a column on end_lineno, not on this line: the
         # expression runs off the end. Underline to the end of what we print
@@ -241,7 +276,9 @@ def _render_lit_frame(frame: traceback.FrameSummary, out: list[str]) -> None:
     elif frame.end_colno is None:
         end = start + 1
     else:
-        end = smap.to_lit(frame.lineno, frame.end_colno)
+        end = smap.to_lit(
+            frame.lineno, char_offset(py_line, frame.end_colno)
+        )
     _render_caret(line, start, end, out)
 
 

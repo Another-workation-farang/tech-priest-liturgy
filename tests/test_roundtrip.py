@@ -10,7 +10,8 @@ import pytest
 
 from _reverse import to_liturgy
 
-from liturgy.lexicon import LEXICON
+from liturgy.constructs import carrier_pass
+from liturgy.lexicon import RESERVED
 from liturgy.transform import transform
 
 
@@ -206,10 +207,14 @@ def _liturgy_word_as_identifier(toks) -> bool:
             and prev.type == tokenize.OP
             and prev.string == "."
         )
-        if tok.type == tokenize.NAME and tok.string in LEXICON and not after_dot:
+        if tok.type == tokenize.NAME and tok.string in RESERVED and not after_dot:
             return True
         prev = tok
     return False
+
+
+def test_the_sweep_skips_on_the_full_reserved_set():
+    assert {"litany", "augur", "consecrated", "thrice", "twice"} <= RESERVED
 
 
 def _corpus() -> list[pathlib.Path]:
@@ -244,6 +249,18 @@ def test_real_python_files_round_trip_through_liturgy(capsys):
 
         swept += 1
         try:
+            # I7: the sweep is the spec's designated backstop for Spec II,
+            # and `transform` here runs DEFAULT_PASSES -- the alias pass
+            # alone. Without this line the carrier pass never sees a single
+            # corpus file and the backstop is inert for the pass it exists
+            # to guard. A file with no construct keyword in statement
+            # position must yield no substitution at all: anything else is
+            # the carrier pass firing on somebody's ordinary identifier,
+            # which is the Spec I failure this whole design exists to avoid.
+            carried = carrier_pass(toks)
+            if carried:
+                failures.append(f"{path}: carrier_pass produced {carried!r}")
+                continue
             back = transform(to_liturgy(src))[0]
         except Exception as exc:  # noqa: BLE001 - report, do not mask
             failures.append(f"{path}: {type(exc).__name__}: {exc}")

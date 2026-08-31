@@ -115,6 +115,29 @@ def test_a_pass_that_adds_a_line_is_rejected_loudly():
         transform("x = 1\n", passes=(bad_pass,))
 
 
+def test_splice_span_guard_excludes_the_trailing_newline():
+    # `lines[row - 1]` keeps its trailing "\n" (see `split_lines`), so a
+    # guard that measures against the raw line length lets a span that
+    # reaches one column past the real text through -- [0, 6) is not a
+    # valid span within "abcde" even though "abcde\n" is 6 characters long.
+    # Letting it through would silently splice two lines together.
+    def swallows_the_newline(toks):
+        return [Substitution(1, 0, 6, "")]
+
+    with pytest.raises(ValueError, match=r"does not lie within row"):
+        transform("abcde\n", passes=(swallows_the_newline,))
+
+
+def test_splice_span_guard_allows_the_full_line_up_to_the_newline():
+    # The boundary case just inside the guard: a span reaching exactly the
+    # end of the line's text, not its newline, is legitimate.
+    def replaces_the_whole_line(toks):
+        return [Substitution(1, 0, 5, "fghij")]
+
+    out, _ = transform("abcde\n", passes=(replaces_the_whole_line,))
+    assert out == "fghij\n"
+
+
 # Regression: I6 — transform's failure contract. tokenize.TokenError is not
 # a SyntaxError and carries no filename, so an unclosed bracket -- the
 # commonest typo -- escaped chant raw.

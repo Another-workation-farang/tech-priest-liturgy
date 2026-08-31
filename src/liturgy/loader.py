@@ -19,8 +19,9 @@ from importlib.machinery import (
     SourcelessFileLoader,
 )
 
+from .compiler import compile_litany
 from .curse import record_source
-from .transform import split_lines, transform
+from .transform import split_lines
 
 SUFFIX = ".lit"
 
@@ -39,10 +40,7 @@ class LiturgyLoader(SourceFileLoader):
         # source is known for certain -- record it so a later curse render
         # is correct even if the .lit file is edited on disk afterwards.
         record_source(path, src)
-        py, _smap = transform(src, filename=path)
-        return compile(
-            py, path, "exec", dont_inherit=True, optimize=_optimize
-        )
+        return compile_litany(src, path, optimize=_optimize)
 
     def exec_module(self, module):  # noqa: D102
         # Recording in source_to_code alone is not enough: the import system
@@ -100,7 +98,6 @@ def chant(path: str, argv: list[str]) -> int:
         src = importlib.util.decode_source(fh.read())
 
     record_source(path, src)
-    py, _smap = transform(src, filename=path)
 
     # No loader is involved here, so seed linecache by hand or the traceback
     # will have no source lines to show.
@@ -128,7 +125,7 @@ def chant(path: str, argv: list[str]) -> int:
     sys.argv = [path, *argv]
     sys.path.insert(0, script_dir)
     try:
-        exec(compile(py, path, "exec", dont_inherit=True), module.__dict__)
+        exec(compile_litany(src, path), module.__dict__)
     finally:
         # Remove one occurrence, not every one: the directory may legitimately
         # have been on sys.path already, or the litany may have added it.

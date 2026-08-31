@@ -1,0 +1,36 @@
+## The Three Constructs
+## Chanted to demonstrate what Python cannot say.
+
+consecrated MAX_ATTEMPTS = 3
+
+
+rite divide(a, b):
+    augur:
+        b be nay Void
+        b != 0
+    render a / b
+
+
+rite flaky(attempts):
+    attempts.append(1)
+    proclaim MotiveFailure("the spirit is silent")
+
+
+rite main():
+    intone(f"++ 6 / 2 is {divide(6, 2)} ++")
+
+    attempt:
+        divide(1, 0)
+    curse ImpureOffering styled omen:
+        intone(f"++ {omen} ++")
+
+    seen = []
+    attempt:
+        litany(MAX_ATTEMPTS, resting=0, curse=MotiveFailure):
+            flaky(seen)
+    curse MotiveFailure:
+        intone(f"++ attempts: {measure(seen)} ++")
+
+
+should __name__ == "__main__":
+    main()

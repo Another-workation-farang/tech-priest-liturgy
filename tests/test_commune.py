@@ -133,3 +133,75 @@ def test_console_script_repl_can_import_from_the_working_directory(tmp_path):
         cwd=str(tmp_path), capture_output=True, text=True,
     )
     assert "ave" in out.stdout
+
+
+# --- Spec II constructs at the prompt --------------------------------------
+#
+# `runsource` used to transform with DEFAULT_PASSES, so every construct
+# header reached `self.compile()` un-desugared and died as a SyntaxError
+# before `compile_litany` was ever consulted. Nothing in this file mentioned
+# a construct, which is why that shipped. These drive the real console over
+# stdin, one construct each, plus a block typed across several lines.
+
+
+def commune(*lines: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, "-m", "liturgy", "commune"],
+        input="".join(f"{line}\n" for line in lines),
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_consecrated_works_at_the_prompt():
+    out = commune("consecrated PORT = 8080", "intone(PORT)")
+    assert "8080" in out.stdout
+    assert "SyntaxError" not in out.stdout + out.stderr
+
+
+def test_a_rebinding_within_one_prompt_entry_is_rejected():
+    # Each entry is its own compilation unit, and `commune` compiles with
+    # mode="single" -- an `Interactive` node, not a `Module`. `ConstructPass`
+    # had no visitor for it, so the prompt got no scope visit at all: no
+    # rebinding check, and (on 3.12/3.13, where annotations are still
+    # eager) not even a desugared carrier.
+    out = commune("consecrated PORT = 8080; PORT = 9")
+    assert "may not be rebound" in out.stdout + out.stderr
+
+
+def test_a_rebinding_typed_on_a_later_line_is_not_caught():
+    # Enforcement is per-compilation-unit, and the compiler has no record of
+    # the earlier entry. This is a real limit of the design, documented in
+    # Chapter VII; asserting it here keeps it from being mistaken for a bug
+    # and "fixed" with something that cannot work.
+    out = commune("consecrated PORT = 8080", "PORT = 9", "intone(PORT)")
+    assert "9" in out.stdout
+    assert "may not be rebound" not in out.stdout + out.stderr
+
+
+def test_litany_works_at_the_prompt_typed_across_several_lines():
+    out = commune(
+        "tries = []",
+        "litany(thrice, curse=MotiveFailure):",
+        "    tries.append(1)",
+        "    should measure(tries) < 2:",
+        "        proclaim MotiveFailure('again')",
+        "",
+        "intone(measure(tries))",
+    )
+    assert "2" in out.stdout
+    assert "SyntaxError" not in out.stdout + out.stderr
+
+
+def test_augur_works_at_the_prompt():
+    out = commune(
+        "rite divide(a, b):",
+        "    augur:",
+        "        b != 0",
+        "    render a / b",
+        "",
+        "intone(divide(6, 2))",
+        "divide(1, 0)",
+    )
+    assert "3.0" in out.stdout
+    assert "the omens forbid it -- b != 0" in out.stdout + out.stderr
