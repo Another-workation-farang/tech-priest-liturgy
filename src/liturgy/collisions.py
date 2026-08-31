@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from .lexicon import LEXICON
 from .rewrite import _names_in_target, _stored_names
+from .sourcemap import char_offset
 from .transform import alias_pass, split_lines, transform
 
 
@@ -74,15 +75,27 @@ def find_collisions(
 
     (a) A substitution produced the bound name -- the author wrote `span` and
         it became `range`. Position comes from the `Substitution` itself,
-        which is already in Liturgy coordinates and exact.
+        which is already in Liturgy coordinates and exact. Two bindings on
+        one row can share both row and substituted text -- `span, span = 1,
+        2` -- so substitutions are consumed in left-to-right order rather
+        than collapsed by `(row, text)`; `_bindings` yields same-node
+        multi-target bindings in source order, matching that.
     (b) The bound name is itself a Liturgy word, surviving unsubstituted
         because an exemption protected it -- `invoke os styled span` binds
-        `span`, and every later reference to it becomes `range`. Position
-        falls back to the AST node, whose column is the statement's start for
-        `for`/`def`/`class`/`except`/`import`. Line is exact regardless.
+        `span`, and every later reference to it becomes `range`. The AST
+        node's own column is a *generated-Python* column -- for `for`/
+        `def`/`class`/`except`/`import` it is only the statement's start
+        (Line is exact regardless), but for a parameter or a `match`
+        capture it is the name's own column, and an earlier substitution on
+        the same row can have shifted it (`rite` -> `def` is one character
+        shorter). Either way it is mapped back to Liturgy coordinates the
+        same two-step way `rewrite._liturgy_source` does: `char_offset` from
+        UTF-8 bytes to characters against the *generated* line, then
+        `SourceMap.to_lit` from generated-Python characters to Liturgy.
 
     Clause (b) alone is the whole rule for a `.py` file, which has no
-    substitutions.
+    substitutions and no SourceMap -- the AST's own column already is the
+    answer.
 
     Raises:
         UnfinishedLitany: `src` ends mid-bracket or mid-string.
@@ -91,12 +104,17 @@ def find_collisions(
             it as a compile failure rather than a collision.
     """
     if liturgy:
-        py, _smap = transform(src, filename=filename)
+        py, smap = transform(src, filename=filename)
         tree = ast.parse(py, filename)
+        py_lines = split_lines(py)
         toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
-        subs = {(s.row, s.text): s for s in alias_pass(toks)}
+        subs: dict[tuple[int, str], list] = {}
+        for s in alias_pass(toks):
+            subs.setdefault((s.row, s.text), []).append(s)
     else:
         tree = ast.parse(src, filename)
+        smap = None
+        py_lines = []
         subs = {}
 
     lines = split_lines(src)
@@ -105,13 +123,19 @@ def find_collisions(
     for node in ast.walk(tree):
         for name, at in _bindings(node):
             line = getattr(at, "lineno", 0)
-            sub = subs.get((line, name))
+            queue = subs.get((line, name))
+            sub = queue.pop(0) if queue else None
             if sub is not None:
                 word = lines[line - 1][sub.col_start : sub.col_end]
                 col = sub.col_start
             elif name in LEXICON:
                 word = name
-                col = getattr(at, "col_offset", 0) or 0
+                raw_col = getattr(at, "col_offset", 0) or 0
+                if smap is None:
+                    col = raw_col
+                else:
+                    py_line = py_lines[line - 1] if line - 1 < len(py_lines) else ""
+                    col = smap.to_lit(line, char_offset(py_line, raw_col))
             else:
                 continue
             found.add(

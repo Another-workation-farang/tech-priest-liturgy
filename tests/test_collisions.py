@@ -118,6 +118,56 @@ def test_clause_a_reports_the_words_own_column():
     assert (c.line, c.col) == (1, 8)
 
 
+def _cols(src):
+    return sorted(
+        (c.line, c.col, c.word, c.target)
+        for c in find_collisions(src, "p.lit", liturgy=True)
+    )
+
+
+def test_two_duplicate_targets_on_one_row_both_collide():
+    # `span, span = 1, 2` substitutes `range` twice on the same row. Keying
+    # the substitution lookup by (row, text) alone would keep only the last
+    # one and both bindings would resolve to its column -- the first
+    # occurrence must not disappear.
+    assert _cols("span, span = 1, 2\n") == [
+        (1, 0, "span", "range"),
+        (1, 6, "span", "range"),
+    ]
+
+
+def test_a_chained_assignment_to_the_same_word_both_collide():
+    # `span = span = 1` -- two targets, same statement node, same word.
+    assert _cols("span = span = 1\n") == [
+        (1, 0, "span", "range"),
+        (1, 7, "span", "range"),
+    ]
+
+
+def test_a_keyword_only_parameter_reports_its_liturgy_column():
+    # `rite f(*, span=1):` -> `def f(*, span=1):` -- `rite` -> `def` is one
+    # character shorter, so `span` sits at column 9 in the generated Python
+    # but column 10 in the Liturgy source. The AST's own column is a
+    # generated-Python column and must be mapped back through the
+    # SourceMap, not reported as-is.
+    #
+    # (`span` survives unsubstituted here only because `transform`'s Rule 2
+    # treats a parameter default like a call-site keyword argument -- a
+    # pre-existing, unrelated quirk this test isn't about.)
+    (c,) = find_collisions("rite f(*, span=1):\n    abide\n", "p.lit", liturgy=True)
+    assert (c.line, c.col) == (1, 10)
+
+
+def test_a_duplicate_after_an_earlier_substitution_on_the_same_row():
+    # `foreach` -> `for` shifts every later column on the row, and the
+    # `span, span` for-target pair still resolves to two distinct,
+    # correctly-placed collisions -- both fixes exercised together.
+    assert _cols("foreach span, span among [1, 2]:\n    abide\n") == [
+        (1, 8, "span", "range"),
+        (1, 14, "span", "range"),
+    ]
+
+
 # --- .py files: clause (b) only ---
 def test_python_bindings_of_liturgy_words_collide():
     src = "span = 5\ndef render(): pass\nx = 1\n"
