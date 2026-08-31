@@ -448,6 +448,8 @@ unthemed.</p>
 </div>
 <div>
 <h3>Numeral words</h3>
+<p>Two counting words, spelled out because they name an attempt count, not
+a value in the data a rite works on:</p>
 <div class="table-scroll">
 <table>
   <tr><th>LITURGY</th><th>PYTHON</th></tr>
@@ -850,7 +852,7 @@ enforcement does not reach.</p>
 
 <h3>litany — a rite re-chanted on failure</h3>
 
-<div class="code-block"><pre><span class="kw">litany</span>(<span class="kw">thrice</span>, resting=2, curse=TimeoutError):
+<div class="code-block"><pre><span class="kw">litany</span>(thrice, resting=2, curse=TimeoutError):
     send_offering()</pre></div>
 
 <p><code>litany(count, resting=..., curse=...):</code> runs its body once,
