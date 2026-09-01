@@ -925,30 +925,26 @@ than module scope. It was <b>cut, not deferred</b> — it is a service
 locator, and Liturgy generates code with no runtime of its own for a
 registry like that to live in. There is no clean place left to put it.</p>
 
-<h3>The two verbs still unwritten</h3>
+<h3>The one verb still unwritten</h3>
 
-<p>Six verbs are built; Chapter XI sets them down. Two names remain
-reserved on the command line, and it is worth recording why each is still a
-name and nothing more, rather than leaving the blanks unexplained.</p>
+<p>Seven verbs are built; Chapter XI sets them down. One name remains
+reserved on the command line, and it is worth recording why it is still a
+name and nothing more, rather than leaving the blank unexplained.</p>
 
-<p><code>sanctify</code> — to set a litany's form in order — is unbuilt
-because a formatter is its own project rather than a verb on someone
-else's. Doing it properly means a full-fidelity round-trip through
-comments, blank lines and string quoting; doing it improperly means a tool
-that eats your source.</p>
-
-<p><code>forge</code> and <code>consecrate</code> were both in this list, and
-neither is any longer. They were two of the three words reserved as flavour
-with no feature behind them. Ahead-of-time compilation turned out to be what
-<code>forge</code> had been waiting for; carrying <code>consecrated</code>
-past the compilation unit turned out to be what <code>consecrate</code> had.
-Chapter XI sets both down. The reservation did its work twice — each name was
-still there when something worth spending it on arrived.</p>
+<p><code>forge</code>, <code>consecrate</code>, <code>prove</code> and
+<code>sanctify</code> were all in this list once. Each left it for its own
+reason, and the reasons are worth keeping: <code>forge</code> and
+<code>consecrate</code> were words reserved as flavour that turned out to
+have features waiting for them; <code>prove</code> was declined for adding a
+layer and no capability, and was built anyway once it was clear that
+boilerplate every project must copy is itself a cost; <code>sanctify</code>
+was declined because a formatter done improperly eats your source, and was
+built only once it could check that it had not.</p>
 
 <p><code>anoint</code> is unbuilt because there is still no feature behind
-it. It was reserved as flavour, a good word held back so that nothing trivial
-could spend it later. It is held, not planned, and no page is being left
-blank for it.</p>
+it. It is the last of the reserved names, held rather than planned — and
+holding it is the point. A name still unspent is worth more than a name spent
+on something trivial. No page is being left blank for it.</p>
 
 <p><code>augur</code> and <code>purge</code> each name two different things
 in this project. <code>augur</code> is both Chapter X's source construct
@@ -1070,19 +1066,19 @@ rite that contains it; each rite's opening belongs to that rite alone.</p>
 <h2><pre>[XI] THE READING OF OMENS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
-<p class="epigraph">Two verbs chant. Five do not. A sixth chants only what you wrote to be
+<p class="epigraph">Two verbs chant. Six do not. A seventh chants only what you wrote to be
 chanted. An adept who only ever chants learns of his errors from the
 machine, at the hour the machine chooses. These are the rites of asking
 first.</p>
 
 <p><code>augur</code>, <code>transcribe</code>, <code>forge</code>,
-<code>consecrate</code>, <code>prove</code> and <code>purge</code> are the
-built tooling verbs. <code>augur</code> reads a litany,
-<code>transcribe</code> writes one, <code>forge</code> compiles one without
-chanting it, <code>consecrate</code> checks the seals across all of them,
-and <code>purge</code> clears what chanting left behind. <code>prove</code>
-is the exception that does run a litany — but only the trials you wrote to
-be run.</p>
+<code>consecrate</code>, <code>sanctify</code>, <code>prove</code> and
+<code>purge</code> are the built tooling verbs. <code>augur</code> reads a
+litany, <code>transcribe</code> writes one, <code>forge</code> compiles one
+without chanting it, <code>consecrate</code> checks the seals across all of
+them, <code>sanctify</code> sets one's form in order, and <code>purge</code>
+clears what chanting left behind. <code>prove</code> is the exception that
+does run a litany — but only the trials you wrote to be run.</p>
 
 <h3>augur — the omens read before the chant</h3>
 
@@ -1386,6 +1382,68 @@ server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here</pre
 
 <p>The exit status is 0 when every seal held, and 1 when any was reached or
 any litany could not be read.</p>
+
+<h3>sanctify — a litany's form set in order</h3>
+
+<p><code>sanctify</code> reshapes the whitespace between a litany's tokens
+and changes nothing else. Indentation becomes four spaces to the level,
+trailing whitespace goes, runs of blank lines are capped at two, and the
+file ends with exactly one newline.</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy sanctify --check
+   unclean prayer.lit
+++ 1 unclean, 0 already in order ++
+
+<span class="prompt">$</span> liturgy sanctify
+   sanctified prayer.lit
+++ 1 sanctified, 0 already in order ++</pre>
+
+<p><code>--check</code> writes nothing and exits 1 if anything is unclean,
+which is the form a chant-hall's own trials want.</p>
+
+<p>Only <code>.lit</code> files are touched. Formatting Python is
+<code>ruff</code>'s work or <code>black</code>'s, and neither of them can
+read a litany — which is the whole reason this verb exists.</p>
+
+<h3>What sanctify refuses to do</h3>
+
+<p>Chapter IX declined a formatter twice, and the second reason was the real
+one: done improperly, it eats your source. <code>ast.unparse</code> would
+give a full reformatting in three lines and drop every comment and blank
+line on the way. It is not used here, and this verb re-flows no expression,
+re-quotes no string, and moves no token.</p>
+
+<p>Three shapes are left alone on purpose, each of which a careless
+formatter gets wrong:</p>
+
+<ul>
+<li><b>The interior of a multi-line string.</b> Its trailing spaces and its
+indentation are its value, not its layout.</li>
+<li><b>A bracket continuation.</b> The machine emits no indentation token
+for one, and how an adept aligns a continued line is a choice.</li>
+<li><b>A standalone comment before a block's first statement.</b> The
+machine reports it <i>before</i> the indentation token, so a formatter
+counting depth as it reads will indent that comment to the enclosing level
+and quietly walk it out of the block it introduces. Here such a comment
+takes the depth of the statement it belongs to.</li>
+</ul>
+
+<h3>The guarantee, checked rather than claimed</h3>
+
+<p>Before returning anything, <code>sanctify</code> reads its own output
+back and compares two things against the original: every token that carries
+meaning — comments emphatically included — and the tree the litany compiles
+to. If either differs, the verb refuses and the file is left exactly as it
+was.</p>
+
+<div class="warning"><pre>++ CANNOT SANCTIFY: prayer.lit the meaning would have changed ++</pre></div>
+
+<p>That check is not decoration. It caught a real defect while this verb was
+being written, and refused rather than writing the damaged file.</p>
+
+<p>Encoding, line endings and a BOM are preserved exactly as
+<code>transcribe</code> preserves them. A litany that does not parse is
+refused and left untouched, and one refusal does not end the walk.</p>
 
 <h3>prove — the trials of a litany</h3>
 

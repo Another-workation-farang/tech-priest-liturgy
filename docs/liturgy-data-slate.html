@@ -442,14 +442,14 @@ REBUKE.</p>
 <h2><pre>[VII] THE READING OF OMENS — TOOLING VERBS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
-<p class="desc">SIX TOOLING VERBS ARE BUILT.
+<p class="desc">SEVEN TOOLING VERBS ARE BUILT.
 <span class="lower amber">augur</span> READS A LITANY, <span class="lower amber">transcribe</span> WRITES
 ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
 <span class="lower amber">consecrate</span> CHECKS THE SEALS ACROSS ALL OF THEM,
+<span class="lower amber">sanctify</span> SETS ONE'S FORM IN ORDER,
 <span class="lower amber">prove</span> RUNS THE TRIALS, AND
-<span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND. TWO NAMES —
-<span class="lower amber">sanctify</span>,
-<span class="lower amber">anoint</span> — REMAIN RESERVED AND UNBUILT.</p>
+<span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND. ONE NAME —
+<span class="lower amber">anoint</span> — REMAINS RESERVED AND UNBUILT.</p>
 
 <div class="directive">
 <pre><span class="dim">.. function::</span> <span class="sig">liturgy augur PATH... [--plain]</span>
@@ -584,6 +584,38 @@ ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
      assigned  server.lit:4
 
 ++ 1 seal broken, 1 held ++
+</pre>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy sanctify [PATH...] [--check]</span>
+
+   <span class="ok">RESHAPES THE WHITESPACE BETWEEN A LITANY'S TOKENS AND NOTHING ELSE.
+   INDENTATION TO FOUR SPACES PER LEVEL, TRAILING WHITESPACE GONE, BLANK
+   RUNS CAPPED AT TWO, ONE FINAL NEWLINE. .LIT ONLY — RUFF AND BLACK CANNOT
+   READ A LITANY, WHICH IS WHY THIS EXISTS.</span>
+
+   <span class="field">:option <b>--check</b>:</span> REPORT WHAT IS UNCLEAN AND WRITE NOTHING; EXIT 1
+                    IF ANY LITANY WOULD CHANGE.
+   <span class="alert">:does not use ast.unparse:</span> IT WOULD REFORMAT EVERYTHING AND DROP
+                               EVERY COMMENT. NO EXPRESSION IS RE-FLOWED,
+                               NO STRING RE-QUOTED, NO TOKEN MOVED.
+   <span class="field">:left alone:</span> A MULTI-LINE STRING'S INTERIOR; A BRACKET CONTINUATION;
+                A STANDALONE COMMENT BEFORE A BLOCK'S FIRST STATEMENT,
+                WHICH tokenize REPORTS BEFORE THE INDENT AND A NAIVE
+                FORMATTER WALKS OUT OF ITS BLOCK.
+   <span class="field">:guarantee:</span> THE SIGNIFICANT TOKEN STREAM AND THE COMPILED AST MUST
+               MATCH BEFORE AND AFTER, OR THE FILE IS LEFT AS IT WAS.
+   <span class="field">:returns:</span> 0 DONE, 1 REFUSED — OR, UNDER --check, 1 IF UNCLEAN.</pre>
+</div>
+
+<pre>
+<span class="dim">$</span> liturgy sanctify
+   sanctified prayer.lit
+++ 1 sanctified, 0 already in order ++
 </pre>
 </section>
 

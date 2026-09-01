@@ -647,29 +647,25 @@ a binding placed in a process-wide registry rather than module scope. It was
 with no runtime of its own for a registry like that to live in. There is no
 clean place left to put it.
 
-### The two verbs still unwritten
+### The one verb still unwritten
 
-Six verbs are built; Chapter XI sets them down. Two names remain reserved on
-the command line, and it is worth recording why each is still a name and
-nothing more, rather than leaving the blanks unexplained.
+Seven verbs are built; Chapter XI sets them down. One name remains reserved
+on the command line, and it is worth recording why it is still a name and
+nothing more, rather than leaving the blank unexplained.
 
-`sanctify` — to set a litany's form in order — is unbuilt because a formatter
-is its own project rather than a verb on someone else's. Doing it properly
-means a full-fidelity round-trip through comments, blank lines and string
-quoting; doing it improperly means a tool that eats your source.
+`forge`, `consecrate`, `prove` and `sanctify` were all in this list once.
+Each left it for its own reason, and the reasons are worth keeping: `forge`
+and `consecrate` were words reserved as flavour that turned out to have
+features waiting for them; `prove` was declined for adding a layer and no
+capability, and was built anyway once it was clear that boilerplate every
+project must copy is itself a cost; `sanctify` was declined because a
+formatter done improperly eats your source, and was built only once it could
+check that it had not.
 
-`forge` and `consecrate` were both in this list, and neither is any longer.
-They were two of the three words reserved as flavour with no feature behind
-them. Ahead-of-time compilation turned out to be what `forge` had been
-waiting for; carrying `consecrated` past the compilation unit turned out to
-be what `consecrate` had. Chapter XI sets both down. The reservation did its
-work twice — each name was still there when something worth spending it on
-arrived.
-
-`anoint` is unbuilt because there is still no feature behind it. It was
-reserved as flavour, a good word held back so that nothing trivial could
-spend it later. It is held, not planned, and no page is being left blank for
-it.
+`anoint` is unbuilt because there is still no feature behind it. It is the
+last of the reserved names, held rather than planned — and holding it is the
+point. A name still unspent is worth more than a name spent on something
+trivial. No page is being left blank for it.
 
 `augur` and `purge` each name two different things in this project. `augur`
 is both Chapter X's source construct (preconditions) and Chapter XI's CLI
@@ -786,16 +782,17 @@ that contains it; each rite's opening belongs to that rite alone.
 
 ## Chapter XI — The Reading of Omens
 
-*Two verbs chant. Five do not. A sixth chants only what you wrote to be
+*Two verbs chant. Six do not. A seventh chants only what you wrote to be
 chanted. An adept who only ever chants learns of his errors from the
 machine, at the hour the machine chooses. These are the rites of asking
 first.*
 
-`augur`, `transcribe`, `forge`, `consecrate`, `prove` and `purge` are the
-built tooling verbs. `augur` reads a litany, `transcribe` writes one, `forge`
-compiles one without chanting it, `consecrate` checks the seals across all of
-them, and `purge` clears what chanting left behind. `prove` is the exception
-that does run a litany — but only the trials you wrote to be run.
+`augur`, `transcribe`, `forge`, `consecrate`, `sanctify`, `prove` and
+`purge` are the built tooling verbs. `augur` reads a litany, `transcribe`
+writes one, `forge` compiles one without chanting it, `consecrate` checks
+the seals across all of them, `sanctify` sets one's form in order, and
+`purge` clears what chanting left behind. `prove` is the exception that
+does run a litany — but only the trials you wrote to be run.
 
 ### augur — the omens read before the chant
 
@@ -1120,6 +1117,69 @@ server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here
 
 The exit status is 0 when every seal held, and 1 when any was reached or any
 litany could not be read.
+
+### sanctify — a litany's form set in order
+
+`sanctify` reshapes the whitespace between a litany's tokens and changes
+nothing else. Indentation becomes four spaces to the level, trailing
+whitespace goes, runs of blank lines are capped at two, and the file ends
+with exactly one newline.
+
+```
+$ liturgy sanctify --check
+   unclean prayer.lit
+++ 1 unclean, 0 already in order ++
+
+$ liturgy sanctify
+   sanctified prayer.lit
+++ 1 sanctified, 0 already in order ++
+```
+
+`--check` writes nothing and exits 1 if anything is unclean, which is the
+form a chant-hall's own trials want.
+
+Only `.lit` files are touched. Formatting Python is `ruff`'s work or
+`black`'s, and neither of them can read a litany — which is the whole reason
+this verb exists.
+
+### What sanctify refuses to do
+
+Chapter IX declined a formatter twice, and the second reason was the real
+one: done improperly, it eats your source. `ast.unparse` would give a full
+reformatting in three lines and drop every comment and blank line on the
+way. It is not used here, and this verb re-flows no expression, re-quotes no
+string, and moves no token.
+
+Three shapes are left alone on purpose, each of which a careless formatter
+gets wrong:
+
+- **The interior of a multi-line string.** Its trailing spaces and its
+  indentation are its value, not its layout.
+- **A bracket continuation.** The machine emits no indentation token for
+  one, and how an adept aligns a continued line is a choice.
+- **A standalone comment before a block's first statement.** The machine
+  reports it *before* the indentation token, so a formatter counting depth
+  as it reads will indent that comment to the enclosing level and quietly
+  walk it out of the block it introduces. Here such a comment takes the
+  depth of the statement it belongs to.
+
+### The guarantee, checked rather than claimed
+
+Before returning anything, `sanctify` reads its own output back and compares
+two things against the original: every token that carries meaning —
+comments emphatically included — and the tree the litany compiles to. If
+either differs, the verb refuses and the file is left exactly as it was.
+
+```
+++ CANNOT SANCTIFY: prayer.lit the meaning would have changed ++
+```
+
+That check is not decoration. It caught a real defect while this verb was
+being written, and refused rather than writing the damaged file.
+
+Encoding, line endings and a BOM are preserved exactly as `transcribe`
+preserves them. A litany that does not parse is refused and left untouched,
+and one refusal does not end the walk.
 
 ### prove — the trials of a litany
 

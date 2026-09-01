@@ -72,7 +72,7 @@ That installs the `liturgy` console script.
 
 ## `chant` and `commune`
 
-These two run litanies; the [six tooling verbs](#augur-transcribe-forge-consecrate-prove-and-purge)
+These two run litanies; the [seven tooling verbs](#augur-transcribe-forge-consecrate-sanctify-prove-and-purge)
 further down read, translate and tidy them. `chant <file.lit> [args...]`
 executes a Liturgy file the way
 `python file.py` executes a Python one: the file becomes `__main__`,
@@ -328,7 +328,7 @@ must be exactly `"0"` — `false`, empty, or anything else still counts as
 impious). Calling a rite by its proper name, `chant` or `commune`, never
 triggers a rebuke in the first place.
 
-## `augur`, `transcribe`, `forge`, `consecrate`, `prove` and `purge`
+## `augur`, `transcribe`, `forge`, `consecrate`, `sanctify`, `prove` and `purge`
 
 Three tooling verbs are built. They do not run your litany; they read it,
 translate into it, or clean up after it.
@@ -571,6 +571,57 @@ server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here
 Exit status is 0 when every seal held, 1 when any was reached or any litany
 could not be read.
 
+### `sanctify` — set a litany's form in order
+
+`sanctify` reshapes the whitespace between tokens and nothing else:
+indentation to four spaces per level, trailing whitespace gone, blank-line
+runs capped at two, exactly one final newline.
+
+```
+$ liturgy sanctify --check
+   unclean prayer.lit
+++ 1 unclean, 0 already in order ++
+
+$ liturgy sanctify
+   sanctified prayer.lit
+++ 1 sanctified, 0 already in order ++
+```
+
+`--check` writes nothing and exits 1 if anything is unclean — the shape CI
+wants. Only `.lit` files are touched; formatting Python is ruff's or black's
+job, and neither can read a litany, which is why this exists.
+
+**It does not use `ast.unparse`.** That would reformat everything in three
+lines and drop every comment and blank line on the way. Nothing here
+re-flows an expression, re-quotes a string, or moves a token.
+
+Three shapes are deliberately left alone, each one a thing a careless
+formatter gets wrong:
+
+- **A multi-line string's interior** — its trailing spaces and indentation
+  are its value.
+- **A bracket continuation** — `tokenize` emits no `INDENT` for one, and the
+  author's alignment is a choice.
+- **A standalone comment before a block's first statement** — `tokenize`
+  reports it *before* the `INDENT`, so a running depth counter indents it to
+  the enclosing level and silently walks it out of the block it introduces.
+
+**The guarantee is checked, not claimed.** Before returning, `sanctify`
+re-reads its own output and compares the significant token stream (comments
+included) and the compiled AST against the original. If either differs it
+refuses and leaves the file untouched:
+
+```
+++ CANNOT SANCTIFY: prayer.lit the meaning would have changed ++
+```
+
+That check caught a real defect during development rather than writing a
+damaged file. Swept over the stdlib corpus, 574 files sanctified with zero
+non-idempotent results; the 50 refusals were all files that do not parse as
+Liturgy.
+
+Encoding, line endings and BOM are preserved as `transcribe` preserves them.
+
 ### `prove` — run a litany's trials
 
 `prove` runs pytest with the import hook installed and `test_*.lit`
@@ -750,23 +801,20 @@ requires Python >= 3.12.
 
 Spec I gets you alias-only Liturgy: writing, running, and debugging `.lit`
 files with an honest import hook and honest tracebacks. Spec II adds the three
-constructs above. Spec III is the CLI verb surface, and six of its eight
-verbs — `augur`, `transcribe`, `forge`, `consecrate`, `prove`, `purge` — are
-built and documented above.
+constructs above. Spec III is the CLI verb surface, and seven of its eight
+verbs — `augur`, `transcribe`, `forge`, `consecrate`, `sanctify`, `prove`,
+`purge` — are built and documented above.
 
-The other two are still nothing but names the command line refuses to hand
-to anything else:
+One name is still nothing but a name the command line refuses to hand to
+anything else:
 
-- **`sanctify`** (formatter) — a formatter is its own project. Doing it
-  properly means a full-fidelity round-trip through comments, blank lines and
-  string quoting, and doing it improperly means a tool that eats your source.
-  Neither is a weekend.
 - **`anoint`** — reserved as flavour. There is still no feature behind it,
   only a good word nobody wanted a later contributor to spend on something
-  trivial. It is held, not planned. `forge` and `consecrate` were the other
-  two such names, until ahead-of-time compilation turned out to be what one
-  was waiting for and cross-file seal checking what the other was; the
-  reservation did its job twice.
+  trivial. It is held, not planned, and holding it is the point: an unspent
+  name is worth more than one spent on something trivial. `forge` and
+  `consecrate` were reserved the same way until features turned up for them,
+  and `prove` and `sanctify` were each declined on their merits before being
+  built on better terms.
 
 Two names are reused deliberately across the two namespaces, and it is worth
 saying so plainly rather than letting it confuse anyone later: `augur` is both
