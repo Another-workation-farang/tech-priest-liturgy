@@ -925,9 +925,9 @@ than module scope. It was <b>cut, not deferred</b> — it is a service
 locator, and Liturgy generates code with no runtime of its own for a
 registry like that to live in. There is no clean place left to put it.</p>
 
-<h3>The four verbs still unwritten</h3>
+<h3>The three verbs still unwritten</h3>
 
-<p>Four verbs are built; Chapter XI sets them down. Four names remain
+<p>Five verbs are built; Chapter XI sets them down. Three names remain
 reserved on the command line, and it is worth recording why each is still a
 name and nothing more, rather than leaving the blanks unexplained.</p>
 
@@ -945,16 +945,18 @@ else's. Doing it properly means a full-fidelity round-trip through
 comments, blank lines and string quoting; doing it improperly means a tool
 that eats your source.</p>
 
-<p><code>forge</code> was in this list, and is not any longer. It was one of
-three words reserved as flavour with no feature behind it; ahead-of-time
-compilation turned out to be the feature it had been waiting for. Chapter XI
-sets it down. The reservation did its work — the name was still there when
-something worth spending it on arrived.</p>
+<p><code>forge</code> and <code>consecrate</code> were both in this list, and
+neither is any longer. They were two of the three words reserved as flavour
+with no feature behind them. Ahead-of-time compilation turned out to be what
+<code>forge</code> had been waiting for; carrying <code>consecrated</code>
+past the compilation unit turned out to be what <code>consecrate</code> had.
+Chapter XI sets both down. The reservation did its work twice — each name was
+still there when something worth spending it on arrived.</p>
 
-<p><code>consecrate</code> and <code>anoint</code> are unbuilt because there
-is still no feature behind them. They were reserved as flavour — good words
-held back so that nothing trivial could spend them later. They are held, not
-planned, and no page is being left blank for them.</p>
+<p><code>anoint</code> is unbuilt because there is still no feature behind
+it. It was reserved as flavour, a good word held back so that nothing trivial
+could spend it later. It is held, not planned, and no page is being left
+blank for it.</p>
 
 <p><code>augur</code> and <code>purge</code> each name two different things
 in this project. <code>augur</code> is both Chapter X's source construct
@@ -1076,15 +1078,16 @@ rite that contains it; each rite's opening belongs to that rite alone.</p>
 <h2><pre>[XI] THE READING OF OMENS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
-<p class="epigraph">Two verbs chant. Four do not. An adept who only ever chants learns of his
-errors from the machine, at the hour the machine chooses. These four are
+<p class="epigraph">Two verbs chant. Five do not. An adept who only ever chants learns of his
+errors from the machine, at the hour the machine chooses. These five are
 the rites of asking first.</p>
 
-<p><code>augur</code>, <code>transcribe</code>, <code>forge</code> and
-<code>purge</code> are the built tooling verbs. None of them runs your
-litany. <code>augur</code> reads one, <code>transcribe</code> writes one,
-<code>forge</code> compiles one without chanting it, and <code>purge</code>
-clears what chanting left behind.</p>
+<p><code>augur</code>, <code>transcribe</code>, <code>forge</code>,
+<code>consecrate</code> and <code>purge</code> are the built tooling verbs.
+None of them runs your litany. <code>augur</code> reads one,
+<code>transcribe</code> writes one, <code>forge</code> compiles one without
+chanting it, <code>consecrate</code> checks the seals across all of them,
+and <code>purge</code> clears what chanting left behind.</p>
 
 <h3>augur — the omens read before the chant</h3>
 
@@ -1330,6 +1333,64 @@ carries on to the next:</p>
 <p>The exit status is 0 when everything asked for was forged or already
 current, and 1 if the interpreter refused the whole run or any single litany
 failed.</p>
+
+<h3>consecrate — the seals read across every litany</h3>
+
+<p>Chapter VII sets out what <code>consecrated</code> can and cannot enforce,
+and is exact about the boundary: rejection happens at compile time, against
+the AST the compiler can see, and enforcement is per compilation unit. A
+second litany reaching in through the module object is, to the compiler,
+another file entirely.</p>
+
+<p><code>consecrate</code> reads the whole tree instead of one unit at a
+time. It walks twice — once to learn what is sealed, once to find what
+reaches a seal — and reports the pair:</p>
+
+<div class="warning"><pre><span class="prompt">$</span> <span class="cmd">liturgy consecrate</span>
+++ THE SEAL IS BROKEN ++
+   config.lit, line 1
+       consecrated PORT = 8080
+                   ^^^^
+   PORT is consecrated here, and reached in:
+     assigned  server.lit:4
+
+++ 1 seal broken, 1 held ++</pre></div>
+
+<p>Three shapes are read: assignment through the module object
+(<code>config.PORT = 9</code>), <code>setattr</code> with a literal name, and
+deletion. All three are named plainly enough in the source for a walk to find
+them. A <code>.py</code> file counts as much as a litany — it imports through
+the same hook, and can reach the same attribute.</p>
+
+<h3>What consecrate still cannot see</h3>
+
+<p>It is a report, not an enforcement. Nothing here stops a rebinding at run
+time; it tells you the rebinding is written down somewhere.</p>
+
+<p>Two of Chapter VII's escapes remain invisible, and are not guessed at.
+<code>globals()["PORT"] = 9</code> names nothing a walk can match. Neither
+does <code>setattr(config, name, 9)</code>, where the attribute is computed —
+the literal form is read, the computed form is not, and reporting a maybe
+would make the verb worth less than silence.</p>
+
+<p>Only module-level seals are checked. A <code>consecrated</code> inside a
+rite is not reachable as <code>module.NAME</code>, so no other file could
+breach it if it tried.</p>
+
+<p>Modules are matched by basename, which is how <code>config.PORT</code>
+finds <code>config.lit</code>. Two litanies sharing a basename make that
+ambiguous, and the verb says so rather than reporting confidently:</p>
+
+<div class="warning"><pre>++ config is the name of 2 litanies; seals for it are matched by basename ++</pre></div>
+
+<p><code>--plain</code> emits <code>file:line:col:</code> lines for editors
+and CI, and nothing else:</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy consecrate --plain
+server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here</pre>
+
+<p>The exit status is 0 when every seal held, and 1 when any was reached or
+any litany could not be read.</p>
 
 <h3>purge — the clearing of relics</h3>
 
