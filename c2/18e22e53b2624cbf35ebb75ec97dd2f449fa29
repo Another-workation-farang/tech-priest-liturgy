@@ -1,0 +1,34 @@
+docs/liber-liturgiae.html
+  s_d162ead593e4de::t_43430712a7e08f 948-957
+  s_d162ead593e4de::t_9e30bad13fa055 1268-1276
+  s_d162ead593e4de::t_e38e8c795a68f2 928,930-932
+  s_d162ead593e4de::t_549550e4bea877 1079-1080,1083-1087
+README.md
+  s_d162ead593e4de::t_a44d71829d8bf0 462-471
+  s_d162ead593e4de::t_8858496256672a 75,331
+docs/LIBER-LITURGIAE.md
+  s_d162ead593e4de::t_c1bf1f0a648906 667-676
+  s_d162ead593e4de::t_04c8f3e271474d 650,652-654
+  s_d162ead593e4de::t_32aa8d6a3a1eb4 793-794,797-800
+  s_d162ead593e4de::t_f9f6e1c2e214ea 992-1001
+docs/liturgy-data-slate.html
+  s_d162ead593e4de::t_6848439ba01a32 445,447-448,450,517-540
+docs/index.html
+  s_d162ead593e4de::t_213ef4332b9397 271,273-274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "c218e22e53b2624cbf35ebb75ec97dd2f449fa29",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
