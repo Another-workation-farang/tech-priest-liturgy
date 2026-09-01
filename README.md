@@ -72,7 +72,7 @@ That installs the `liturgy` console script.
 
 ## `chant` and `commune`
 
-These two run litanies; the [five tooling verbs](#augur-transcribe-forge-consecrate-and-purge)
+These two run litanies; the [six tooling verbs](#augur-transcribe-forge-consecrate-prove-and-purge)
 further down read, translate and tidy them. `chant <file.lit> [args...]`
 executes a Liturgy file the way
 `python file.py` executes a Python one: the file becomes `__main__`,
@@ -328,7 +328,7 @@ must be exactly `"0"` — `false`, empty, or anything else still counts as
 impious). Calling a rite by its proper name, `chant` or `commune`, never
 triggers a rebuke in the first place.
 
-## `augur`, `transcribe`, `forge`, `consecrate` and `purge`
+## `augur`, `transcribe`, `forge`, `consecrate`, `prove` and `purge`
 
 Three tooling verbs are built. They do not run your litany; they read it,
 translate into it, or clean up after it.
@@ -571,6 +571,62 @@ server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here
 Exit status is 0 when every seal held, 1 when any was reached or any litany
 could not be read.
 
+### `prove` — run a litany's trials
+
+`prove` runs pytest with the import hook installed and `test_*.lit`
+collected. That is the whole verb.
+
+```
+$ liturgy prove
+test_rites.lit .F                                                        [100%]
+
+=================================== FAILURES ===================================
+__________________________ test_the_omnissiah_is_not ___________________________
+
+    rite test_the_omnissiah_is_not():
+>       attest measure("cog") == 99
+               ^^^^^^^^^^^^^^^^
+E       AssertionError
+
+test_rites.lit:5: AssertionError
+========================= 1 failed, 1 passed in 0.01s ==========================
+```
+
+Failures quote Liturgy at the litany's own line number, because the loader
+does not override `get_source` and pytest reads it the same way a traceback
+does.
+
+Every argument passes straight through to pytest — paths, `-k`, `-x`, `-v`:
+
+```
+$ liturgy prove -q -k pleased
+.                                                                        [100%]
+1 passed, 1 deselected in 0.00s
+```
+
+Exit status is pytest's own, unflattened: 0 all passed, 1 failures, 5 nothing
+collected.
+
+**This is convenience, not capability, and the README will not pretend
+otherwise.** Everything `prove` does was already reachable with a
+`conftest.py` that calls `install()` and adds a `pytest_collect_file` for
+`test_*.lit`. `prove` supplies that as a plugin so no project needs the
+boilerplate, and so the answer is in `--help` rather than in the docs.
+
+pytest is an optional extra; without it the verb refuses rather than
+tracebacking:
+
+```
+++ CANNOT PROVE: pytest is not installed ++
+   the trials need it:  pip install 'liturgy[trials]'
+```
+
+One limitation worth knowing: pytest rewrites assertions in `.py` files to
+show the operands of a failed comparison, and does not do so for a litany.
+`attest measure("cog") == 99` reports `AssertionError` and the source line,
+not `3 == 99` — the rewriting works on Python source pytest imports itself,
+and a litany arrives already compiled by our loader.
+
 ### `purge` — clear generated caches
 
 `purge` removes every `__pycache__` directory beneath the working directory,
@@ -694,19 +750,13 @@ requires Python >= 3.12.
 
 Spec I gets you alias-only Liturgy: writing, running, and debugging `.lit`
 files with an honest import hook and honest tracebacks. Spec II adds the three
-constructs above. Spec III is the CLI verb surface, and five of its eight
-verbs — `augur`, `transcribe`, `forge`, `consecrate`, `purge` — are built and
-documented above.
+constructs above. Spec III is the CLI verb surface, and six of its eight
+verbs — `augur`, `transcribe`, `forge`, `consecrate`, `prove`, `purge` — are
+built and documented above.
 
-The other three are still nothing but names the command line refuses to hand
+The other two are still nothing but names the command line refuses to hand
 to anything else:
 
-- **`prove`** (test runner) — pytest already runs `.lit` tests, because the
-  import hook is a real one. A few lines of `conftest.py` — `install()`, plus a
-  `pytest_collect_file` that hands `pytest.Module` any `test_*.lit` — is
-  enough to collect them directly, failures quoting the Liturgy source and
-  all. A Liturgy-branded wrapper around that would add a layer and no
-  capability.
 - **`sanctify`** (formatter) — a formatter is its own project. Doing it
   properly means a full-fidelity round-trip through comments, blank lines and
   string quoting, and doing it improperly means a tool that eats your source.
