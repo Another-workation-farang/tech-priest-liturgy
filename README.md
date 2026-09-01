@@ -72,7 +72,7 @@ That installs the `liturgy` console script.
 
 ## `chant` and `commune`
 
-These two run litanies; the [three tooling verbs](#augur-transcribe-and-purge)
+These two run litanies; the [four tooling verbs](#augur-transcribe-forge-and-purge)
 further down read, translate and tidy them. `chant <file.lit> [args...]`
 executes a Liturgy file the way
 `python file.py` executes a Python one: the file becomes `__main__`,
@@ -328,7 +328,7 @@ must be exactly `"0"` — `false`, empty, or anything else still counts as
 impious). Calling a rite by its proper name, `chant` or `commune`, never
 triggers a rebuke in the first place.
 
-## `augur`, `transcribe` and `purge`
+## `augur`, `transcribe`, `forge` and `purge`
 
 Three tooling verbs are built. They do not run your litany; they read it,
 translate into it, or clean up after it.
@@ -459,6 +459,69 @@ round-trip in the source's own declared encoding. Line endings and a PEP 263
 `coding:` cookie are preserved, so the output differs from the input in its
 words and in nothing else.
 
+### `forge` — compile litanies to bytecode
+
+`forge` compiles `.lit` files to bytecode ahead of the import that would
+otherwise do it. With no paths it walks the working directory; with paths it
+takes those.
+
+```
+$ liturgy forge
+   forged mod.lit
+   forged sub/two.lit
+++ 2 litanies forged ++
+```
+
+Only `.lit` files are forged — `.py` to `.pyc` is `compileall`'s job, and
+Liturgy adds nothing to it.
+
+**It does not execute what it compiles.** That is the difference between
+forging a litany and importing one, and it means a litany whose top level
+prints or writes files can be forged safely. The compile runs through the
+import system's own `get_code`, so the bytecode is byte-for-byte what an
+import would have produced and CPython decides whether an existing cache is
+still valid.
+
+A second run reports rather than repeats:
+
+```
+$ liturgy forge
+++ 0 litanies forged, 2 already current ++
+```
+
+That distinction is measured, not guessed — the cache file's mtime is read
+either side of the compile, and only a change counts as a forging. `--anew`
+forges regardless.
+
+Bytecode is written as ordinary `.pyc` under `__pycache__`. A themed `.litc`
+extension was considered and rejected: `SourceLoader.get_code` calls
+`cache_from_source` as a module-level function rather than a method, so a
+subclass cannot redirect it, and changing the extension would mean
+reimplementing ~84 lines of private `importlib._bootstrap_external` machinery
+and maintaining that fork across every supported Python. The extension is
+cosmetic; the loader it would destabilise is what makes tracebacks quote
+Liturgy. Standard `.pyc` also means `purge` and `.gitignore` keep working
+untouched.
+
+Under `-B` or `PYTHONDONTWRITEBYTECODE` every cache write is discarded, so
+forging would report success and produce nothing. It refuses instead:
+
+```
+++ CANNOT FORGE: this interpreter will not write bytecode ++
+   -B or PYTHONDONTWRITEBYTECODE is in force
+```
+
+A litany that will not compile is named with its line, and the walk
+continues:
+
+```
+++ CANNOT FORGE: broken.lit line 1 SyntaxError: 'return' outside function (render is Liturgy for return) ++
+++ 0 litanies forged, 2 already current ++
+```
+
+Exit status is 0 when everything was forged or already current, 1 if the
+interpreter refused the run or any single litany failed.
+
 ### `purge` — clear generated caches
 
 `purge` removes every `__pycache__` directory beneath the working directory,
@@ -582,10 +645,11 @@ requires Python >= 3.12.
 
 Spec I gets you alias-only Liturgy: writing, running, and debugging `.lit`
 files with an honest import hook and honest tracebacks. Spec II adds the three
-constructs above. Spec III is the CLI verb surface, and three of its eight
-verbs — `augur`, `transcribe`, `purge` — are built and documented above.
+constructs above. Spec III is the CLI verb surface, and four of its eight
+verbs — `augur`, `transcribe`, `forge`, `purge` — are built and documented
+above.
 
-The other five are still nothing but names the command line refuses to hand
+The other four are still nothing but names the command line refuses to hand
 to anything else:
 
 - **`prove`** (test runner) — pytest already runs `.lit` tests, because the
@@ -598,10 +662,11 @@ to anything else:
   properly means a full-fidelity round-trip through comments, blank lines and
   string quoting, and doing it improperly means a tool that eats your source.
   Neither is a weekend.
-- **`forge`**, **`consecrate`**, **`anoint`** — reserved as flavour. There
-  was never a feature behind them, only three good words nobody wanted a
-  later contributor to spend on something trivial. They are held, not
-  planned.
+- **`consecrate`**, **`anoint`** — reserved as flavour. There is still no
+  feature behind them, only good words nobody wanted a later contributor to
+  spend on something trivial. They are held, not planned. `forge` was a third
+  such name until ahead-of-time compilation turned out to be the feature it
+  had been waiting for; the reservation did its job.
 
 Two names are reused deliberately across the two namespaces, and it is worth
 saying so plainly rather than letting it confuse anyone later: `augur` is both

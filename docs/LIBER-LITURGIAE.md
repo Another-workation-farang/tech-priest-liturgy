@@ -647,11 +647,11 @@ a binding placed in a process-wide registry rather than module scope. It was
 with no runtime of its own for a registry like that to live in. There is no
 clean place left to put it.
 
-### The five verbs still unwritten
+### The four verbs still unwritten
 
-Three verbs of the third spec are built; Chapter XI sets them down. Five names
-remain reserved on the command line, and it is worth recording why each is
-still a name and nothing more, rather than leaving the blanks unexplained.
+Four verbs are built; Chapter XI sets them down. Four names remain reserved on
+the command line, and it is worth recording why each is still a name and
+nothing more, rather than leaving the blanks unexplained.
 
 `prove` — to run a litany's trials — is unbuilt because the trials already
 run. The import hook is a real one, so pytest imports a `.lit` module like any
@@ -664,10 +664,16 @@ is its own project rather than a verb on someone else's. Doing it properly
 means a full-fidelity round-trip through comments, blank lines and string
 quoting; doing it improperly means a tool that eats your source.
 
-`forge`, `consecrate` and `anoint` are unbuilt because there was never a
-feature behind them. They were reserved as flavour — three good words held
-back so that nothing trivial could spend them later. They are held, not
-planned, and no page is being left blank for them.
+`forge` was in this list, and is not any longer. It was one of three words
+reserved as flavour with no feature behind it; ahead-of-time compilation
+turned out to be the feature it had been waiting for. Chapter XI sets it
+down. The reservation did its work — the name was still there when something
+worth spending it on arrived.
+
+`consecrate` and `anoint` are unbuilt because there is still no feature
+behind them. They were reserved as flavour — good words held back so that
+nothing trivial could spend them later. They are held, not planned, and no
+page is being left blank for them.
 
 `augur` and `purge` each name two different things in this project. `augur`
 is both Chapter X's source construct (preconditions) and Chapter XI's CLI
@@ -784,13 +790,14 @@ that contains it; each rite's opening belongs to that rite alone.
 
 ## Chapter XI — The Reading of Omens
 
-*Two verbs chant. Three do not. An adept who only ever chants learns of his
-errors from the machine, at the hour the machine chooses. These three are the
+*Two verbs chant. Four do not. An adept who only ever chants learns of his
+errors from the machine, at the hour the machine chooses. These four are the
 rites of asking first.*
 
-`augur`, `transcribe` and `purge` are the built verbs of the third spec. None
-of them runs your litany. `augur` reads one, `transcribe` writes one, and
-`purge` clears what chanting left behind.
+`augur`, `transcribe`, `forge` and `purge` are the built tooling verbs. None
+of them runs your litany. `augur` reads one, `transcribe` writes one, `forge`
+compiles one without chanting it, and `purge` clears what chanting left
+behind.
 
 ### augur — the omens read before the chant
 
@@ -981,6 +988,78 @@ way a consumer honouring their own `coding:` cookie would decode them, and
 compared again. Line endings and the source's declared encoding are carried
 through unchanged, so the transcribed file differs from its source in its
 words and in nothing else.
+
+### forge — the bytecode beaten out beforehand
+
+`forge` compiles litanies to bytecode ahead of the import that would
+otherwise have to do it. Given no paths it works on the current directory,
+recursing; given paths it takes those.
+
+```
+$ liturgy forge
+   forged mod.lit
+   forged sub/two.lit
+++ 2 litanies forged ++
+```
+
+Only `.lit` files are forged. Turning `.py` into `.pyc` is `compileall`'s
+work, and Liturgy has nothing to add to it.
+
+**It does not chant what it forges.** That is the whole difference between
+forging a litany and importing one, and it is why a litany whose top level
+prints, or writes a file, or opens a socket, can be forged in perfect
+safety. The compiling is done by the import system's own `get_code`, which
+compiles and caches without executing.
+
+Run again, a forge that finds its work already done says so rather than
+repeating it:
+
+```
+$ liturgy forge
+++ 0 litanies forged, 2 already current ++
+```
+
+The distinction is measured, not guessed: the cache file's timestamp is read
+either side of the compile, and only a change to it counts as a forging.
+`--anew` forges regardless.
+
+### Why ordinary `.pyc`, and not a `.litc` of our own
+
+A themed extension was considered and rejected. `SourceLoader.get_code`
+reaches for `cache_from_source` as a module-level function rather than a
+method on itself, so a subclass cannot redirect it; changing the extension
+would mean reimplementing eighty-odd lines of private import machinery and
+carrying that fork across every Python version this project supports. The
+extension is cosmetic. The loader it would destabilise is what makes a curse
+quote Liturgy at all.
+
+So the bytecode goes where all bytecode goes, under `__pycache__`, in the
+ordinary spelling. `purge` clears it, `.gitignore` ignores it, and every tool
+that has ever understood a Python cache understands this one.
+
+### When the machine will not keep what is beaten
+
+An interpreter started with `-B`, or with `PYTHONDONTWRITEBYTECODE` set in
+the environment, discards every cache write. Forging under it would compile
+each litany, report success, and leave nothing behind. `forge` refuses
+instead:
+
+```
+++ CANNOT FORGE: this interpreter will not write bytecode ++
+   -B or PYTHONDONTWRITEBYTECODE is in force
+```
+
+A litany that will not compile is named, with the line, and the walk carries
+on to the next:
+
+```
+++ CANNOT FORGE: broken.lit line 1 SyntaxError: 'return' outside function (render is Liturgy for return) ++
+++ 0 litanies forged, 2 already current ++
+```
+
+The exit status is 0 when everything asked for was forged or already
+current, and 1 if the interpreter refused the whole run or any single litany
+failed.
 
 ### purge — the clearing of relics
 

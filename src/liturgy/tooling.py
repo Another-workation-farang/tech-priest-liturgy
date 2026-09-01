@@ -484,3 +484,103 @@ def purge(*, heresies: bool = False, root: str | None = None, out=None) -> int:
 
     print(f"++ {removed} relic{'' if removed == 1 else 's'} purged ++", file=out)
     return 1 if failed else 0
+
+
+def _cache_stamp(path: pathlib.Path) -> tuple[bool, float]:
+    """Whether bytecode exists for `path`, and its mtime.
+
+    Comparing this either side of the compile is how forging tells a litany
+    it wrote from one the import system judged already current -- exact,
+    where comparing source and cache mtimes would only be a guess, and
+    without reading the `.pyc` header this module has no business parsing.
+    """
+    try:
+        cache = pathlib.Path(importlib.util.cache_from_source(str(path)))
+    except (NotImplementedError, ValueError):
+        return False, 0.0
+    try:
+        return True, cache.stat().st_mtime
+    except OSError:
+        return False, 0.0
+
+
+def forge(paths: list[str], *, anew: bool = False, out=None) -> int:
+    """Compile litanies to bytecode before their first import. 0 done, 1 refused.
+
+    Only `.lit` files are forged. Turning `.py` into `.pyc` is `compileall`'s
+    work and Liturgy adds nothing to it.
+
+    The compiling is done by the import system's own `get_code`, not by hand:
+    it runs this project's loader, so the bytecode is byte-for-byte what an
+    import would have produced, and CPython -- not this function -- decides
+    whether an existing cache is still valid. It compiles without executing,
+    which is the whole difference between forging a litany and importing one.
+    """
+    out = out if out is not None else sys.stdout
+    from .loader import LiturgyLoader
+
+    if sys.dont_write_bytecode:
+        # Every write would be a silent no-op, so forging would report
+        # success and leave nothing behind.
+        print("++ CANNOT FORGE: this interpreter will not write bytecode ++", file=out)
+        print("   -B or PYTHONDONTWRITEBYTECODE is in force", file=out)
+        return 1
+
+    files, notes = _gather(paths or ["."])
+    failed = False
+
+    for d, message in notes:
+        failed = True
+        print(f"++ CANNOT FORGE: {d} {message} ++", file=out)
+
+    litanies = [f for f in files if f.suffix == ".lit"]
+    forged = current = 0
+
+    for path in litanies:
+        existed, before = _cache_stamp(path)
+        if anew and existed:
+            try:
+                pathlib.Path(importlib.util.cache_from_source(str(path))).unlink()
+            except OSError:
+                pass  # get_code overwrites it anyway; the unlink is only a hint
+            existed = False
+
+        try:
+            LiturgyLoader(path.stem, str(path)).get_code(path.stem)
+        except OSError as err:
+            failed = True
+            print(f"++ CANNOT FORGE: {path} {err.strerror or err} ++", file=out)
+            continue
+        except SyntaxError as err:
+            # err.msg, not str(err): the latter re-appends "(file, line N)",
+            # which this line has already said.
+            failed = True
+            where = f" line {err.lineno}" if err.lineno else ""
+            print(
+                f"++ CANNOT FORGE: {path}{where} "
+                f"{type(err).__name__}: {err.msg} ++",
+                file=out,
+            )
+            continue
+        except (ValueError, UnicodeDecodeError, LookupError) as err:
+            failed = True
+            print(f"++ CANNOT FORGE: {path} {type(err).__name__}: {err} ++", file=out)
+            continue
+
+        exists_now, after = _cache_stamp(path)
+        if exists_now and (not existed or after != before):
+            print(f"   forged {path}", file=out)
+            forged += 1
+        else:
+            current += 1
+
+    if not litanies:
+        print("++ no litanies to forge ++", file=out)
+        return 1 if failed else 0
+
+    tail = f", {current} already current" if current else ""
+    print(
+        f"++ {forged} litan{'y' if forged == 1 else 'ies'} forged{tail} ++",
+        file=out,
+    )
+    return 1 if failed else 0
