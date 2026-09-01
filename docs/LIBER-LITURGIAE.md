@@ -98,6 +98,47 @@ within reliquary invoke bless
 invoke json
 ```
 
+### When the hook must outlive the verb
+
+"Which both verbs do for you" is the whole of it: `chant`, `commune` and
+`prove` install the hook on their way in, and nothing else does. An
+interpreter started any other way — `python -m`, a server, a notebook — cannot
+see a litany at all.
+
+```
+$ python -c "import mymod"
+ModuleNotFoundError: No module named 'mymod'
+```
+
+The hook can be installed into an environment instead of into a command. A
+`.pth` file in site-packages is executed at interpreter start, and any line
+of one beginning with `import` runs:
+
+```bash
+echo 'import liturgy.loader; liturgy.loader.install()' > "$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')/liturgy-hook.pth"
+```
+
+Thereafter a litany imports from anywhere:
+
+```
+$ python -c "import mymod; print(mymod.greet())"
+ave, Omnissiah
+```
+
+Deleting the file undoes it completely; there is no other state.
+
+Three things are worth knowing before an adept does this. It costs every
+interpreter start in that environment, litany or no litany — some ten to
+twenty milliseconds, most of it reading installed-package metadata. It
+writes into site-packages, so it belongs in a virtual environment and not in
+a machine's own Python. And it buys importing, not collection: plain pytest
+still finds no trials in a `test_*.lit`, because collecting a file and
+importing one are different offices. Chapter XI's `prove` is the verb for
+that.
+
+There is deliberately no verb for anointing an environment. `anoint` was the
+obvious name and Chapter IX sets down why it remains unspent.
+
 ### The illumination of glyphs
 
 Two illuminators are kept, one exact and one approximate. The exact one is a

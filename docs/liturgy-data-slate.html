@@ -325,7 +325,17 @@ ITSELF; SPEAKING ONE ANYWHERE BUT AFTER A DOT IS A LOUD HERESY.</p>
 
    <span class="ok">REGISTERS THE IMPORT HOOK ON sys.path_hooks, CARRYING THE DEFAULT
    LOADER DETAILS ALONGSIDE. THEREAFTER LITURGY MAY
-   IMPORT PYTHON, AND PYTHON MAY IMPORT LITURGY. IDEMPOTENT.</span></pre>
+   IMPORT PYTHON, AND PYTHON MAY IMPORT LITURGY. IDEMPOTENT.</span>
+
+   <span class="field">:called by:</span> chant, commune AND prove — AND NOTHING ELSE. AN INTERPRETER
+               STARTED ANY OTHER WAY CANNOT SEE A .LIT AT ALL.
+   <span class="field">:environment-wide:</span> A .pth IN site-packages RUNS IT AT INTERPRETER
+                      START, SO ANY PYTHON PROCESS CAN IMPORT A LITANY:
+                      <span class="lower amber">import liturgy.loader; liturgy.loader.install()</span>
+                      COSTS ~10-20ms PER START, WRITES INTO site-packages
+                      (USE A VENV), AND BUYS IMPORTING BUT NOT COLLECTION —
+                      PLAIN PYTEST STILL FINDS NO TRIALS IN A test_*.lit.
+                      DELETE THE FILE TO UNDO IT.</pre>
 </div>
 
 <div class="directive">

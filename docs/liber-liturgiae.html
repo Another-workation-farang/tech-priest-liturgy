@@ -327,6 +327,42 @@ may import Liturgy.</p>
 <div class="code-block"><pre><span class="kw">within</span> reliquary <span class="kw">invoke</span> bless
 <span class="kw">invoke</span> json</pre></div>
 
+<h3>When the hook must outlive the verb</h3>
+
+<p>"Which both verbs do for you" is the whole of it: <code>chant</code>,
+<code>commune</code> and <code>prove</code> install the hook on their way in,
+and nothing else does. An interpreter started any other way —
+<code>python -m</code>, a server, a notebook — cannot see a litany at all.</p>
+
+<div class="warning"><pre><span class="prompt">$</span> <span class="cmd">python -c "import mymod"</span>
+ModuleNotFoundError: No module named 'mymod'</pre></div>
+
+<p>The hook can be installed into an environment instead of into a command.
+A <code>.pth</code> file in site-packages is executed at interpreter start,
+and any line of one beginning with <code>import</code> runs:</p>
+
+<pre class="shell">echo &#x27;import liturgy.loader; liturgy.loader.install()&#x27; &gt; &quot;$(python -c &#x27;import sysconfig; print(sysconfig.get_paths()[&quot;purelib&quot;])&#x27;)/liturgy-hook.pth&quot;</pre>
+
+<p>Thereafter a litany imports from anywhere:</p>
+
+<pre class="shell"><span class="prompt">$</span> python -c "import mymod; print(mymod.greet())"
+ave, Omnissiah</pre>
+
+<p>Deleting the file undoes it completely; there is no other state.</p>
+
+<p>Three things are worth knowing before an adept does this. It costs every
+interpreter start in that environment, litany or no litany — some ten to
+twenty milliseconds, most of it reading installed-package metadata. It writes
+into site-packages, so it belongs in a virtual environment and not in a
+machine's own Python. And it buys importing, not collection: plain pytest
+still finds no trials in a <code>test_*.lit</code>, because collecting a file
+and importing one are different offices. Chapter XI's <code>prove</code> is
+the verb for that.</p>
+
+<p>There is deliberately no verb for anointing an environment.
+<code>anoint</code> was the obvious name and Chapter IX sets down why it
+remains unspent.</p>
+
 <h3>The illumination of glyphs</h3>
 
 <p>Two illuminators are kept, one exact and one approximate. The exact one is
