@@ -95,6 +95,52 @@ Ave Omnissiah
 REPL does — an open `should` block or an unclosed bracket just waits for the
 rest, rather than complaining.
 
+## Importing a litany from plain Python
+
+Everything above goes through the `liturgy` command, and that is the only
+place the import hook gets installed — `chant`, `commune` and `prove` each
+install it on the way in. Any other Python entry point cannot see a `.lit`
+file at all:
+
+```
+$ python -c "import mymod"        # mymod.lit is right there
+ModuleNotFoundError: No module named 'mymod'
+```
+
+If you want `.lit` importable from an ordinary `python`, a web server, a
+notebook, or anything else that is not our CLI, install the hook into the
+environment with a `.pth` file. Python executes any line in a `.pth` that
+starts with `import`, at interpreter start:
+
+```bash
+echo 'import liturgy.loader; liturgy.loader.install()' > "$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')/liturgy-hook.pth"
+```
+
+After that, litanies import like anything else:
+
+```
+$ python -c "import mymod; print(mymod.greet())"
+ave, Omnissiah
+```
+
+Delete the file to undo it — there is no other state, and the previous
+behaviour comes straight back.
+
+Three things to know before you do this:
+
+- **It costs every interpreter start in that environment**, whether or not
+  litanies are involved — about 10-20ms here, mostly `importlib.metadata`.
+  A bare `python -c "pass"` went from ~0.02s to ~0.03s.
+- **It is per-environment**, and it writes into site-packages. Do it in a
+  virtualenv, not a system Python.
+- **It gets you imports, not test collection.** Plain `pytest` still reports
+  `no tests ran` for a `test_*.lit`, because collection is a separate hook
+  from importing. Use [`prove`](#prove--run-a-litanys-trials), or the
+  `conftest.py` it replaces.
+
+There is no verb for this. `anoint` was the obvious name and is deliberately
+still unspent — see [What's not built yet](#whats-not-built-yet).
+
 ## The superset promise
 
 > **All valid Python is valid Liturgy, except programs that use a Liturgy word
