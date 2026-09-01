@@ -1,4 +1,5 @@
-"""The tooling verbs: augur, transcribe, forge, consecrate, purge."""
+"""The tooling verbs: augur, transcribe, forge, consecrate, prove,
+sanctify and purge."""
 
 from __future__ import annotations
 
@@ -14,6 +15,7 @@ from .collisions import find_collisions
 from .compiler import compile_litany
 from .heresy import state_path
 from .reverse import to_liturgy
+from .form import UnsanctifiableLitany, sanctify_text
 from .seals import find_breaches, find_seals
 from .transform import UnfinishedLitany, split_lines, transform
 
@@ -751,3 +753,81 @@ def prove(args: list[str], *, out=None) -> int:
     # collected.
     install()
     return int(pytest.main(list(args), plugins=[LitanyTrials()]))
+
+
+def sanctify(paths: list[str], *, check: bool = False, out=None) -> int:
+    """Set litanies' form in order. 0 done, 1 refused or (with check) unclean.
+
+    Only `.lit` files. Formatting Python is `ruff`'s or `black`'s work, and
+    neither of them can read a litany -- which is the whole reason this
+    exists.
+
+    Encoding, line endings and BOM are preserved exactly as `transcribe`
+    preserves them: the verb reshapes whitespace between tokens and changes
+    nothing else about the file's physical form. A litany it cannot prove
+    it kept intact is left exactly as it was.
+    """
+    out = out if out is not None else sys.stdout
+    files, notes = _gather(paths or ["."])
+    failed = False
+
+    for d, message in notes:
+        failed = True
+        print(f"++ CANNOT SANCTIFY: {d} {message} ++", file=out)
+
+    litanies = [f for f in files if f.suffix == ".lit"]
+    changed = clean = 0
+
+    for path in litanies:
+        try:
+            raw = path.read_bytes()
+        except OSError as err:
+            failed = True
+            print(f"++ CANNOT SANCTIFY: {path} {err.strerror} ++", file=out)
+            continue
+        try:
+            src = importlib.util.decode_source(raw)
+        except (SyntaxError, UnicodeDecodeError, LookupError) as err:
+            failed = True
+            print(f"++ CANNOT SANCTIFY: {path} cannot be decoded: {err} ++", file=out)
+            continue
+
+        try:
+            formed = sanctify_text(src)
+        except UnsanctifiableLitany as err:
+            failed = True
+            print(f"++ CANNOT SANCTIFY: {path} {err} ++", file=out)
+            continue
+
+        if formed == src:
+            clean += 1
+            continue
+
+        changed += 1
+        if check:
+            print(f"   unclean {path}", file=out)
+            continue
+
+        newline = _newline_style(raw)
+        encoding = _source_encoding(raw)
+        payload = formed.replace("\n", newline)
+        try:
+            path.write_bytes(payload.encode(encoding))
+        except (OSError, UnicodeEncodeError, LookupError) as err:
+            failed = True
+            print(f"++ CANNOT SANCTIFY: {path} cannot be written: {err} ++", file=out)
+            continue
+        print(f"   sanctified {path}", file=out)
+
+    if not litanies:
+        print("++ no litanies to sanctify ++", file=out)
+        return 1 if failed else 0
+
+    if check:
+        print(
+            f"++ {changed} unclean, {clean} already in order ++", file=out
+        )
+        return 1 if (failed or changed) else 0
+
+    print(f"++ {changed} sanctified, {clean} already in order ++", file=out)
+    return 1 if failed else 0

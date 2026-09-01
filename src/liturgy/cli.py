@@ -16,7 +16,6 @@ HERETICAL: dict[str, str] = {"run": "chant", "repl": "commune"}
 # and nothing needs to: argparse rejects any verb it has no subparser for.
 RESERVED_VERBS = frozenset(
     {
-        "sanctify",
         "anoint",
     }
 )
@@ -105,6 +104,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="paths and pytest options, passed through unchanged",
     )
 
+    p_sanct = verbs.add_parser("sanctify", help="set a litany's form in order")
+    _add_global_flags(p_sanct, default=argparse.SUPPRESS)
+    p_sanct.add_argument("paths", nargs="*")
+    p_sanct.add_argument(
+        "--check", action="store_true",
+        help="report what is unclean without writing anything",
+    )
+
     p_purge = verbs.add_parser("purge", help="clear generated caches")
     _add_global_flags(p_purge, default=argparse.SUPPRESS)
     p_purge.add_argument(
@@ -177,6 +184,11 @@ def main(argv: list[str] | None = None) -> int:
         from .tooling import prove
 
         return prove(args.args)
+
+    if args.verb == "sanctify":
+        from .tooling import sanctify
+
+        return sanctify(args.paths, check=args.check)
 
     if args.verb == "purge":
         from .tooling import purge
