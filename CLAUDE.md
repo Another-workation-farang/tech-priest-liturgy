@@ -17,6 +17,14 @@ back to Python spellings, and compile as ordinary Python.
 - **`src/liturgy/`** — the implementation. Module dependency order is
   `lexicon` -> `sourcemap` -> `transform` -> `constructs` -> `rewrite` ->
   `compiler` -> `loader`/`curse` -> `cli`. Nothing imports later than itself.
+  `highlight` is a leaf off `constructs` that nothing in the core imports:
+  it is the one module allowed to touch Pygments (the optional
+  `[highlight]` extra), loaded only through the `pygments.lexers` entry
+  point.
+- **`editors/vscode-liturgy/`** — the VS Code extension (TextMate grammar).
+  Hand-written approximations of the transform's rules; `tests/test_grammar.py`
+  holds its word lists to the lexicon, so extend the grammar whenever the
+  lexicon grows.
 
 ## Rules this project has learned the hard way
 

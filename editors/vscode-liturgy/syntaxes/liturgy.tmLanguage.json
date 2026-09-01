@@ -1,0 +1,205 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Liturgy",
+  "scopeName": "source.liturgy",
+  "comment": "A TextMate approximation of the transform's context rules. The exact rules live in src/liturgy/transform.py and constructs.py; the Pygments lexer (src/liturgy/highlight.py) applies them exactly. Here: Rule 1 (attribute position) is a (?<!\\.) lookbehind, Rule 2 (keyword-argument position) a (?!\\s*=(?!=)) lookahead applied everywhere rather than only inside calls, Rule 3 (invocations) a line-scoped context. tests/test_grammar.py holds the word lists to the lexicon.",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#fstring" },
+    { "include": "#string" },
+    { "include": "#invocation" },
+    { "include": "#construct-header" },
+    { "include": "#machine-name" },
+    { "include": "#rite-definition" },
+    { "include": "#pattern-definition" },
+    { "include": "#decorator" },
+    { "include": "#constant" },
+    { "include": "#word-operator" },
+    { "include": "#storage" },
+    { "include": "#keyword" },
+    { "include": "#curse-name" },
+    { "include": "#builtin" },
+    { "include": "#numeral" },
+    { "include": "#number" },
+    { "include": "#self" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "#.*$",
+      "name": "comment.line.number-sign.liturgy"
+    },
+    "invocation": {
+      "comment": "Rule 3: inside an invoke/within statement only the statement's own keywords are Liturgy; the targets are the module's, whatever they are named.",
+      "begin": "^\\s*(within|from|invoke|import)\\b",
+      "end": "$",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.import.liturgy" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "match": "\\b(invoke|import|styled|as)\\b",
+          "name": "keyword.control.import.liturgy"
+        }
+      ]
+    },
+    "construct-header": {
+      "comment": "A construct word is only a construct in header position: consecrated before a name, litany before its parenthesised count, augur with the colon ending the line.",
+      "patterns": [
+        {
+          "match": "^\\s*(consecrated)\\b(?=\\s+[A-Za-z_])",
+          "captures": { "1": { "name": "keyword.control.construct.liturgy" } }
+        },
+        {
+          "match": "^\\s*(litany)\\b(?=\\s*\\()",
+          "captures": { "1": { "name": "keyword.control.construct.liturgy" } }
+        },
+        {
+          "match": "^\\s*(augur)\\b(?=\\s*:\\s*(#.*)?$)",
+          "captures": { "1": { "name": "keyword.control.construct.liturgy" } }
+        }
+      ]
+    },
+    "machine-name": {
+      "comment": "The machine's own names: __consecrated__, __litany__, __augur__, and everything beginning __liturgy_. Speaking one anywhere but after a dot is a loud heresy.",
+      "match": "(?<!\\.)\\b(__consecrated__|__litany__|__augur__|__liturgy_[A-Za-z0-9_]*)\\b",
+      "name": "invalid.illegal.machine-name.liturgy"
+    },
+    "rite-definition": {
+      "match": "^\\s*(?:(remote|async)\\s+)?(rite|def)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": { "name": "storage.modifier.async.liturgy" },
+        "2": { "name": "storage.type.function.liturgy" },
+        "3": { "name": "entity.name.function.liturgy" }
+      }
+    },
+    "pattern-definition": {
+      "match": "^\\s*(pattern|class)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": { "name": "storage.type.class.liturgy" },
+        "2": { "name": "entity.name.type.class.liturgy" }
+      }
+    },
+    "decorator": {
+      "match": "^\\s*(@)\\s*([A-Za-z_][A-Za-z0-9_.]*)",
+      "captures": {
+        "1": { "name": "punctuation.definition.decorator.liturgy" },
+        "2": { "name": "entity.name.function.decorator.liturgy" }
+      }
+    },
+    "constant": {
+      "match": "(?<!\\.)\\b(Sanctioned|Heretical|Void|True|False|None)\\b(?!\\s*=(?!=))",
+      "name": "constant.language.liturgy"
+    },
+    "word-operator": {
+      "match": "(?<!\\.)\\b(likewise|elsewise|nay|be|among|and|or|not|is|in)\\b(?!\\s*=(?!=))",
+      "name": "keyword.operator.word.liturgy"
+    },
+    "storage": {
+      "patterns": [
+        {
+          "match": "(?<!\\.)\\b(rite|pattern|servitor|def|class|lambda)\\b(?!\\s*=(?!=))",
+          "name": "storage.type.liturgy"
+        },
+        {
+          "match": "(?<!\\.)\\b(remote|async)\\b(?!\\s*=(?!=))",
+          "name": "storage.modifier.async.liturgy"
+        },
+        {
+          "match": "^\\s*(archetype|type)\\b(?=\\s+[A-Za-z_][A-Za-z0-9_]*\\s*(\\[[^\\]]*\\])?\\s*=)",
+          "captures": { "1": { "name": "storage.type.liturgy" } }
+        }
+      ]
+    },
+    "keyword": {
+      "match": "(?<!\\.)\\b(should|lest|otherwise|discern|wherein|foreach|whilst|cease|persist|render|emanate|attempt|curse|regardless|proclaim|attest|attend|abide|purge|anointed|universal|adjacent|if|elif|else|match|case|for|while|break|continue|return|yield|try|except|finally|raise|assert|await|pass|del|with|global|nonlocal)\\b(?!\\s*=(?!=))",
+      "name": "keyword.control.liturgy"
+    },
+    "curse-name": {
+      "patterns": [
+        {
+          "match": "(?<!\\.)\\b(PrimalCurse|MachineCurse|ImpureOffering|PatternMismatch|LostPattern|BeyondTheManifest|AbsentAugmetic|DivisionByTheVoid|ForbiddenLore|RelicNotFound|SpiralOfMadness|TheRiteIsEnded|UnknownInvocation|MotiveFailure|RiteUnwritten)\\b(?!\\s*=(?!=))",
+          "name": "support.class.exception.liturgy"
+        },
+        {
+          "match": "(?<!\\.)\\b([A-Z][A-Za-z0-9]*(?:Error|Exception|Warning)|BaseException|StopIteration|StopAsyncIteration|KeyboardInterrupt|SystemExit|GeneratorExit)\\b",
+          "name": "support.class.exception.liturgy"
+        }
+      ]
+    },
+    "builtin": {
+      "match": "(?<!\\.)\\b(intone|measure|span|unseal|hearken|archetype|abs|aiter|all|any|anext|ascii|bin|bool|breakpoint|bytearray|bytes|callable|chr|classmethod|compile|complex|delattr|dict|dir|divmod|enumerate|eval|exec|filter|float|format|frozenset|getattr|globals|hasattr|hash|hex|id|input|int|isinstance|issubclass|iter|len|list|locals|map|max|memoryview|min|next|object|oct|open|ord|pow|print|property|range|repr|reversed|round|set|setattr|slice|sorted|staticmethod|str|sum|super|tuple|type|vars|zip|__import__)\\b(?!\\s*=(?!=))",
+      "name": "support.function.builtin.liturgy"
+    },
+    "numeral": {
+      "match": "(?<!\\.)\\b(twice|thrice)\\b(?!\\s*=(?!=))",
+      "name": "constant.numeric.word.liturgy"
+    },
+    "number": {
+      "match": "\\b(0[bB][01_]+|0[oO][0-7_]+|0[xX][0-9a-fA-F_]+|\\d[\\d_]*(\\.[\\d_]*)?([eE][+-]?\\d+)?[jJ]?)\\b",
+      "name": "constant.numeric.liturgy"
+    },
+    "self": {
+      "match": "\\b(self|cls)\\b",
+      "name": "variable.language.liturgy"
+    },
+    "escape": {
+      "match": "\\\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|N\\{[^}]+\\}|[0-7]{1,3}|.|$)",
+      "name": "constant.character.escape.liturgy"
+    },
+    "fstring": {
+      "patterns": [
+        {
+          "begin": "(?i)\\b(rf|fr|f)('''|\"\"\")",
+          "end": "\\2",
+          "name": "string.interpolated.multiline.liturgy",
+          "beginCaptures": { "1": { "name": "storage.type.string.liturgy" } },
+          "patterns": [{ "include": "#fstring-guts" }]
+        },
+        {
+          "begin": "(?i)\\b(rf|fr|f)('|\")",
+          "end": "\\2|$",
+          "name": "string.interpolated.liturgy",
+          "beginCaptures": { "1": { "name": "storage.type.string.liturgy" } },
+          "patterns": [{ "include": "#fstring-guts" }]
+        }
+      ]
+    },
+    "fstring-guts": {
+      "patterns": [
+        { "include": "#escape" },
+        { "match": "\\{\\{|\\}\\}", "name": "constant.character.escape.liturgy" },
+        {
+          "begin": "\\{",
+          "end": "\\}",
+          "name": "meta.interpolation.liturgy",
+          "patterns": [{ "include": "$self" }]
+        }
+      ]
+    },
+    "string": {
+      "patterns": [
+        {
+          "begin": "(?i)\\b(rb|br|[rbu])?('''|\"\"\")",
+          "end": "\\2",
+          "name": "string.quoted.multiline.liturgy",
+          "beginCaptures": { "1": { "name": "storage.type.string.liturgy" } },
+          "patterns": [{ "include": "#escape" }]
+        },
+        {
+          "begin": "(?i)\\b(rb|br|[rbu])('|\")",
+          "end": "\\2|$",
+          "name": "string.quoted.liturgy",
+          "beginCaptures": { "1": { "name": "storage.type.string.liturgy" } },
+          "patterns": [{ "include": "#escape" }]
+        },
+        {
+          "begin": "('|\")",
+          "end": "\\1|$",
+          "name": "string.quoted.liturgy",
+          "patterns": [{ "include": "#escape" }]
+        }
+      ]
+    }
+  }
+}

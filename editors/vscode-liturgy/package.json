@@ -1,0 +1,40 @@
+{
+  "name": "liturgy-syntax",
+  "displayName": "Liturgy",
+  "description": "Syntax highlighting for Liturgy, the superset of Python spoken in the ritual tongue of the Adeptus Mechanicus.",
+  "version": "0.1.0",
+  "publisher": "tech-priest-liturgy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Another-workation-farang/tech-priest-liturgy"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "liturgy",
+        "aliases": [
+          "Liturgy",
+          "liturgy"
+        ],
+        "extensions": [
+          ".lit"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "liturgy",
+        "scopeName": "source.liturgy",
+        "path": "./syntaxes/liturgy.tmLanguage.json"
+      }
+    ]
+  }
+}

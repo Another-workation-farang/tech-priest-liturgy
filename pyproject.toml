@@ -5,8 +5,14 @@ description = "A superset of Python in the ritual language of the Adeptus Mechan
 requires-python = ">=3.12"
 dependencies = []
 
+[project.optional-dependencies]
+highlight = ["Pygments>=2.14"]
+
 [project.scripts]
 liturgy = "liturgy.cli:main"
+
+[project.entry-points."pygments.lexers"]
+liturgy = "liturgy.highlight:LiturgyLexer"
 
 [build-system]
 requires = ["hatchling"]
