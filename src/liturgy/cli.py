@@ -18,7 +18,6 @@ RESERVED_VERBS = frozenset(
     {
         "prove",
         "sanctify",
-        "consecrate",
         "anoint",
     }
 )
@@ -85,6 +84,16 @@ def _build_parser() -> argparse.ArgumentParser:
         help="forge even litanies whose bytecode is already current",
     )
 
+    p_cons = verbs.add_parser(
+        "consecrate", help="check consecrated names across the tree"
+    )
+    _add_global_flags(p_cons, default=argparse.SUPPRESS)
+    p_cons.add_argument("paths", nargs="*")
+    p_cons.add_argument(
+        "--plain", action="store_true",
+        help="emit file:line:col: messages for editors and CI",
+    )
+
     p_purge = verbs.add_parser("purge", help="clear generated caches")
     _add_global_flags(p_purge, default=argparse.SUPPRESS)
     p_purge.add_argument(
@@ -132,6 +141,11 @@ def main(argv: list[str] | None = None) -> int:
         from .tooling import forge
 
         return forge(args.paths, anew=args.anew)
+
+    if args.verb == "consecrate":
+        from .tooling import consecrate
+
+        return consecrate(args.paths, plain=args.plain)
 
     if args.verb == "purge":
         from .tooling import purge

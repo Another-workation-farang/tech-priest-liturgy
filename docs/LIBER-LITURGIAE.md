@@ -647,10 +647,10 @@ a binding placed in a process-wide registry rather than module scope. It was
 with no runtime of its own for a registry like that to live in. There is no
 clean place left to put it.
 
-### The four verbs still unwritten
+### The three verbs still unwritten
 
-Four verbs are built; Chapter XI sets them down. Four names remain reserved on
-the command line, and it is worth recording why each is still a name and
+Five verbs are built; Chapter XI sets them down. Three names remain reserved
+on the command line, and it is worth recording why each is still a name and
 nothing more, rather than leaving the blanks unexplained.
 
 `prove` — to run a litany's trials — is unbuilt because the trials already
@@ -664,16 +664,18 @@ is its own project rather than a verb on someone else's. Doing it properly
 means a full-fidelity round-trip through comments, blank lines and string
 quoting; doing it improperly means a tool that eats your source.
 
-`forge` was in this list, and is not any longer. It was one of three words
-reserved as flavour with no feature behind it; ahead-of-time compilation
-turned out to be the feature it had been waiting for. Chapter XI sets it
-down. The reservation did its work — the name was still there when something
-worth spending it on arrived.
+`forge` and `consecrate` were both in this list, and neither is any longer.
+They were two of the three words reserved as flavour with no feature behind
+them. Ahead-of-time compilation turned out to be what `forge` had been
+waiting for; carrying `consecrated` past the compilation unit turned out to
+be what `consecrate` had. Chapter XI sets both down. The reservation did its
+work twice — each name was still there when something worth spending it on
+arrived.
 
-`consecrate` and `anoint` are unbuilt because there is still no feature
-behind them. They were reserved as flavour — good words held back so that
-nothing trivial could spend them later. They are held, not planned, and no
-page is being left blank for them.
+`anoint` is unbuilt because there is still no feature behind it. It was
+reserved as flavour, a good word held back so that nothing trivial could
+spend it later. It is held, not planned, and no page is being left blank for
+it.
 
 `augur` and `purge` each name two different things in this project. `augur`
 is both Chapter X's source construct (preconditions) and Chapter XI's CLI
@@ -790,14 +792,14 @@ that contains it; each rite's opening belongs to that rite alone.
 
 ## Chapter XI — The Reading of Omens
 
-*Two verbs chant. Four do not. An adept who only ever chants learns of his
-errors from the machine, at the hour the machine chooses. These four are the
+*Two verbs chant. Five do not. An adept who only ever chants learns of his
+errors from the machine, at the hour the machine chooses. These five are the
 rites of asking first.*
 
-`augur`, `transcribe`, `forge` and `purge` are the built tooling verbs. None
-of them runs your litany. `augur` reads one, `transcribe` writes one, `forge`
-compiles one without chanting it, and `purge` clears what chanting left
-behind.
+`augur`, `transcribe`, `forge`, `consecrate` and `purge` are the built
+tooling verbs. None of them runs your litany. `augur` reads one, `transcribe`
+writes one, `forge` compiles one without chanting it, `consecrate` checks the
+seals across all of them, and `purge` clears what chanting left behind.
 
 ### augur — the omens read before the chant
 
@@ -1060,6 +1062,68 @@ on to the next:
 The exit status is 0 when everything asked for was forged or already
 current, and 1 if the interpreter refused the whole run or any single litany
 failed.
+
+### consecrate — the seals read across every litany
+
+Chapter VII sets out what `consecrated` can and cannot enforce, and is exact
+about the boundary: rejection happens at compile time, against the AST the
+compiler can see, and enforcement is per compilation unit. A second litany
+reaching in through the module object is, to the compiler, another file
+entirely.
+
+`consecrate` reads the whole tree instead of one unit at a time. It walks
+twice — once to learn what is sealed, once to find what reaches a seal — and
+reports the pair:
+
+```
+$ liturgy consecrate
+++ THE SEAL IS BROKEN ++
+   config.lit, line 1
+       consecrated PORT = 8080
+                   ^^^^
+   PORT is consecrated here, and reached in:
+     assigned  server.lit:4
+
+++ 1 seal broken, 1 held ++
+```
+
+Three shapes are read: assignment through the module object
+(`config.PORT = 9`), `setattr` with a literal name, and deletion. All three
+are named plainly enough in the source for a walk to find them. A `.py` file
+counts as much as a litany — it imports through the same hook, and can reach
+the same attribute.
+
+### What consecrate still cannot see
+
+It is a report, not an enforcement. Nothing here stops a rebinding at run
+time; it tells you the rebinding is written down somewhere.
+
+Two of Chapter VII's escapes remain invisible, and are not guessed at.
+`globals()["PORT"] = 9` names nothing a walk can match. Neither does
+`setattr(config, name, 9)`, where the attribute is computed — the literal
+form is read, the computed form is not, and reporting a maybe would make the
+verb worth less than silence.
+
+Only module-level seals are checked. A `consecrated` inside a rite is not
+reachable as `module.NAME`, so no other file could breach it if it tried.
+
+Modules are matched by basename, which is how `config.PORT` finds
+`config.lit`. Two litanies sharing a basename make that ambiguous, and the
+verb says so rather than reporting confidently:
+
+```
+++ config is the name of 2 litanies; seals for it are matched by basename ++
+```
+
+`--plain` emits `file:line:col:` lines for editors and CI, and nothing else:
+
+```
+$ liturgy consecrate --plain
+server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here
+```
+
+The exit status is 0 when every seal held, and 1 when any was reached or any
+litany could not be read.
 
 ### purge — the clearing of relics
 

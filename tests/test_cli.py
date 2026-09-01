@@ -89,11 +89,10 @@ def test_profane_env_var_also_gives_a_plain_traceback(tmp_path):
 
 def test_reserved_verbs_are_declared():
     # Spec III owns these; Core must not hand the names to anything else.
-    # augur (Task 3), transcribe (Task 4), purge (Task 5) and forge have
-    # since graduated to real subparsers, so they are no longer merely
-    # reserved.
-    assert cli.RESERVED_VERBS == {"prove", "sanctify", "consecrate", "anoint"}
-    for built in ("augur", "transcribe", "purge", "forge"):
+    # augur, transcribe, purge, forge and consecrate have since graduated
+    # to real subparsers, so they are no longer merely reserved.
+    assert cli.RESERVED_VERBS == {"prove", "sanctify", "anoint"}
+    for built in ("augur", "transcribe", "purge", "forge", "consecrate"):
         assert built not in cli.RESERVED_VERBS
 
 

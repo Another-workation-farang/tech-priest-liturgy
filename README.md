@@ -72,7 +72,7 @@ That installs the `liturgy` console script.
 
 ## `chant` and `commune`
 
-These two run litanies; the [four tooling verbs](#augur-transcribe-forge-and-purge)
+These two run litanies; the [five tooling verbs](#augur-transcribe-forge-consecrate-and-purge)
 further down read, translate and tidy them. `chant <file.lit> [args...]`
 executes a Liturgy file the way
 `python file.py` executes a Python one: the file becomes `__main__`,
@@ -328,7 +328,7 @@ must be exactly `"0"` — `false`, empty, or anything else still counts as
 impious). Calling a rite by its proper name, `chant` or `commune`, never
 triggers a rebuke in the first place.
 
-## `augur`, `transcribe`, `forge` and `purge`
+## `augur`, `transcribe`, `forge`, `consecrate` and `purge`
 
 Three tooling verbs are built. They do not run your litany; they read it,
 translate into it, or clean up after it.
@@ -522,6 +522,55 @@ continues:
 Exit status is 0 when everything was forged or already current, 1 if the
 interpreter refused the run or any single litany failed.
 
+### `consecrate` — check consecrated names across the tree
+
+`consecrated` is enforced per compilation unit, so the compiler cannot see a
+rebinding that arrives from another file. `consecrate` walks the tree twice —
+once to learn what is sealed, once to find what reaches a seal — and reports
+the pair.
+
+```
+$ liturgy consecrate
+++ THE SEAL IS BROKEN ++
+   config.lit, line 1
+       consecrated PORT = 8080
+                   ^^^^
+   PORT is consecrated here, and reached in:
+     assigned  server.lit:4
+
+++ 1 seal broken, 1 held ++
+```
+
+Three shapes are read: assignment through the module object
+(`config.PORT = 9`), `setattr` with a literal name, and deletion. A `.py`
+file counts as much as a litany — it imports through the same hook and can
+reach the same attribute.
+
+**It is a report, not an enforcement.** Nothing here stops a rebinding at run
+time. Two of the escapes named in the disclaimer stay invisible and are not
+guessed at: `globals()["PORT"] = 9` names nothing a walk can match, and
+neither does `setattr(config, name, 9)` with a computed attribute. The
+literal form is read; the computed form is not.
+
+Only module-level seals are checked — a `consecrated` inside a rite is not
+reachable as `module.NAME`, so nothing outside the file could breach it.
+Modules are matched by basename, and two litanies sharing one are called out
+rather than reported on confidently:
+
+```
+++ config is the name of 2 litanies; seals for it are matched by basename ++
+```
+
+`--plain` emits `file:line:col:` lines for editors and CI, and nothing else:
+
+```
+$ liturgy consecrate --plain
+server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here
+```
+
+Exit status is 0 when every seal held, 1 when any was reached or any litany
+could not be read.
+
 ### `purge` — clear generated caches
 
 `purge` removes every `__pycache__` directory beneath the working directory,
@@ -645,11 +694,11 @@ requires Python >= 3.12.
 
 Spec I gets you alias-only Liturgy: writing, running, and debugging `.lit`
 files with an honest import hook and honest tracebacks. Spec II adds the three
-constructs above. Spec III is the CLI verb surface, and four of its eight
-verbs — `augur`, `transcribe`, `forge`, `purge` — are built and documented
-above.
+constructs above. Spec III is the CLI verb surface, and five of its eight
+verbs — `augur`, `transcribe`, `forge`, `consecrate`, `purge` — are built and
+documented above.
 
-The other four are still nothing but names the command line refuses to hand
+The other three are still nothing but names the command line refuses to hand
 to anything else:
 
 - **`prove`** (test runner) — pytest already runs `.lit` tests, because the
@@ -662,11 +711,12 @@ to anything else:
   properly means a full-fidelity round-trip through comments, blank lines and
   string quoting, and doing it improperly means a tool that eats your source.
   Neither is a weekend.
-- **`consecrate`**, **`anoint`** — reserved as flavour. There is still no
-  feature behind them, only good words nobody wanted a later contributor to
-  spend on something trivial. They are held, not planned. `forge` was a third
-  such name until ahead-of-time compilation turned out to be the feature it
-  had been waiting for; the reservation did its job.
+- **`anoint`** — reserved as flavour. There is still no feature behind it,
+  only a good word nobody wanted a later contributor to spend on something
+  trivial. It is held, not planned. `forge` and `consecrate` were the other
+  two such names, until ahead-of-time compilation turned out to be what one
+  was waiting for and cross-file seal checking what the other was; the
+  reservation did its job twice.
 
 Two names are reused deliberately across the two namespaces, and it is worth
 saying so plainly rather than letting it confuse anyone later: `augur` is both

@@ -442,12 +442,12 @@ REBUKE.</p>
 <h2><pre>[VII] THE READING OF OMENS — TOOLING VERBS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
-<p class="desc">FOUR TOOLING VERBS ARE BUILT. NONE OF THEM CHANTS.
+<p class="desc">FIVE TOOLING VERBS ARE BUILT. NONE OF THEM CHANTS.
 <span class="lower amber">augur</span> READS A LITANY, <span class="lower amber">transcribe</span> WRITES
-ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT, AND
-<span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND. FOUR NAMES —
+ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
+<span class="lower amber">consecrate</span> CHECKS THE SEALS ACROSS ALL OF THEM, AND
+<span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND. THREE NAMES —
 <span class="lower amber">prove</span>, <span class="lower amber">sanctify</span>,
-<span class="lower amber">consecrate</span>,
 <span class="lower amber">anoint</span> — REMAIN RESERVED AND UNBUILT.</p>
 
 <div class="directive">
@@ -548,6 +548,41 @@ ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
 <pre>
 <span class="dim">$</span> liturgy forge
 ++ 0 litanies forged, 2 already current ++
+</pre>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy consecrate [PATH...] [--plain]</span>
+
+   <span class="ok">CHECKS EVERY MODULE-LEVEL consecrated NAME AGAINST THE WHOLE TREE. WALKS
+   TWICE — ONCE TO LEARN WHAT IS SEALED, ONCE TO FIND WHAT REACHES A SEAL.
+   READS THREE SHAPES: ASSIGNMENT THROUGH THE MODULE OBJECT, setattr WITH A
+   LITERAL NAME, AND DELETION. A .PY FILE COUNTS AS MUCH AS A LITANY.</span>
+
+   <span class="field">:option <b>--plain</b>:</span> EMIT file:line:col: LINES AND NOTHING ELSE.
+   <span class="alert">:not enforcement:</span> A REPORT. NOTHING HERE STOPS A REBINDING AT RUN TIME.
+   <span class="field">:cannot see:</span> globals()["PORT"] = 9, AND setattr WITH A COMPUTED NAME.
+                 THE LITERAL FORM IS READ; THE COMPUTED FORM IS NOT GUESSED AT.
+   <span class="field">:scope:</span> MODULE-LEVEL SEALS ONLY — A consecrated INSIDE A RITE IS NOT
+           REACHABLE AS module.NAME. MODULES MATCH BY BASENAME, AND A SHARED
+           BASENAME IS CALLED OUT RATHER THAN REPORTED ON CONFIDENTLY.
+   <span class="field">:returns:</span> 0 IF EVERY SEAL HELD, 1 IF ANY WAS REACHED OR ANY LITANY
+             COULD NOT BE READ.</pre>
+</div>
+
+<pre>
+<span class="dim">$</span> liturgy consecrate
+++ THE SEAL IS BROKEN ++
+   config.lit, line 1
+       consecrated PORT = 8080
+                   ^^^^
+   PORT is consecrated here, and reached in:
+     assigned  server.lit:4
+
+++ 1 seal broken, 1 held ++
 </pre>
 </section>
 
