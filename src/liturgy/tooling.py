@@ -720,3 +720,34 @@ def consecrate(paths: list[str], *, plain: bool = False, out=None) -> int:
             file=out,
         )
     return 1 if broken else 0
+
+
+def prove(args: list[str], *, out=None) -> int:
+    """Run a litany's trials. Returns pytest's own exit code.
+
+    Convenience, and openly nothing more: pytest already imports a `.lit`
+    module through the hook, and a seven-line `conftest.py` already collects
+    `test_*.lit`. This installs the hook and supplies that collector as a
+    plugin, so a project needs neither.
+
+    Everything in `args` goes straight to pytest -- paths, `-k`, `-v`, any
+    of it. The exit code is pytest's, passed through rather than flattened
+    to 0/1: 0 all passed, 1 failures, 5 nothing collected, and so on. A test
+    runner that lies about which of those happened is worse than none.
+    """
+    out = out if out is not None else sys.stdout
+    try:
+        import pytest
+    except ImportError:
+        print("++ CANNOT PROVE: pytest is not installed ++", file=out)
+        print("   the trials need it:  pip install 'liturgy[trials]'", file=out)
+        return 1
+
+    from .loader import install
+    from .trials import LitanyTrials
+
+    # The hook must be live before collection, or importing a `.lit` module
+    # from a trial fails and `.lit` files are unimportable even once
+    # collected.
+    install()
+    return int(pytest.main(list(args), plugins=[LitanyTrials()]))
