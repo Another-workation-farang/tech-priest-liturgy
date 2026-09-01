@@ -98,6 +98,30 @@ within reliquary invoke bless
 invoke json
 ```
 
+### The illumination of glyphs
+
+Two illuminators are kept, one exact and one approximate. The exact one is a
+Pygments lexer carried by the package itself as an optional extra:
+
+```
+$ pip install -e ".[highlight]"
+$ pygmentize prayer.lit
+```
+
+It does not guess from a word-list; it asks the same token passes the
+compiler runs which occurrences *are* Liturgy, so the three prohibitions of
+Chapter VI and the construct-header rules of Chapter X hold in the colours
+exactly as they hold in the transform, and the machine's own names of
+Chapter VII are painted as the heresies they are. It is not a linter:
+`span = 1` paints `span` as the builtin it becomes, and judging bindings
+remains `augur`'s office.
+
+The approximate one is a TextMate grammar for VS Code, in
+`editors/vscode-liturgy` of the repository, installed by hand (its README
+sets down how, and which context rules a line-based grammar can only
+approximate). A test holds its word lists to the lexicon, so a word cannot
+be reserved without the grammar learning it.
+
 ---
 
 ## Chapter III — The Lesser Rites

@@ -486,6 +486,34 @@ with a count of what went:
 Exit status is 0 when everything asked for went, and 1 if the guard refused or
 any single removal failed.
 
+## Syntax highlighting
+
+Two highlighters ship with the repository, one exact and one approximate.
+
+**Pygments** (exact). The package carries an optional lexer, registered under
+the names `liturgy` and `lit` and claiming `*.lit`:
+
+```
+$ pip install -e ".[highlight]"
+$ pygmentize examples/fibonacci.lit
+```
+
+It is driven by the compiler's own token passes rather than a keyword regex,
+so the three prohibitions hold in the colours exactly as they hold in the
+transform: `template.render()` paints `render` as a plain attribute,
+`func(intone=True)` a plain keyword argument, an invocation's targets stay
+the module's own, and `litany = 5` is your name while `litany(...):` is a
+construct header. The machine's own names paint as errors. Highlighting is
+not a linter, though — `span = 1` still paints `span` as the builtin it
+becomes; `augur` is the verb that judges bindings.
+
+**VS Code** (approximate). A TextMate grammar lives in
+[`editors/vscode-liturgy`](editors/vscode-liturgy/); its README covers
+installation (a `vsce package` or a symlink — it is not on the marketplace)
+and lists the places where a line-based grammar can only approximate the
+transform's context rules. `tests/test_grammar.py` holds its word lists to
+the lexicon, so a new reserved word cannot ship without joining the grammar.
+
 ## When a rite breaks
 
 An unhandled exception in a `.lit` file does not print a Python traceback by
