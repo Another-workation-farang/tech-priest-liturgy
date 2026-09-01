@@ -1,4 +1,4 @@
-"""The Spec III verbs: augur, transcribe, purge."""
+"""The tooling verbs: augur, transcribe, forge, consecrate, purge."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from .collisions import find_collisions
 from .compiler import compile_litany
 from .heresy import state_path
 from .reverse import to_liturgy
+from .seals import find_breaches, find_seals
 from .transform import UnfinishedLitany, split_lines, transform
 
 _SOURCES = (".lit", ".py")
@@ -584,3 +585,138 @@ def forge(paths: list[str], *, anew: bool = False, out=None) -> int:
         file=out,
     )
     return 1 if failed else 0
+
+
+def _decoded(path, *, plain, out, verb):
+    """Source text, or None having reported why not. See `augur` for the why."""
+    try:
+        return importlib.util.decode_source(path.read_bytes())
+    except OSError as err:
+        print(f"++ CANNOT {verb}: {path} cannot be read: {err.strerror} ++", file=out)
+    except (SyntaxError, UnicodeDecodeError, LookupError) as err:
+        print(f"++ CANNOT {verb}: {path} cannot be decoded: {err} ++", file=out)
+    return None
+
+
+def consecrate(paths: list[str], *, plain: bool = False, out=None) -> int:
+    """Check consecrated names against the whole tree. 0 held, 1 broken.
+
+    `consecrated` enforces per compilation unit, so the compiler cannot see a
+    rebinding that arrives from another file. This walks the tree twice --
+    once to learn what is sealed, once to find what breaks a seal -- and
+    reports the pairs.
+
+    It is a report, not an enforcement: nothing here stops the rebinding at
+    run time, and `globals()` and a computed `setattr` name stay invisible
+    to it. Chapter VII's boundary moves; it does not disappear.
+    """
+    out = out if out is not None else sys.stdout
+    files, notes = _gather(paths or ["."])
+    broken = False
+
+    for d, message in notes:
+        broken = True
+        print(f"++ CANNOT CONSECRATE: {d} {message} ++", file=out)
+
+    # Pass one: what is sealed, and where.
+    sealed: dict[str, set[str]] = {}
+    where: dict[tuple[str, str], tuple[pathlib.Path, object, str]] = {}
+    ambiguous: dict[str, set[str]] = {}
+    sources: dict[pathlib.Path, str] = {}
+
+    for path in files:
+        src = _decoded(path, plain=plain, out=out, verb="CONSECRATE")
+        if src is None:
+            broken = True
+            continue
+        sources[path] = src
+        if path.suffix != ".lit":
+            continue
+        try:
+            found = find_seals(src, str(path), liturgy=True)
+        except UnfinishedLitany:
+            broken = True
+            _emit_bare(path, "seals unread: the litany does not tokenise",
+                       plain=plain, out=out)
+            continue
+        except SyntaxError as err:
+            broken = True
+            _emit_bare(path, f"{type(err).__name__}: {err.msg}",
+                       line=err.lineno or 1, plain=plain, out=out)
+            continue
+        for seal in found:
+            ambiguous.setdefault(seal.module, set()).add(str(path))
+            sealed.setdefault(seal.module, set()).add(seal.name)
+            where[(seal.module, seal.name)] = (path, seal, src)
+
+    total = sum(len(v) for v in sealed.values())
+    if not sealed:
+        if not plain:
+            print("++ no consecrated names found ++", file=out)
+        return 1 if broken else 0
+
+    # Two modules sharing a basename make `module.NAME` ambiguous, and the
+    # walk resolves by basename. Say so rather than reporting confidently.
+    for module, homes in sorted(ambiguous.items()):
+        if len(homes) > 1:
+            print(
+                f"++ {module} is the name of {len(homes)} litanies; "
+                "seals for it are matched by basename ++",
+                file=out,
+            )
+            for h in sorted(homes):
+                print(f"   {h}", file=out)
+
+    # Pass two: who breaks one.
+    breaches = []
+    for path in files:
+        src = sources.get(path)
+        if src is None:
+            continue
+        try:
+            breaches.extend(
+                (path, b)
+                for b in find_breaches(
+                    src, str(path), sealed, liturgy=path.suffix == ".lit"
+                )
+            )
+        except (UnfinishedLitany, SyntaxError):
+            continue  # already reported in pass one for .lit; a .py is not ours
+
+    by_seal: dict[tuple[str, str], list] = {}
+    for path, b in breaches:
+        by_seal.setdefault((b.module, b.name), []).append((path, b))
+
+    for key in sorted(by_seal, key=lambda k: (k[0], k[1])):
+        broken = True
+        seal_path, seal, seal_src = where[key]
+        module, name = key
+        if plain:
+            for path, b in by_seal[key]:
+                print(
+                    f"{path}:{b.line}:{b.col + 1}: {name} is consecrated in "
+                    f"{seal_path} line {seal.line} and {b.how} here",
+                    file=out,
+                )
+            continue
+        lines = split_lines(seal_src)
+        text = lines[seal.line - 1].rstrip("\n") if seal.line <= len(lines) else ""
+        print("++ THE SEAL IS BROKEN ++", file=out)
+        print(f"   {seal_path}, line {seal.line}", file=out)
+        print(f"       {text}", file=out)
+        print(f"       {' ' * seal.col}{'^' * len(name)}", file=out)
+        print(f"   {name} is consecrated here, and reached in:", file=out)
+        for path, b in sorted(by_seal[key], key=lambda pb: (str(pb[0]), pb[1].line)):
+            print(f"     {b.how:9} {path}:{b.line}", file=out)
+        print("", file=out)
+
+    if not plain:
+        # --plain is for editors and CI, like augur's: machine-readable
+        # lines and nothing else to parse around.
+        held = total - len(by_seal)
+        print(
+            f"++ {len(by_seal)} seal{'' if len(by_seal) == 1 else 's'} broken, "
+            f"{held} held ++",
+            file=out,
+        )
+    return 1 if broken else 0
