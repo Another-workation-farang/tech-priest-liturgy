@@ -925,19 +925,11 @@ than module scope. It was <b>cut, not deferred</b> — it is a service
 locator, and Liturgy generates code with no runtime of its own for a
 registry like that to live in. There is no clean place left to put it.</p>
 
-<h3>The three verbs still unwritten</h3>
+<h3>The two verbs still unwritten</h3>
 
-<p>Five verbs are built; Chapter XI sets them down. Three names remain
+<p>Six verbs are built; Chapter XI sets them down. Two names remain
 reserved on the command line, and it is worth recording why each is still a
 name and nothing more, rather than leaving the blanks unexplained.</p>
-
-<p><code>prove</code> — to run a litany's trials — is unbuilt because the
-trials already run. The import hook is a real one, so pytest imports a
-<code>.lit</code> module like any other, and a short
-<code>conftest.py</code> that installs the hook and hands
-<code>pytest.Module</code> any <code>test_*.lit</code> collects them
-directly, failures quoting the Liturgy source. A verb wrapping that would
-add a layer and no capability.</p>
 
 <p><code>sanctify</code> — to set a litany's form in order — is unbuilt
 because a formatter is its own project rather than a verb on someone
@@ -1078,16 +1070,19 @@ rite that contains it; each rite's opening belongs to that rite alone.</p>
 <h2><pre>[XI] THE READING OF OMENS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
-<p class="epigraph">Two verbs chant. Five do not. An adept who only ever chants learns of his
-errors from the machine, at the hour the machine chooses. These five are
-the rites of asking first.</p>
+<p class="epigraph">Two verbs chant. Five do not. A sixth chants only what you wrote to be
+chanted. An adept who only ever chants learns of his errors from the
+machine, at the hour the machine chooses. These are the rites of asking
+first.</p>
 
 <p><code>augur</code>, <code>transcribe</code>, <code>forge</code>,
-<code>consecrate</code> and <code>purge</code> are the built tooling verbs.
-None of them runs your litany. <code>augur</code> reads one,
+<code>consecrate</code>, <code>prove</code> and <code>purge</code> are the
+built tooling verbs. <code>augur</code> reads a litany,
 <code>transcribe</code> writes one, <code>forge</code> compiles one without
 chanting it, <code>consecrate</code> checks the seals across all of them,
-and <code>purge</code> clears what chanting left behind.</p>
+and <code>purge</code> clears what chanting left behind. <code>prove</code>
+is the exception that does run a litany — but only the trials you wrote to
+be run.</p>
 
 <h3>augur — the omens read before the chant</h3>
 
@@ -1391,6 +1386,76 @@ server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here</pre
 
 <p>The exit status is 0 when every seal held, and 1 when any was reached or
 any litany could not be read.</p>
+
+<h3>prove — the trials of a litany</h3>
+
+<p><code>prove</code> runs pytest with the import hook installed and
+<code>test_*.lit</code> collected. That is the whole verb.</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy prove
+test_rites.lit .F                                                        [100%]
+
+=================================== FAILURES ===================================
+__________________________ test_the_omnissiah_is_not ___________________________
+
+    rite test_the_omnissiah_is_not():
+&gt;       attest measure(&quot;cog&quot;) == 99
+               ^^^^^^^^^^^^^^^^
+E       AssertionError
+
+test_rites.lit:5: AssertionError
+========================= 1 failed, 1 passed in 0.01s ==========================</pre>
+
+<p>The failure quotes Liturgy — <code>rite</code>, <code>attest</code>,
+<code>measure</code>, at the litany's own line number — because the loader
+does not override <code>get_source</code>, and pytest reads the source the
+same way a traceback does.</p>
+
+<p>Every argument goes straight to pytest: paths, <code>-k</code>,
+<code>-x</code>, <code>-v</code>, any of it.</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy prove -q -k pleased
+.                                                                        [100%]
+1 passed, 1 deselected in 0.00s</pre>
+
+<p>The exit status is pytest's own, passed through rather than flattened: 0
+all passed, 1 failures, 5 nothing collected. A runner that reported those
+three alike would be worse than none.</p>
+
+<h3>What prove is, and is not</h3>
+
+<p>It is convenience, and the chapter will not pretend otherwise. Everything
+<code>prove</code> does was already available: the hook is a real one, so
+pytest imports a <code>.lit</code> module like any other, and this
+<code>conftest.py</code> collects the trials without any verb at all.</p>
+
+<pre class="shell">import pytest
+from liturgy.loader import install
+install()
+
+def pytest_collect_file(parent, file_path):
+    if file_path.suffix == &quot;.lit&quot; and file_path.name.startswith(&quot;test_&quot;):
+        return pytest.Module.from_parent(parent, path=file_path)</pre>
+
+<p><code>prove</code> supplies exactly that as a plugin. What it buys is
+that a project needs no <code>conftest.py</code>, and that the way to run a
+litany's trials is discoverable from <code>--help</code> rather than from
+this page. Chapter IX declined the verb once for adding a layer and no
+capability; the layer was built anyway, on the grounds that seven lines of
+boilerplate every project must copy is itself a cost.</p>
+
+<p>pytest is an optional extra. Without it the verb refuses rather than
+tracebacking:</p>
+
+<div class="warning"><pre>++ CANNOT PROVE: pytest is not installed ++
+   the trials need it:  pip install 'liturgy[trials]'</pre></div>
+
+<p>One limitation is worth stating plainly: pytest rewrites assertions in
+<code>.py</code> files to show the operands of a failed comparison, and it
+does not do this for a litany. <code>attest measure("cog") == 99</code>
+reports <code>AssertionError</code> and the source line, not
+<code>3 == 99</code>. The rewriting works on Python source pytest itself
+imports, and a litany arrives already compiled by our loader.</p>
 
 <h3>purge — the clearing of relics</h3>
 

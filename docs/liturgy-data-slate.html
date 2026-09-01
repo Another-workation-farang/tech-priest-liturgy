@@ -442,12 +442,13 @@ REBUKE.</p>
 <h2><pre>[VII] THE READING OF OMENS — TOOLING VERBS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
-<p class="desc">FIVE TOOLING VERBS ARE BUILT. NONE OF THEM CHANTS.
+<p class="desc">SIX TOOLING VERBS ARE BUILT.
 <span class="lower amber">augur</span> READS A LITANY, <span class="lower amber">transcribe</span> WRITES
 ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
-<span class="lower amber">consecrate</span> CHECKS THE SEALS ACROSS ALL OF THEM, AND
-<span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND. THREE NAMES —
-<span class="lower amber">prove</span>, <span class="lower amber">sanctify</span>,
+<span class="lower amber">consecrate</span> CHECKS THE SEALS ACROSS ALL OF THEM,
+<span class="lower amber">prove</span> RUNS THE TRIALS, AND
+<span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND. TWO NAMES —
+<span class="lower amber">sanctify</span>,
 <span class="lower amber">anoint</span> — REMAIN RESERVED AND UNBUILT.</p>
 
 <div class="directive">
@@ -583,6 +584,36 @@ ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
      assigned  server.lit:4
 
 ++ 1 seal broken, 1 held ++
+</pre>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy prove [ARG...]</span>
+
+   <span class="ok">RUNS PYTEST WITH THE .LIT IMPORT HOOK INSTALLED AND test_*.lit COLLECTED.
+   EVERY ARGUMENT IS PASSED STRAIGHT THROUGH — PATHS, -k, -x, -v. FAILURES
+   QUOTE LITURGY AT THE LITANY'S OWN LINE NUMBER.</span>
+
+   <span class="field">:requires:</span> PYTEST, AN OPTIONAL EXTRA — pip install 'liturgy[trials]'.
+              WITHOUT IT THE VERB REFUSES RATHER THAN TRACEBACKING.
+   <span class="alert">:convenience only:</span> A conftest.py CALLING install() AND ADDING A
+                       pytest_collect_file FOR test_*.lit DOES THE SAME.
+                       THE VERB SUPPLIES IT AS A PLUGIN SO NO PROJECT
+                       NEEDS THE BOILERPLATE.
+   <span class="field">:limitation:</span> PYTEST'S ASSERTION REWRITING DOES NOT APPLY TO A LITANY.
+                A FAILED attest REPORTS AssertionError AND THE SOURCE LINE,
+                NOT THE OPERANDS.
+   <span class="field">:returns:</span> PYTEST'S OWN EXIT CODE, UNFLATTENED — 0 PASSED, 1 FAILURES,
+             5 NOTHING COLLECTED.</pre>
+</div>
+
+<pre>
+<span class="dim">$</span> liturgy prove -q -k pleased
+.                                                                        [100%]
+1 passed, 1 deselected in 0.00s
 </pre>
 </section>
 

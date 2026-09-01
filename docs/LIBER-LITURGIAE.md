@@ -647,17 +647,11 @@ a binding placed in a process-wide registry rather than module scope. It was
 with no runtime of its own for a registry like that to live in. There is no
 clean place left to put it.
 
-### The three verbs still unwritten
+### The two verbs still unwritten
 
-Five verbs are built; Chapter XI sets them down. Three names remain reserved
-on the command line, and it is worth recording why each is still a name and
+Six verbs are built; Chapter XI sets them down. Two names remain reserved on
+the command line, and it is worth recording why each is still a name and
 nothing more, rather than leaving the blanks unexplained.
-
-`prove` — to run a litany's trials — is unbuilt because the trials already
-run. The import hook is a real one, so pytest imports a `.lit` module like any
-other, and a short `conftest.py` that installs the hook and hands
-`pytest.Module` any `test_*.lit` collects them directly, failures quoting the
-Liturgy source. A verb wrapping that would add a layer and no capability.
 
 `sanctify` — to set a litany's form in order — is unbuilt because a formatter
 is its own project rather than a verb on someone else's. Doing it properly
@@ -792,14 +786,16 @@ that contains it; each rite's opening belongs to that rite alone.
 
 ## Chapter XI — The Reading of Omens
 
-*Two verbs chant. Five do not. An adept who only ever chants learns of his
-errors from the machine, at the hour the machine chooses. These five are the
-rites of asking first.*
+*Two verbs chant. Five do not. A sixth chants only what you wrote to be
+chanted. An adept who only ever chants learns of his errors from the
+machine, at the hour the machine chooses. These are the rites of asking
+first.*
 
-`augur`, `transcribe`, `forge`, `consecrate` and `purge` are the built
-tooling verbs. None of them runs your litany. `augur` reads one, `transcribe`
-writes one, `forge` compiles one without chanting it, `consecrate` checks the
-seals across all of them, and `purge` clears what chanting left behind.
+`augur`, `transcribe`, `forge`, `consecrate`, `prove` and `purge` are the
+built tooling verbs. `augur` reads a litany, `transcribe` writes one, `forge`
+compiles one without chanting it, `consecrate` checks the seals across all of
+them, and `purge` clears what chanting left behind. `prove` is the exception
+that does run a litany — but only the trials you wrote to be run.
 
 ### augur — the omens read before the chant
 
@@ -1124,6 +1120,81 @@ server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here
 
 The exit status is 0 when every seal held, and 1 when any was reached or any
 litany could not be read.
+
+### prove — the trials of a litany
+
+`prove` runs pytest with the import hook installed and `test_*.lit`
+collected. That is the whole verb.
+
+```
+$ liturgy prove
+test_rites.lit .F                                                        [100%]
+
+=================================== FAILURES ===================================
+__________________________ test_the_omnissiah_is_not ___________________________
+
+    rite test_the_omnissiah_is_not():
+>       attest measure("cog") == 99
+               ^^^^^^^^^^^^^^^^
+E       AssertionError
+
+test_rites.lit:5: AssertionError
+========================= 1 failed, 1 passed in 0.01s ==========================
+```
+
+The failure quotes Liturgy — `rite`, `attest`, `measure`, at the litany's own
+line number — because the loader does not override `get_source`, and pytest
+reads the source the same way a traceback does.
+
+Every argument goes straight to pytest: paths, `-k`, `-x`, `-v`, any of it.
+
+```
+$ liturgy prove -q -k pleased
+.                                                                        [100%]
+1 passed, 1 deselected in 0.00s
+```
+
+The exit status is pytest's own, passed through rather than flattened: 0 all
+passed, 1 failures, 5 nothing collected. A runner that reported those three
+alike would be worse than none.
+
+### What prove is, and is not
+
+It is convenience, and the chapter will not pretend otherwise. Everything
+`prove` does was already available: the hook is a real one, so pytest imports
+a `.lit` module like any other, and this `conftest.py` collects the trials
+without any verb at all.
+
+```python
+import pytest
+from liturgy.loader import install
+install()
+
+def pytest_collect_file(parent, file_path):
+    if file_path.suffix == ".lit" and file_path.name.startswith("test_"):
+        return pytest.Module.from_parent(parent, path=file_path)
+```
+
+`prove` supplies exactly that as a plugin. What it buys is that a project
+needs no `conftest.py`, and that the way to run a litany's trials is
+discoverable from `--help` rather than from this page. Chapter IX declined
+the verb once for adding a layer and no capability; the layer was built
+anyway, on the grounds that seven lines of boilerplate every project must
+copy is itself a cost.
+
+pytest is an optional extra. Without it the verb refuses rather than
+tracebacking:
+
+```
+++ CANNOT PROVE: pytest is not installed ++
+   the trials need it:  pip install 'liturgy[trials]'
+```
+
+One limitation is worth stating plainly: pytest rewrites assertions in `.py`
+files to show the operands of a failed comparison, and it does not do this
+for a litany. `attest measure("cog") == 99` reports `AssertionError` and the
+source line, not `3 == 99`. The rewriting works on Python source pytest
+itself imports, and a litany arrives already compiled by our loader.
 
 ### purge — the clearing of relics
 

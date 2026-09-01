@@ -16,7 +16,6 @@ HERETICAL: dict[str, str] = {"run": "chant", "repl": "commune"}
 # and nothing needs to: argparse rejects any verb it has no subparser for.
 RESERVED_VERBS = frozenset(
     {
-        "prove",
         "sanctify",
         "anoint",
     }
@@ -94,6 +93,18 @@ def _build_parser() -> argparse.ArgumentParser:
         help="emit file:line:col: messages for editors and CI",
     )
 
+    p_prove = verbs.add_parser(
+        "prove",
+        help="run a litany's trials",
+        description="Run pytest with the .lit hook installed and test_*.lit "
+                    "collected. Every argument is passed straight to pytest.",
+    )
+    _add_global_flags(p_prove, default=argparse.SUPPRESS)
+    p_prove.add_argument(
+        "args", nargs=argparse.REMAINDER,
+        help="paths and pytest options, passed through unchanged",
+    )
+
     p_purge = verbs.add_parser("purge", help="clear generated caches")
     _add_global_flags(p_purge, default=argparse.SUPPRESS)
     p_purge.add_argument(
@@ -115,7 +126,22 @@ def main(argv: list[str] | None = None) -> int:
             argv[i] = HERETICAL[arg]
         break
 
+    # `prove` hands everything after it to pytest, flags included. argparse
+    # would claim a leading `-k` for itself before REMAINDER ever saw it --
+    # `chant` escapes that only because a required positional comes first --
+    # so prove's tail is lifted out before parsing and put back after.
+    passthrough: list[str] = []
+    verb_at = next((i for i, a in enumerate(argv) if not a.startswith("-")), None)
+    if verb_at is not None and argv[verb_at] == "prove":
+        tail = argv[verb_at + 1 :]
+        # -h/--help stays with argparse: every other verb answers it, and a
+        # wrapper that suddenly shows pytest's help instead is a surprise.
+        if not {"-h", "--help"} & set(tail):
+            argv, passthrough = argv[: verb_at + 1], tail
+
     args = _build_parser().parse_args(argv)
+    if getattr(args, "verb", None) == "prove" and passthrough:
+        args.args = passthrough
 
     if transgression and not args.absolved:
         heresy.rebuke(*transgression)
@@ -146,6 +172,11 @@ def main(argv: list[str] | None = None) -> int:
         from .tooling import consecrate
 
         return consecrate(args.paths, plain=args.plain)
+
+    if args.verb == "prove":
+        from .tooling import prove
+
+        return prove(args.args)
 
     if args.verb == "purge":
         from .tooling import purge
