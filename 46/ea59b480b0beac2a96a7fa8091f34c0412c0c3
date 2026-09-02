@@ -1,0 +1,23 @@
+README.md
+  s_d162ead593e4de::t_b630e1aa0eca48 882-893
+LICENSE
+  s_d162ead593e4de::t_5304428faca8bf 1-21
+pyproject.toml
+  s_d162ead593e4de::t_8cfffcc0fc1f7a 6-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "46ea59b480b0beac2a96a7fa8091f34c0412c0c3",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
