@@ -879,3 +879,15 @@ The full design is in
 [`design/specs/2026-08-30-liturgy-core-design.md`](design/specs/2026-08-30-liturgy-core-design.md);
 the task-by-task implementation plan for Core is in
 [`design/plans/2026-08-30-liturgy-core.md`](design/plans/2026-08-30-liturgy-core.md).
+
+## Licence
+
+MIT — see [`LICENSE`](LICENSE). Use it, fork it, sell it if you can find a
+buyer; keep the copyright notice, and expect no warranty.
+
+That covers the code. It does not cover the setting the code is dressed in:
+*Warhammer 40,000*, the Adeptus Mechanicus, the Omnissiah and the rest are
+Games Workshop's intellectual property, and this project is an unaffiliated
+work of fan homage with no claim to any of it. The vocabulary is used here
+the way a fan uses it, and a licence on the source cannot and does not grant
+anyone rights to the trademarks.
