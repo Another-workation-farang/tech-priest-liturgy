@@ -9,6 +9,10 @@ compiles exactly the way a `.py` file would, so everything you already know
 about control flow, closures, exceptions, and the rest of the language
 carries over unchanged.
 
+**[Read the Liber Liturgiae](https://another-workation-farang.github.io/tech-priest-liturgy/)**
+— the full language reference, plus a one-page data-slate of every verb and
+alias.
+
 The joke is the reason to start, but it is not really the point. Doing it
 honestly — matching line numbers in tracebacks, correct column carets under a
 syntax error, an import hook that behaves like a real one, a REPL that can
@@ -22,9 +26,9 @@ time.
 > around in CPython's import machinery. It is not a serious language and it is
 > not maintained as one.
 >
-> It is **incomplete** — the third of three planned specs is three verbs
-> into an eight-verb surface, and five of those names are still nothing but
-> reserved words.
+> It is **incomplete** — the third of three planned specs is seven verbs
+> into an eight-verb surface, and the last name is still nothing but a
+> reserved word.
 >
 > It is **breakable**. Some of it is documented: naming a variable `span` or
 > `measure` (or `discern`, or any of the ten quiet words) silently shadows
