@@ -11,6 +11,7 @@ import shutil
 import sys
 import tokenize
 
+from .archetypes import ArchetypesUnread, check, mypy_available
 from .collisions import find_collisions
 from .compiler import compile_litany
 from .constructs import TechHeresy
@@ -135,12 +136,57 @@ def _report(path, line, src_line, col, width, message, *, out) -> None:
     print(f"   {message}", file=out)
 
 
-def augur(paths: list[str], *, plain: bool = False, out=None) -> int:
-    """Read litanies for faults without chanting them. 0 clean, 1 findings."""
+def augur(
+    paths: list[str],
+    *,
+    plain: bool = False,
+    archetypes: bool = False,
+    oracle=None,
+    out=None,
+) -> int:
+    """Read litanies for faults without chanting them. 0 clean, 1 findings.
+
+    Two checks always, and a third only when it is asked for. Collisions
+    and the compile are cheap enough to run on every keystroke; reading
+    archetypes spawns mypy and is not, so `archetypes` is a flag and the
+    two standing checks behave identically whether or not it is passed.
+
+    **Only litanies are read for archetypes.** A `.py` file is still
+    scanned by the two standing checks, but it has no substitutions and so
+    no `SourceMap`, which means nothing this verb could say about it would
+    be in Liturgy coordinates -- it would be mypy's own report, wearing
+    Liturgy's banner. Running mypy on Python is mypy's job, and the user
+    can run it directly and get better output than this could relay. A
+    `.py` beside litanies is simply skipped; a run whose files held **no**
+    litany at all says so and exits 1, because a check that was asked for
+    and never happened must not read as a check that found nothing.
+
+    `oracle` is the seam `archetypes.check` documents, passed straight
+    through: the trials use it to run a real mypy from an environment the
+    core does not have. When it is given, the "is mypy installed here"
+    gate below is skipped, because the caller has supplied the oracle that
+    gate exists to find.
+    """
     out = out if out is not None else sys.stdout
     troubled = False
 
+    if archetypes and oracle is None and not mypy_available():
+        # Refused before the walk, as `prove` refuses without pytest. Doing
+        # two thirds of what was asked and exiting 1 anyway would leave the
+        # reader to work out which third was missing.
+        print("++ CANNOT READ ARCHETYPES: mypy is not installed ++", file=out)
+        print(
+            "   reading them needs it:  pip install 'liturgy[archetypes]'",
+            file=out,
+        )
+        return 1
+
     files, notes = _gather(paths)
+    # Whether the third check had anything it could be run on. Asked for and
+    # never run is the silent success this module's docstring calls the worst
+    # outcome available, and it has to be said out loud rather than left to
+    # an empty report the reader will read as "clean".
+    saw_litany = False
 
     for d, message in notes:
         troubled = True
@@ -166,6 +212,7 @@ def augur(paths: list[str], *, plain: bool = False, out=None) -> int:
             continue
 
         liturgy = path.suffix == ".lit"
+        saw_litany = saw_litany or liturgy
         try:
             collisions = find_collisions(src, str(path), liturgy=liturgy)
         except UnfinishedLitany:
@@ -189,6 +236,7 @@ def augur(paths: list[str], *, plain: bool = False, out=None) -> int:
             _emit_bare(path, f"cannot be compiled: {err}", plain=plain, out=out)
             continue
 
+        compiles = True
         if liturgy:
             # Compiling is what makes augur agree with chant. Collisions are
             # already in hand, so a failure here is something else entirely.
@@ -196,6 +244,7 @@ def augur(paths: list[str], *, plain: bool = False, out=None) -> int:
                 compile_litany(src, str(path))
             except SyntaxError as err:
                 troubled = True
+                compiles = False
                 _emit_bare(
                     path, f"{type(err).__name__}: {err.msg}",
                     line=err.lineno or 1, plain=plain, out=out,
@@ -219,7 +268,95 @@ def augur(paths: list[str], *, plain: bool = False, out=None) -> int:
                 text = lines[c.line - 1].rstrip("\n") if c.line <= len(lines) else ""
                 _report(path, c.line, text, c.col, len(c.word), note, out=out)
 
+        # Last, and only for a litany that got as far as compiling: `check`
+        # transforms and parses again, and would raise the same SyntaxError
+        # the compile above has already reported in better words.
+        if archetypes and liturgy and compiles:
+            if _read_archetypes(
+                path, src, lines, plain=plain, oracle=oracle, out=out
+            ):
+                troubled = True
+
+    if archetypes and not saw_litany:
+        # The same shape as the missing-mypy refusal above, and for the same
+        # reason: the reader asked for archetypes and got none, and an empty
+        # report plus exit 0 would let them believe a check happened. Only
+        # when *no* litany was read at all -- a .py beside litanies is the
+        # documented, harmless case and says nothing.
+        print("++ NO ARCHETYPES WERE READ: no litany was given ++", file=out)
+        print(
+            "   only .lit files carry the substitutions this check maps back",
+            file=out,
+        )
+        troubled = True
+
     return 1 if troubled else 0
+
+
+def _read_archetypes(path, src, lines, *, plain, oracle, out) -> bool:
+    """Report one litany's false archetypes. True if there was anything.
+
+    The distinction this function exists to keep is the one
+    `archetypes.check` is built around: an empty list of findings means
+    mypy ran and found nothing, and *every* other outcome is an
+    `ArchetypesUnread` that must read as "unread" and never as "clean".
+    Hence "archetypes unread", the same words `augur` and `consecrate`
+    already use for omens and seals they could not read, and never
+    silence.
+
+    An unread litany does not end the walk either -- the next file is still
+    read -- so the exception is caught here rather than allowed past
+    `augur`'s `-> int`.
+    """
+    try:
+        findings = check(src, str(path), oracle=oracle)
+    except ArchetypesUnread as err:
+        _emit_bare(path, f"archetypes unread: {err}", plain=plain, out=out)
+        return True
+    except SyntaxError as err:
+        # Not reachable through `augur`, which has already compiled this
+        # litany, but `check` is documented to let these through and a
+        # reader that dies on the third file of forty is no reader.
+        _emit_bare(
+            path, f"archetypes unread: {type(err).__name__}: {err.msg}",
+            line=err.lineno or 1, plain=plain, out=out,
+        )
+        return True
+
+    after_error = False
+    for f in findings:
+        # mypy's own convention: the code in brackets at the end, which is
+        # what a reader greps for and what `# type: ignore[...]` names.
+        note = f.message if f.code is None else f"{f.message}  [{f.code}]"
+        if f.severity == "note" and after_error:
+            # A note explains the error above it. Giving it its own banner
+            # would announce a second fault that does not exist.
+            if plain:
+                col = 1 if f.col is None else f.col + 1
+                print(f"{path}:{f.line}:{col}: note: {note}", file=out)
+            else:
+                print(f"   note: {note}", file=out)
+            continue
+        after_error = f.severity == "error"
+        if f.severity == "note":
+            note = f"note: {note}"
+        elif not f.translated:
+            # `Finding.translated` exists for exactly this: a diagnostic
+            # the checker's words could not be confidently rendered into
+            # Liturgy is attributed to the checker, not passed off as
+            # Liturgy's own. It is why the litany's author is suddenly
+            # being told about `def` and `return`.
+            note = f"mypy's own words: {note}"
+        if f.col is None:
+            # No caret, and no column invented for one. A caret under
+            # column 0 is a claim about where the fault is.
+            _emit_bare(path, note, line=f.line, plain=plain, out=out)
+        elif plain:
+            print(f"{path}:{f.line}:{f.col + 1}: {note}", file=out)
+        else:
+            text = lines[f.line - 1].rstrip("\n") if f.line <= len(lines) else ""
+            _report(path, f.line, text, f.col, 1, note, out=out)
+    return bool(findings)
 
 
 def _emit_bare(path, message, *, line: int = 1, plain: bool, out) -> None:

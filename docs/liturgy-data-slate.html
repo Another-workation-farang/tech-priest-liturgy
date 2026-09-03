@@ -465,13 +465,14 @@ ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
 <span class="lower amber">anoint</span> — REMAINS RESERVED AND UNBUILT.</p>
 
 <div class="directive">
-<pre><span class="dim">.. function::</span> <span class="sig">liturgy augur PATH... [--plain]</span>
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy augur PATH... [--plain] [--archetypes]</span>
 
    <span class="ok">READS .LIT AND .PY FILES FOR FAULTS WITHOUT CHANTING THEM. A DIRECTORY IS
    WALKED, PRUNING DOT-DIRECTORIES, __pycache__ AND VIRTUAL ENVIRONMENTS
    (ANYTHING HOLDING A pyvenv.cfg); A DIRECTORY NAMED DIRECTLY IS ALWAYS
-   READ, AND OVERLAPPING ARGUMENTS REPORT EACH FINDING ONCE. EXACTLY TWO
-   CHECKS, AND NO THIRD: BINDINGS WHOSE NAME IS ONE OF THE SIXTY WORDS THAT
+   READ, AND OVERLAPPING ARGUMENTS REPORT EACH FINDING ONCE. TWO STANDING
+   CHECKS, AND A THIRD ONLY WHEN IT IS ASKED FOR: BINDINGS WHOSE NAME IS ONE
+   OF THE SIXTY WORDS THAT
    BECOME ANOTHER WORD (THE MACHINE'S OWN NAMES INCLUDED), AND —
    FOR A .LIT FILE — THAT IT
    COMPILES, SO augur AND chant CANNOT DISAGREE. IT IS NOT A GENERAL LINTER
@@ -479,6 +480,23 @@ ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
 
    <span class="field">:param <b>PATH</b>:</span> FILES OR DIRECTORIES TO BE READ.
    <span class="field">:option <b>--plain</b>:</span> ONE file:line:col: LINE PER FINDING, FOR EDITORS AND CI.
+   <span class="field">:option <b>--archetypes</b>:</span> THE THIRD CHECK — WHETHER A DECLARED ARCHETYPE IS
+                         TRUE, BY HANDING THE GENERATED PYTHON TO MYPY AND
+                         SAYING THE DIAGNOSTICS BACK IN LITURGY. A FLAG
+                         BECAUSE THE STANDING TWO ARE FAST ENOUGH TO RUN
+                         CONSTANTLY AND SPAWNING MYPY IS NOT; THEY BEHAVE
+                         IDENTICALLY WHETHER IT IS PASSED OR NOT. .LIT ONLY.
+   <span class="field">:requires:</span> FOR --archetypes ONLY, MYPY, AN OPTIONAL EXTRA —
+              pip install 'liturgy[archetypes]'. WITHOUT IT THE VERB REFUSES
+              BEFORE IT WALKS A SINGLE PATH.
+   <span class="alert">:advisory:</span> <span class="alert">THE THIRD CHECK REFUSES NOTHING. chant STILL RUNS A LITANY
+              MYPY DISLIKES. AN EMPTY REPORT MEANS MYPY RAN AND FOUND
+              NOTHING; EVERY OTHER OUTCOME IS archetypes unread, NEVER
+              CLEAN.</span>
+   <span class="alert">:imports not followed:</span> <span class="alert">ONE LITANY AT A TIME. A RITE CALLED FROM ANOTHER
+                          FILE WITH THE WRONG ARCHETYPE IS NOT FOUND. THE
+                          SHADOW TREE THAT WOULD FIX IT IS DESIGNED AND
+                          UNSCHEDULED.</span>
    <span class="field">:returns:</span> 0 IF NOTHING WAS REPORTED, 1 IF ANYTHING WAS.
    <span class="field">:silently:</span> <span class="alert">A FINDING SO MARKED SUBSTITUTES TO A NAME, NOT A KEYWORD —
               THE FILE COMPILES AND THE HARM IS DEFERRED.</span>
@@ -494,6 +512,9 @@ ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
 quiet.lit:1:1: span is reserved; it becomes range -- silently
 <span class="dim">$</span> liturgy augur --plain imp.lit
 imp.lit:1:33: render is reserved; it becomes return
+<span class="dim">$</span> liturgy augur --archetypes --plain prayer.lit
+prayer.lit:4:12: this rite renders a str where it declared an int  [return-value]
+prayer.lit:6:14: argument 1 to greet is an int where greet declares a str  [arg-type]
 </pre>
 
 <p class="desc">THE SECOND IS THE SUBTLE ONE. THE THIRD PROHIBITION LEAVES AN INVOCATION'S
@@ -727,11 +748,13 @@ SPELLING OF ITS OWN.</p>
    A RITE THAT RENDERS NOTHING. EVERY PARAMETER POSITION PYTHON CAN ANNOTATE
    IS COVERED: POSITIONAL-ONLY, ORDINARY, KEYWORD-ONLY, *args AND **kwargs.</span>
 
-   <span class="alert">:presence, not correctness:</span> <span class="alert">LITURGY SEES THAT AN ANNOTATION IS WRITTEN.
+   <span class="alert">:presence, not correctness:</span> <span class="alert">THIS RULE SEES THAT AN ANNOTATION IS WRITTEN.
                                IT CANNOT SEE WHETHER IT IS TRUE.
                                rite count(n: str) -&gt; int: IS A LIE IN BOTH
-                               HALVES AND PASSES. A TYPE CHECKER IS DESIGNED
-                               AND UNSCHEDULED.</span>
+                               HALVES AND COMPILES. WHETHER IT IS TRUE IS
+                               READ BY augur --archetypes OF SECTION [VII],
+                               ASKED FOR AND ADVISORY. PRESENCE IS ENFORCED;
+                               TRUTH IS REPORTED.</span>
    <span class="field">:not required:</span> PLAIN ASSIGNMENTS, foreach TARGETS, COMPREHENSION
                   VARIABLES, anointed ... styled TARGETS, THE NAME A curse
                   BINDS. IDIOMATIC PYTHON LEAVES THEM BARE AND SO DOES THIS.
