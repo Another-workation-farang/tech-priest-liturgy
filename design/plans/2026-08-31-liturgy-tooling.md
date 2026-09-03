@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Three CLI verbs — `augur` (lint), `transcribe` (Python → Liturgy), `purge` (clear caches) — so Liturgy is usable on code you did not write in it, and so the one class of mistake the compiler cannot catch is catchable.
+**Goal:** Three CLI verbs (`augur` (lint), `transcribe` (Python → Liturgy), `purge` (clear caches)) so Liturgy is usable on code you did not write in it, and so the one class of mistake the compiler cannot catch is catchable.
 
 **Architecture:** Both real verbs rest on one primitive, `find_collisions`, which reuses `rewrite._stored_names` for binding analysis and the alias pass's own `Substitution` list for positions. The reverse pass is promoted out of the test tree and becomes `transcribe`'s engine.
 
@@ -31,7 +31,7 @@ The collision algorithm below was prototyped against fourteen shapes and is know
 |---|---|
 | `src/liturgy/collisions.py` (create) | `Collision`, `find_collisions`. The one definition. |
 | `src/liturgy/reverse.py` (create) | `to_liturgy`, moved from `tests/_reverse.py`. |
-| `src/liturgy/tooling.py` (create) | `augur`, `transcribe`, `purge` — thin over the two above. |
+| `src/liturgy/tooling.py` (create) | `augur`, `transcribe`, `purge`: thin over the two above. |
 | `src/liturgy/cli.py` (modify) | Three verbs move from `RESERVED_VERBS` into real subparsers. |
 | `tests/_reverse.py` (delete) | Superseded by `src/liturgy/reverse.py`. |
 | `tests/test_roundtrip.py` (modify) | Import from the shipped module. |
@@ -337,7 +337,7 @@ git commit -m "feat(collisions): one definition of a reserved word used as an id
 - Consumes: `liturgy.lexicon.INVERSE`; `liturgy.transform`.
 - Produces: `liturgy.reverse.to_liturgy(src: str) -> str`.
 
-Spec II deliberately moved this **out** of the shipped wheel because it was test-only. Under Spec III it becomes the feature, so it moves back — and the round-trip property test then exercises shipped code rather than a private twin.
+Spec II deliberately moved this **out** of the shipped wheel because it was test-only. Under Spec III it becomes the feature, so it moves back, and the round-trip property test then exercises shipped code rather than a private twin.
 
 - [ ] **Step 1: Move the file and repoint the import**
 
@@ -429,7 +429,7 @@ git commit -m "refactor(reverse): promote the reverse pass out of the test tree"
 - Consumes: `find_collisions`; `liturgy.compiler.compile_litany`; `liturgy.transform.UnfinishedLitany`.
 - Produces: `liturgy.tooling.augur(paths: list[str], *, plain: bool = False, out=None) -> int`.
 
-Named `test_augur_verb.py`, not `test_augur.py` — that file already exists for the Spec II construct, and the two are different things.
+Named `test_augur_verb.py`, not `test_augur.py`; that file already exists for the Spec II construct, and the two are different things.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -645,7 +645,7 @@ and dispatch it in `main`, beside the `chant` branch:
         return augur(args.paths, plain=args.plain)
 ```
 
-The import is local, matching how `commune` is already dispatched — it keeps `cli` importable without pulling in the tooling modules.
+The import is local, matching how `commune` is already dispatched: it keeps `cli` importable without pulling in the tooling modules.
 
 - [ ] **Step 5: Run the full suite**
 
@@ -1021,7 +1021,7 @@ and dispatch:
         return purge(heresies=args.heresies)
 ```
 
-`RESERVED_VERBS` now holds five names, not eight. Update `test_reserved_verbs_are_declared` in `tests/test_cli.py` so it asserts the five that remain — `prove`, `sanctify`, `forge`, `consecrate`, `anoint` — and that the three built ones are **no longer** in it.
+`RESERVED_VERBS` now holds five names, not eight. Update `test_reserved_verbs_are_declared` in `tests/test_cli.py` so it asserts the five that remain (`prove`, `sanctify`, `forge`, `consecrate`, `anoint`) and that the three built ones are **no longer** in it.
 
 - [ ] **Step 5: Run the full suite, then commit**
 
@@ -1043,12 +1043,12 @@ git commit -m "feat(purge): clear generated caches, guarded against the wrong di
 - Consumes: `find_collisions`; the corpus discovery already in `tests/test_roundtrip.py`.
 - Produces: nothing importable.
 
-Two independent implementations of "this file uses a Liturgy word as an identifier" — the sweep's skip predicate and `find_collisions` — should agree.
+Two independent implementations of "this file uses a Liturgy word as an identifier" (the sweep's skip predicate and `find_collisions`) should agree.
 
 `tests/` is not a package, and pytest puts each test file's directory on
 `sys.path`, so the import is `from test_roundtrip import ...`. If that fails in
 your environment, add a `tests/__init__.py` and use `from tests.test_roundtrip
-import ...` — but check which works before assuming. The sweep is what caught the Critical that hand-written tests missed in Spec I; making a second implementation answer to it is cheap insurance on both.
+import ...`, but check which works before assuming. The sweep is what caught the Critical that hand-written tests missed in Spec I; making a second implementation answer to it is cheap insurance on both.
 
 - [ ] **Step 1: Write the test**
 
@@ -1106,7 +1106,7 @@ This was measured before the plan shipped: with `_bindings` as written in Task 1
 623 corpus files were checked and 621 agreed. The two survivors are files where
 the sweep skips and `find_collisions` correctly does not:
 
-- **A Liturgy word in keyword-argument position** — `increment_count(thrice=3)`.
+- **A Liturgy word in keyword-argument position**: `increment_count(thrice=3)`.
   Rule 2 exempts it, the file round-trips fine, and the sweep is over-skipping.
 - The same shape again in the other file.
 
@@ -1114,7 +1114,7 @@ So the fix is to the **sweep**, not to `find_collisions`: narrow
 `_liturgy_word_as_identifier` to skip a NAME immediately followed by `=` at
 paren depth greater than zero, mirroring Rule 2 exactly as it already mirrors
 Rule 1 for attribute position. That should take the corpus from 573 swept to
-575 — two files gained, not lost.
+575, two files gained, not lost.
 
 If you see a different count or a disagreement in the other direction
 (`find_collisions` flagging where the sweep does not), **do not weaken the
@@ -1164,18 +1164,18 @@ Expected: FAIL until Task 3's verb is wired, then PASS.
 
 - [ ] **Step 3: Update `README.md`**
 
-Add a section for the three verbs after "Heresy". For `augur`, state plainly that it exists to catch the quiet shadowing the disclaimer and Chapter VII already warn about, and show the real output. Update "What's not built yet" so it names the five deferred verbs and says why each — `prove` because pytest already works on `.lit`, `sanctify` because a real formatter is its own project, and the other three because they were reserved as flavour with no feature behind them.
+Add a section for the three verbs after "Heresy". For `augur`, state plainly that it exists to catch the quiet shadowing the disclaimer and Chapter VII already warn about, and show the real output. Update "What's not built yet" so it names the five deferred verbs and says why each: `prove` because pytest already works on `.lit`, `sanctify` because a real formatter is its own project, and the other three because they were reserved as flavour with no feature behind them.
 
 - [ ] **Step 4: Update both tome copies**
 
-A new **Chapter XI — The Reading of Omens** covering the three verbs, in house style: voice in the chapter opening and section headers, plain technical body. It must say:
+A new **Chapter XI: The Reading of Omens** covering the three verbs, in house style: voice in the chapter opening and section headers, plain technical body. It must say:
 
 - `augur`'s two checks, and that it deliberately does not become a general linter.
-- That an import bound to a reserved word is a collision, with the `within json invoke loads styled render` example and why — this is the subtle one and Chapter VI's exemptions do not cover it.
+- That an import bound to a reserved word is a collision, with the `within json invoke loads styled render` example and why; this is the subtle one and Chapter VI's exemptions do not cover it.
 - `transcribe`'s refusal policy and its round-trip self-check.
 - `purge`'s guard.
 
-Chapter VII's "The quiet ones" gains a line pointing at `augur` as the answer, replacing the existing "until the `augur` rite exists to warn you" — it exists now.
+Chapter VII's "The quiet ones" gains a line pointing at `augur` as the answer, replacing the existing "until the `augur` rite exists to warn you"; it exists now.
 
 Chapter IX loses the three built verbs and records why the five remaining are unbuilt.
 

@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
 
 **Goal:** Enforce that every rite's parameters and return, and every
-consecrated binding, declare an archetype — with `unsanctioned` as the
+consecrated binding, declare an archetype, with `unsanctioned` as the
 per-rite and per-file exemption.
 
 **Architecture:** Consecration moves out of the annotation slot into a side
@@ -54,7 +54,7 @@ and the annotation slot is already taken.
 name go into `ConstructFacts.consecrated`.
 
 **Hazards:**
-- `transform`'s return arity changes. Every caller must be found — `compiler`,
+- `transform`'s return arity changes. Every caller must be found: `compiler`,
   `collisions`, `seals`, `form`, `tooling`, `loader`, and the tests. Prefer a
   small frozen dataclass over a bare tuple so a missed caller fails loudly.
 - `rewrite._collect_consecrated` currently matches on the carrier annotation.
@@ -81,7 +81,7 @@ side table and confirm the new test goes red.
   `editors/vscode-liturgy/syntaxes/liturgy.tmLanguage.json`
 - Test: `tests/test_lexicon.py`, `tests/test_unsanctioned.py` (new)
 
-`unsanctioned` is a modifier, not an alias — it has no Python spelling. It
+`unsanctioned` is a modifier, not an alias; it has no Python spelling. It
 joins `CONSTRUCT_KEYWORDS` alongside `consecrated`, `litany` and `augur`,
 **not** `LEXICON`.
 
@@ -103,8 +103,8 @@ unsanctioned                   ->   (blank line)           file-level flag
   of the line shifts left and the leading indentation is untouched. Verify
   with an indented method inside a `pattern`.
 - The bare module-level form must leave a blank line, never delete the line.
-- `unsanctioned` anywhere it does not belong — mid-expression, before a
-  non-rite non-consecrated statement — is a heresy, not a silent no-op.
+- `unsanctioned` anywhere it does not belong (mid-expression, before a
+  non-rite non-consecrated statement) is a heresy, not a silent no-op.
 - `test_every_reserved_word_appears_in_the_grammar` in `tests/test_grammar.py`
   will go red until the VS Code grammar learns the word. That is the test
   doing its job; update the grammar.
@@ -126,10 +126,10 @@ In `ConstructPass`, beside the existing rejections, using `self._heresy`.
 
 **Exempt:**
 - `self`/`cls` as the *first* parameter only.
-- `servitor` (lambda) entirely — Python cannot annotate lambda parameters.
+- `servitor` (lambda) entirely: Python cannot annotate lambda parameters.
 - Any rite or binding whose row is in `unsanctioned_rows`.
 - Every rite and binding when `unsanctioned_file` is set.
-- `visit_Interactive` — the REPL. `commune` must not enforce.
+- `visit_Interactive`: the REPL. `commune` must not enforce.
 
 **Messages** (house style, caret under the offending name):
 
@@ -143,7 +143,7 @@ TechHeresy: PORT is unsanctioned; a consecrated name must declare its archetype
 - Positions come from `ast` and are byte offsets. Route through
   `char_offset` then the `SourceMap`, exactly as `collisions` does.
 - `*args`/`**kwargs` are annotatable and are **not** exempt.
-- Positional-only and keyword-only parameters must be covered —
+- Positional-only and keyword-only parameters must be covered:
   `node.args.posonlyargs`, `args`, `kwonlyargs`, `vararg`, `kwarg`.
 - A nested rite inside an `unsanctioned` rite: decide and document whether
   exemption inherits. Recommend yes, and test it.
@@ -160,19 +160,19 @@ All 5 example rites are unannotated and every one now fails to compile.
 Annotate them. They are the first Liturgy anyone reads and must show the
 language as it now is.
 
-**The corpus sweep is NOT affected — checked before this plan shipped.**
+**The corpus sweep is NOT affected, checked before this plan shipped.**
 `test_real_python_files_round_trip_through_liturgy` does
 `transform(to_liturgy(src))[0] == src`: it transforms and never compiles, and
 enforcement lives in the compile path. The 574-file sweep is untouched.
 Task 1 changes `transform`'s return arity, so its `[0]` indexing must keep
-working or be updated — that is the only interaction.
+working or be updated; that is the only interaction.
 
 **But `transcribe` now emits litanies that do not compile.** Transcribed
 Python is unannotated by definition, so `transcribe foo.py -o foo.lit &&
 chant foo.lit` fails under enforcement.
 
 *Ruling: transcribe warns; it does not prepend.* Prepending an `unsanctioned`
-line was the obvious fix and it is wrong — verified that
+line was the obvious fix and it is wrong: verified that
 `transform("unsanctioned\n" + lit)[0] == src` is **False**, so it breaks
 transcribe's own round-trip self-check, which is the guarantee that makes the
 verb trustworthy. Instead transcribe gains a line to its existing output-omens
@@ -187,10 +187,10 @@ marker. Cost if wrong: a user pastes one word at the top of the file.
 - Modify: `README.md`, `docs/LIBER-LITURGIAE.md`, `docs/liber-liturgiae.html`,
   `docs/liturgy-data-slate.html`, `docs/index.html`
 
-A new **Chapter XII — The Declaration of Archetypes**, in house style: in-voice
+A new **Chapter XII: The Declaration of Archetypes**, in house style: in-voice
 frame, plain body. It must say:
 
-- What is enforced, and that it is **presence, not correctness** — Liturgy
+- What is enforced, and that it is **presence, not correctness**: Liturgy
   cannot check that an annotation is true, and saying otherwise would promise
   what the language does not deliver.
 - The exemptions, each with its reason.
@@ -199,7 +199,7 @@ frame, plain body. It must say:
   itself gained no new word.
 
 All 22 `rite` samples across the five surfaces must be annotated. A doc whose
-examples do not compile is worse than no doc — run them.
+examples do not compile is worse than no doc; run them.
 
 Chapter IX's count of unwritten verbs is unaffected (`anoint` stays reserved),
 but its "words meaning two things" list should note `Sanctioned` (True) beside

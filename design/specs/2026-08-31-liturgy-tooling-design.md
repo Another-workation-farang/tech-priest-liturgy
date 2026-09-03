@@ -1,4 +1,4 @@
-# Liturgy Tooling — Design
+# Liturgy Tooling: Design
 
 **Date:** 2026-08-31
 **Status:** Approved
@@ -22,12 +22,12 @@ Three verbs:
 Spec I reserved eight CLI verb names so nothing else would claim them. That was
 right. Building all eight because the names exist would be backwards.
 
-- **`prove`** (test runner) — `pytest` already works on `.lit` files once the
+- **`prove`** (test runner): `pytest` already works on `.lit` files once the
   import hook is installed. A themed wrapper adds flavour, not capability.
   Deferred.
-- **`sanctify`** (formatter) — a real formatter is a large, fiddly project, and
+- **`sanctify`** (formatter): a real formatter is a large, fiddly project, and
   the value for a toy language is low. Deferred.
-- **`forge`, `consecrate`, `anoint`** — reserved as flavour with no feature
+- **`forge`, `consecrate`, `anoint`**: reserved as flavour with no feature
   behind them. They stay reserved and undefined. Inventing purposes for them
   during a spec is how features nobody needs get built.
 
@@ -42,7 +42,7 @@ drift apart about what counts.
 
 ### What a collision is
 
-A collision is **a binding whose source-language name is reserved** — not
+A collision is **a binding whose source-language name is reserved**, not
 merely a reserved word appearing somewhere. `template.render()` and
 `f(intone=1)` are correct code and are not collisions: neither binds anything.
 
@@ -55,7 +55,7 @@ become `import return` and fail to compile. But the resulting binding is still
     within json invoke loads styled render
     intone(render("{}"))
 
-compiles to `from json import loads as render` / `print(return("{}"))` — a
+compiles to `from json import loads as render` / `print(return("{}"))`, a
 syntax error. The import brings in a name nothing can reach. The exemption is
 about what the transform does; the collision is about what the resulting program
 can do, and the two are not in conflict.
@@ -65,10 +65,10 @@ can do, and the two are not in conflict.
 A binding at line L collides if either holds:
 
 - **(a) A substitution at line L produced the bound name.** The author wrote a
-  Liturgy word and it became a Python binding — `span = 5` becoming `range = 5`.
+  Liturgy word and it became a Python binding: `span = 5` becoming `range = 5`.
 - **(b) The bound name is itself a `LEXICON` key.** The binding survived
   unsubstituted, because an exemption protected it, but every reference to it
-  will substitute — the import case above.
+  will substitute, as in the import case above.
 
 Clause (b) alone is the whole `.py` rule, since a `.py` file has no
 substitutions. So the two file types share one implementation with one branch
@@ -83,10 +83,10 @@ agree quietly drifting apart.
 
 ### Two paths, because the file types differ
 
-- **`.lit`** — run `transform()` and `alias_pass()`, parse the generated
+- **`.lit`**: run `transform()` and `alias_pass()`, parse the generated
   Python, walk `_stored_names`, and apply both clauses.
-- **`.py`** — parse directly and apply clause (b) only. This answers a different
-  question — *would this transcribe?* — with the same code. `span = 5` is fine
+- **`.py`**: parse directly and apply clause (b) only. This answers a different
+  question (*would this transcribe?*) with the same code. `span = 5` is fine
   Python, survives `to_liturgy` untouched, and becomes `range = 5` when
   compiled.
 
@@ -94,11 +94,11 @@ agree quietly drifting apart.
 
 Each collision records which it is:
 
-- **Quiet** — the substitution target is not a Python keyword, so the file
+- **Quiet**: the substitution target is not a Python keyword, so the file
   compiles and silently shadows. `span`, `measure`, `unseal`, `hearken`, and
   every curse name (`MachineCurse = 5` becomes `Exception = 5`, which is legal).
   These are `augur`'s reason to exist.
-- **Loud** — the target is a Python keyword, so compilation fails anyway.
+- **Loud**: the target is a Python keyword, so compilation fails anyway.
   `augur` still reports them, earlier and with a better message than the
   compiler gives.
 
@@ -110,7 +110,7 @@ start, not the bound name's. A prototype that read the word at that column
 produced five false negatives.
 
 Clause (a) instead takes its position straight from the `Substitution` the alias
-pass already produced — exact, and already in Liturgy coordinates, so nothing
+pass already produced: exact, and already in Liturgy coordinates, so nothing
 needs mapping back through the `SourceMap` at all. Clause (b) has no
 substitution to draw on and falls back to the node's column, which for the five
 statement-node shapes is the statement's start. Line is always exact; column is
@@ -146,12 +146,12 @@ liturgy augur [--plain] PATH...
 
 Accepts files or directories, recursing for `.lit` and `.py`. *(Refined
 post-review: the walk prunes dot-directories, `__pycache__` and anything
-holding a `pyvenv.cfg` — a vendored virtual environment drowned real findings
-— while a directory named directly is always read, and overlapping arguments
+holding a `pyvenv.cfg` (a vendored virtual environment drowned real findings)
+while a directory named directly is always read, and overlapping arguments
 report each finding once.)*
 
 It checks exactly two things, and does not grow into a general linter. Unused
-imports, shadowed names, complexity — that is ruff's job, ruff is better at it,
+imports, shadowed names, complexity: that is ruff's job, ruff is better at it,
 and Liturgy has no business competing.
 
 1. **Compile the file without running it.** That surfaces everything the
@@ -165,10 +165,10 @@ On a `.py` file only the second check runs.
 **When the two checks conflict.** The collision scan needs the `SourceMap`,
 which needs `transform()` to succeed. A `.lit` file that will not tokenise has
 no map, so there is nothing to scan against. In that case `augur` reports the
-compile failure alone and says so explicitly — `omens unread: the litany does
-not tokenise` — rather than silently reporting zero collisions, which would read
-as a clean bill of health. A file that tokenises but fails later — a
-`TechHeresy`, a parse error — gets the compile failure alone as well: the
+compile failure alone and says so explicitly, as `omens unread: the litany does
+not tokenise`, rather than silently reporting zero collisions, which would read
+as a clean bill of health. A file that tokenises but fails later (a
+`TechHeresy`, a parse error) gets the compile failure alone as well: the
 collision scan runs through the same `transform()`, so the failure arrives
 before any collision does. Fixing the heresy and re-running is what surfaces
 the collisions, and the exit code is `1` either way, so nothing in CI turns
@@ -198,7 +198,7 @@ liturgy transcribe SOURCE.py [-o OUT.lit]
 
 Collisions are checked first. **Any collision refuses the whole file**, listing
 every one, exit `1`. A half-transcribed file that looks fine and breaks later is
-the worst available outcome; refusing is honest, and the fix — rename, retry —
+the worst available outcome; refusing is honest, and the fix (rename, retry)
 is the author's to make. `augur` on the same `.py` file gives the identical
 report before you commit to it.
 
@@ -220,8 +220,8 @@ Removes `__pycache__` directories beneath the working directory, printing each.
 `--heresies` also clears the heresy escalation state file.
 
 **It is the only destructive verb, so it is guarded.** It refuses unless the
-working directory contains at least one `.lit` file — a recursive delete in the
-wrong directory is a bad afternoon — and it never follows symlinks.
+working directory contains at least one `.lit` file (a recursive delete in the
+wrong directory is a bad afternoon), and it never follows symlinks.
 
 That guard protects the recursive part. `--heresies` removes one known file at
 a fixed path outside the project, so the guard is irrelevant to it; it is
@@ -231,7 +231,7 @@ reported by full path before deletion so there is no doubt what went.
 
 Three tiers, matching Specs I and II.
 
-### 1. Collision units — pure, no CLI
+### 1. Collision units: pure, no CLI
 
 - Every binding shape `_stored_names` knows, in both `.lit` and `.py` form.
 - Quiet-versus-loud classification, including a curse name as a quiet case.
@@ -244,15 +244,15 @@ Permanent, in this project's tradition. The first two shapes caused a Critical
 in Spec I's final review and must never be reported as collisions, because
 neither binds anything:
 
-- `template.render()` — attribute position
-- `f(intone=1)` — keyword-argument position
+- `template.render()`: attribute position
+- `f(intone=1)`: keyword-argument position
 
 And the counterpart, which must always be reported, because it does bind:
 
-- `within jinja2 invoke render` — the import compiles, and binds a name every
+- `within jinja2 invoke render`: the import compiles, and binds a name every
   later reference substitutes away from
 
-### 3. Integration — each verb through the real CLI
+### 3. Integration: each verb through the real CLI
 
 - `augur`: exit codes, both output formats, a directory argument, a `.py`
   argument.
@@ -266,7 +266,7 @@ And the counterpart, which must always be reported, because it does bind:
 Point `augur --plain` at the stdlib corpus the round-trip sweep already uses.
 Every file `augur` flags should be exactly a file the sweep skips. Two
 independent implementations of "this file uses a Liturgy word as an identifier"
-agreeing is a strong check on both — and the sweep is what caught the Critical
+agreeing is a strong check on both, and the sweep is what caught the Critical
 that hand-written tests missed in Spec I.
 
 ## Documentation
@@ -277,7 +277,7 @@ and Chapter IX updated to record which five verbs remain unbuilt and why.
 
 ## Out of scope
 
-- `prove`, `sanctify`, `forge`, `consecrate`, `anoint` — see above.
+- `prove`, `sanctify`, `forge`, `consecrate`, `anoint`: see above.
 - Any linting beyond the reservation rule.
 - Editor integration. `--plain` emits the standard format; wiring it into an
   editor is the user's business, not a feature to build.

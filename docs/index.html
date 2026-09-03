@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Liturgy — a superset of Python in the Machine Tongue</title>
+<title>Liturgy: a superset of Python in the Machine Tongue</title>
 <meta name="description" content="Liturgy is a superset of Python whose surface syntax is Warhammer 40,000 tech-priest ritual language. Honest tracebacks, a real import hook, and three constructs Python cannot express.">
 <style>
   :root {
@@ -28,7 +28,7 @@
     text-align: left;
   }
 
-  /* Simulated scanline effect — per AM-COG-UI-844.M41 */
+  /* Simulated scanline effect, per AM-COG-UI-844.M41 */
   body::before {
     content: " ";
     display: block;
@@ -120,18 +120,18 @@
 
 <pre>
 <span class="dim">:status:</span>     <span class="ok">SPEC I (CORE) AND SPEC II (CONSTRUCTS) OPERATIONAL</span>
-             <span class="ok">SPEC III (TOOLING) — SEVEN VERBS OF EIGHT</span>
-             <span class="ok">SPEC IV (SANCTION) — ARCHETYPES DECLARED AT COMPILE TIME</span>
-             <span class="ok">SPEC V (ARCHETYPE TRUTH) — READ ON REQUEST, ONE LITANY AT A TIME</span>
-<span class="dim">:requires:</span>   <span class="amber">PYTHON &gt;= 3.12 (PEP 701 — SANCTIFIED F-STRING TOKENIZATION)</span>
-<span class="dim">:canonical:</span>  docs/LIBER-LITURGIAE.md — THE AUTHORITY
+             <span class="ok">SPEC III (TOOLING): SEVEN VERBS OF EIGHT</span>
+             <span class="ok">SPEC IV (SANCTION): ARCHETYPES DECLARED AT COMPILE TIME</span>
+             <span class="ok">SPEC V (ARCHETYPE TRUTH): READ ON REQUEST, ONE LITANY AT A TIME</span>
+<span class="dim">:requires:</span>   <span class="amber">PYTHON &gt;= 3.12 (PEP 701, SANCTIFIED F-STRING TOKENIZATION)</span>
+<span class="dim">:canonical:</span>  docs/LIBER-LITURGIAE.md (THE AUTHORITY)
 </pre>
 
 <div class="warning">
 <pre><b>++ DO NOT USE THIS IN PRODUCTION ++</b></pre>
 <p>LITURGY IS A TOY, BUILT FOR FUN AND FOR THE EXCUSE IT GAVE TO GO RUMMAGING
 AROUND IN CPYTHON'S IMPORT MACHINERY. IT IS NOT A SERIOUS LANGUAGE AND IT IS
-NOT MAINTAINED AS ONE. IT IS INCOMPLETE — ONE OF THE THIRD SPEC'S EIGHT VERBS
+NOT MAINTAINED AS ONE. IT IS INCOMPLETE: ONE OF THE THIRD SPEC'S EIGHT VERBS
 IS NOTHING BUT A RESERVED NAME, AND THE READING OF ARCHETYPES DOES NOT FOLLOW
 IMPORTS, SO IT JUDGES ONE LITANY AT A TIME. IT IS BREAKABLE, IN WAYS
 PART DOCUMENTED AND PART NOT: WRITTEN IN A FEW DAYS BY ONE PERSON AND REVIEWED
@@ -152,10 +152,10 @@ LOSING.</p>
 THEIR PYTHON SPELLINGS, AND COMPILES EXACTLY AS A <span class="lower amber">.py</span> FILE
 WOULD.</p>
 
-<p>THE JOKE IS THE REASON TO START. IT IS NOT THE POINT. DOING IT HONESTLY —
-MATCHING LINE NUMBERS IN TRACEBACKS, CORRECT COLUMN CARETS UNDER A SYNTAX
+<p>THE JOKE IS THE REASON TO START. IT IS NOT THE POINT. DOING IT HONESTLY
+(MATCHING LINE NUMBERS IN TRACEBACKS, CORRECT COLUMN CARETS UNDER A SYNTAX
 ERROR, AN IMPORT HOOK THAT BEHAVES LIKE A REAL ONE, A REPL THAT CAN TELL
-"UNFINISHED" FROM "WRONG" — TURNS INTO A FAIRLY THOROUGH TOUR OF HOW CPYTHON
+"UNFINISHED" FROM "WRONG") TURNS INTO A FAIRLY THOROUGH TOUR OF HOW CPYTHON
 ACTUALLY LOADS AND RUNS SOURCE.</p>
 
 <pre>
@@ -164,12 +164,12 @@ Ave Omnissiah
 </pre>
 
 <p>THE SHARP EDGE IS THAT LITURGY RESERVES MORE WORDS THAN PYTHON DOES. MOST
-MISUSES FAIL LOUDLY, BUT EIGHT — THE FIVE BUILTIN ALIASES
-<span class="lower amber">intone</span>, <span class="lower amber">measure</span>,
+MISUSES FAIL LOUDLY, BUT EIGHT, THE FIVE BUILTIN ALIASES
+(<span class="lower amber">intone</span>, <span class="lower amber">measure</span>,
 <span class="lower amber">span</span>, <span class="lower amber">unseal</span>,
 <span class="lower amber">hearken</span> AND THE THREE SOFT-KEYWORD ALIASES
 <span class="lower amber">discern</span>, <span class="lower amber">wherein</span>,
-<span class="lower amber">archetype</span> — SILENTLY SHADOW THE NAME THEY ALIAS AND
+<span class="lower amber">archetype</span>) SILENTLY SHADOW THE NAME THEY ALIAS AND
 BREAK SOMEWHERE ELSE ENTIRELY. <span class="lower amber">liturgy augur</span> READS A
 LITANY FOR THAT FAULT WITHOUT CHANTING IT, AND EXITS NONZERO WHEN IT FINDS ONE.</p>
 
@@ -193,7 +193,7 @@ quiet.lit:1:1: span is reserved; it becomes range -- silently
 </pre>
 
 <p>THE HOOK IS INSTALLED BY <span class="lower amber">chant</span>,
-<span class="lower amber">commune</span> AND <span class="lower amber">prove</span>, AND BY NOTHING ELSE —
+<span class="lower amber">commune</span> AND <span class="lower amber">prove</span>, AND BY NOTHING ELSE:
 A PLAIN <span class="lower amber">python -c "import mymod"</span> CANNOT SEE A LITANY. TO ANOINT A WHOLE
 ENVIRONMENT, DROP A <span class="lower amber">.pth</span> INTO SITE-PACKAGES; CHAPTER II SETS DOWN THE
 LINE, AND ITS THREE COSTS.</p>
@@ -216,9 +216,9 @@ NOT FINISHED TYPING AND ONE YOU HAVE TYPED WRONGLY.</p>
 <p>LITANIES BIND INTO A <b>CODEX</b>: A DIRECTORY WITH AN
 <span class="lower amber">__init__.lit</span> IN IT IS AN ORDINARY PYTHON PACKAGE, WITH THE
 CODEX ITSELF, DOTTED SUBMODULES AND RELATIVE IMPORTS ALL AVAILABLE. THE TWO
-FILE KINDS MIX IN BOTH DIRECTIONS — A <span class="lower amber">.py</span> SUBMODULE INSIDE A
+FILE KINDS MIX IN BOTH DIRECTIONS: A <span class="lower amber">.py</span> SUBMODULE INSIDE A
 <span class="lower amber">.lit</span> CODEX, A <span class="lower amber">.lit</span> SUBMODULE INSIDE A
-<span class="lower amber">.py</span> PACKAGE — BECAUSE THE PATH HOOK CARRIES THE STANDARD
+<span class="lower amber">.py</span> PACKAGE, BECAUSE THE PATH HOOK CARRIES THE STANDARD
 LOADER DETAILS ALONGSIDE ITS OWN. THE TOOLING VERBS READ A CODEX AS THEY READ
 ANY DIRECTORY. THERE IS NO <span class="lower amber">codex</span> KEYWORD; CHAPTER II SETS
 DOWN WHY THERE CANNOT BE.</p>
@@ -242,7 +242,7 @@ DOWN WHY THERE CANNOT BE.</p>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <p>THREE CONSTRUCTS PYTHON CANNOT EXPRESS. EACH DESUGARS INTO SELF-CONTAINED
-GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME.</p>
+GENERATED PYTHON; NOTHING IS IMPORTED FROM LITURGY AT RUNTIME.</p>
 
 <pre>
 <span class="amber">consecrated</span> OMNISSIAH_PORT: int = 8080
@@ -250,11 +250,11 @@ GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME.</p>
    ALL-CAPS HONOUR SYSTEM; REBINDING IS REJECTED AT COMPILE TIME.</span>
 
 <span class="amber">litany</span>(thrice, resting=2, curse=TimeoutError):
-<span class="dim">   A BLOCK RE-CHANTED ON NAMED FAILURES. curse= IS REQUIRED — A RETRY THAT
+<span class="dim">   A BLOCK RE-CHANTED ON NAMED FAILURES. curse= IS REQUIRED: A RETRY THAT
    CATCHES EVERYTHING WOULD RE-ATTEMPT A TYPE ERROR THREE TIMES.</span>
 
 <span class="amber">augur</span>:
-<span class="dim">   PRECONDITIONS AT A RITE'S OPENING. A CONTRACT, NOT AN ASSERTION —
+<span class="dim">   PRECONDITIONS AT A RITE'S OPENING. A CONTRACT, NOT AN ASSERTION:
    IT SURVIVES python -O, AND QUOTES THE LITURGY SOURCE WHEN IT FAILS.</span>
 </pre>
 </section>
@@ -283,7 +283,7 @@ EVERY <span class="lower amber">consecrated</span> BINDING MUST DECLARE ONE.
 </pre>
 
 <p><b>PRESENCE, NOT CORRECTNESS.</b> THE COMPILER CHECKS THAT AN ANNOTATION IS
-WRITTEN. IT CANNOT CHECK THAT IT IS TRUE —
+WRITTEN. IT CANNOT CHECK THAT IT IS TRUE:
 <span class="lower amber">rite count(n: str) -&gt; int:</span> IS A LIE IN BOTH
 HALVES AND COMPILES CLEANLY. THAT IS A TYPE CHECKER'S WORK, AND
 <span class="lower amber">liturgy augur --archetypes</span> IS THE VERB THAT ASKS
@@ -296,8 +296,8 @@ prayer.lit:4:12: this rite renders a str where it declared an int  [return-value
 prayer.lit:6:14: argument 1 to greet is an int where greet declares a str  [arg-type]
 </pre>
 
-<p>IT NEEDS THE EXTRA — <span class="lower amber">pip install -e ".[archetypes]"</span>
-— AND WITHOUT IT THE VERB REFUSES RATHER THAN REPORTING A LITANY IT NEVER
+<p>IT NEEDS THE EXTRA, <span class="lower amber">pip install -e ".[archetypes]"</span>,
+AND WITHOUT IT THE VERB REFUSES RATHER THAN REPORTING A LITANY IT NEVER
 READ. IMPORTS ARE NOT FOLLOWED: THIS VERSION READS ONE LITANY AT A TIME. THE
 JUDGEMENT IS ADVISORY, AND <span class="lower amber">chant</span> STILL RUNS
 CODE MYPY DISLIKES. PRESENCE IS ENFORCED; TRUTH IS REPORTED.</p>
@@ -329,7 +329,7 @@ WHICH ARE PYTHON'S BUSINESS. THE RULE LIVES IN THE COMPILE PATH, SO
 <span class="alert">++ the machine spirit is displeased ++</span>
 </pre>
 
-<p>THE LINE NUMBERS ARE THE LITURGY LINE NUMBERS — THE TRANSFORM NEVER ADDS OR
+<p>THE LINE NUMBERS ARE THE LITURGY LINE NUMBERS: THE TRANSFORM NEVER ADDS OR
 REMOVES A LINE. THE CARETS POINT AT THE LITURGY COLUMNS, THOUGH
 <span class="lower amber">render</span> AND <span class="lower amber">return</span> DIFFER IN
 WIDTH. THE SOURCE SHOWN IS WHAT ACTUALLY RAN, NOT WHATEVER THE FILE CONTAINS NOW.
@@ -342,10 +342,10 @@ WIDTH. THE SOURCE SHOWN IS WHAT ACTUALLY RAN, NOT WHATEVER THE FILE CONTAINS NOW
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <pre>
-<a href="liber-liturgiae.html">LIBER LITURGIAE</a>      <span class="dim">THE FULL LANGUAGE REFERENCE — TWELVE CHAPTERS AND A
+<a href="liber-liturgiae.html">LIBER LITURGIAE</a>      <span class="dim">THE FULL LANGUAGE REFERENCE: TWELVE CHAPTERS AND A
                      CONCORDANCE OF ALL SIXTY-FOUR RESERVED WORDS.</span>
 
-<a href="liber-liturgiae.html#ch11">THE READING OF OMENS</a> <span class="dim">CHAPTER XI — THE SEVEN TOOLING VERBS. augur READS A
+<a href="liber-liturgiae.html#ch11">THE READING OF OMENS</a> <span class="dim">CHAPTER XI: THE SEVEN TOOLING VERBS. augur READS A
                      LITANY FOR FAULTS, transcribe RENDERS PYTHON INTO
                      LITURGY, forge COMPILES A LITANY WITHOUT CHANTING IT,
                      consecrate CHECKS THE SEALS, sanctify SETS A LITANY'S

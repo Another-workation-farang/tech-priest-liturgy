@@ -80,7 +80,7 @@ def test_columns_map_back_to_original():
     assert smap.to_lit(1, 3) == 7
 
 
-# Regression: C1 — str.splitlines() breaks on \x0b \x0c \x1c \x1d \x1e \x85
+# Regression (C1): str.splitlines() breaks on \x0b \x0c \x1c \x1d \x1e \x85
 #    , but CPython's tokenizer breaks only on "\n". Splicing on the
 # former desynchronises the line list from the token rows, and every
 # substitution after the first such character lands on the wrong line.
@@ -139,7 +139,7 @@ def test_splice_span_guard_allows_the_full_line_up_to_the_newline():
     assert out == "fghij\n"
 
 
-# Regression: I6 — transform's failure contract. tokenize.TokenError is not
+# Regression (I6): transform's failure contract. tokenize.TokenError is not
 # a SyntaxError and carries no filename, so an unclosed bracket -- the
 # commonest typo -- escaped chant raw.
 def test_unclosed_bracket_raises_a_located_syntax_error():
@@ -184,7 +184,7 @@ def test_the_default_filename_is_used_when_none_is_given():
     assert info.value.filename == "<litany>"
 
 
-# I8 — the spec requires transform tests "table-driven across every lexicon
+# I8: the spec requires transform tests "table-driven across every lexicon
 # entry". Without this, 25 of the 58 entries appeared in no test at all, and
 # a typo'd target ("unseal": "openn") passed the whole suite.
 @pytest.mark.parametrize(

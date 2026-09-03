@@ -11,7 +11,7 @@
 
 ---
 
-## Chapter I — Of the Machine Tongue
+## Chapter I: Of the Machine Tongue
 
 *The Omnissiah does not speak as men speak. He speaks in current and in
 interrupt, and the adept who would be understood must shape his mouth to the
@@ -24,7 +24,7 @@ Liturgy is a superset of Python. Every keyword has a ritual spelling: `if` is
 `should`, `def` is `rite`, `return` is `render`. A `.lit` file is tokenized,
 its ritual words are substituted back to their Python spellings, and the
 result is compiled exactly as a `.py` file would be. Underneath, it is
-Python — the same objects, the same scoping, the same control flow, the same
+Python: the same objects, the same scoping, the same control flow, the same
 standard library.
 
 ### The promise, and its fine print
@@ -33,7 +33,7 @@ standard library.
 > as an identifier.** Liturgy reserves more words than Python does.
 
 `print` still works in a `.lit` file. So does `def`. Substitution runs one
-way — ritual spelling to Python spelling — so the Python spellings are never
+way, ritual spelling to Python spelling, so the Python spellings are never
 touched. What breaks is a program that names a variable `rite`, or `render`,
 or `curse`.
 
@@ -45,7 +45,7 @@ Chapter VII treats the consequences in full. Read it before you name anything.
 
 ---
 
-## Chapter II — The Rite of Installation
+## Chapter II: The Rite of Installation
 
 *Before the machine will hear you, it must be told that you exist.*
 
@@ -60,7 +60,7 @@ different meanings for identical source, which is worse than supporting one.
 $ pipx install .
 ```
 
-### chant — to execute a litany
+### chant: to execute a litany
 
 ```
 $ liturgy chant hello.lit
@@ -70,7 +70,7 @@ Ave Omnissiah
 `chant` runs a `.lit` file with `__main__` semantics, the way `python file.py`
 runs a Python one. Arguments after the filename are passed to the prayer.
 
-### commune — to hold converse
+### commune: to hold converse
 
 ```
 $ liturgy commune
@@ -98,7 +98,7 @@ within reliquary invoke bless
 invoke json
 ```
 
-### The codex — litanies bound into one
+### The codex: litanies bound into one
 
 One file is a litany. A directory of them with an `__init__.lit` inside is a
 Python package, and the bound collection at the end of the hierarchy has its
@@ -126,10 +126,10 @@ rite bless(name: str) -> str:
 Three ways of reaching in are open, and each is the ordinary Python import
 spelled in the proper tongue:
 
-- `within reliquary invoke bless` — a name bound by the codex's own litany.
-- `within reliquary.relics invoke waken` — a name from a submodule, reached
+- `within reliquary invoke bless`: a name bound by the codex's own litany.
+- `within reliquary.relics invoke waken`: a name from a submodule, reached
   through the dot.
-- `within .relics invoke waken` — a relative import, resolved against the
+- `within .relics invoke waken`: a relative import, resolved against the
   codex rather than against `sys.path`, and legible only from inside it. The
   first line of `__init__.lit` above is exactly that, which is why `waken` is
   reachable as `reliquary.waken` as well as `reliquary.relics.waken`.
@@ -138,7 +138,7 @@ spelled in the proper tongue:
 
 The two kinds of file interleave freely, and in both directions. A `.py`
 submodule may sit inside a `.lit` codex, and a `.lit` submodule inside a
-`.py` package — `tally.py` and `orison.lit` in the tree above are each of
+`.py` package, and `tally.py` and `orison.lit` in the tree above are each of
 these:
 
 ```
@@ -147,8 +147,8 @@ within sanctum.orison invoke orison
 ```
 
 That is not a happy accident. The path hook Liturgy registers carries the
-standard loader details — `ExtensionFileLoader`, `SourceFileLoader` and
-`SourcelessFileLoader` — alongside its own, because a hook carrying only the
+standard loader details (`ExtensionFileLoader`, `SourceFileLoader` and
+`SourcelessFileLoader`) alongside its own, because a hook carrying only the
 `.lit` details would still match every directory, shadow the stdlib's own
 `FileFinder`, and break every `.py` import in the program. The tuple that
 keeps ordinary Python working is the same tuple that lets one directory hold
@@ -171,7 +171,7 @@ spoken in the sanctum
 Chapter XI's verbs already take directories, so a codex asks nothing new of
 any of them. `forge` compiles a codex's litanies and writes ordinary `.pyc`
 files under `reliquary/__pycache__/`, which is where the import machinery
-looks for them — a forged codex is simply a codex that imports without
+looks for them: a forged codex is simply a codex that imports without
 compiling:
 
 ```
@@ -206,7 +206,7 @@ it. `codex` is what the thing is called in prose, and prose is all it is.
 
 "Which both verbs do for you" is the whole of it: `chant`, `commune` and
 `prove` install the hook on their way in, and nothing else does. An
-interpreter started any other way — `python -m`, a server, a notebook — cannot
+interpreter started any other way (`python -m`, a server, a notebook) cannot
 see a litany at all.
 
 ```
@@ -232,7 +232,7 @@ ave, Omnissiah
 Deleting the file undoes it completely; there is no other state.
 
 Three things are worth knowing before an adept does this. It costs every
-interpreter start in that environment, litany or no litany — some ten to
+interpreter start in that environment, litany or no litany: some ten to
 twenty milliseconds, most of it reading installed-package metadata. It
 writes into site-packages, so it belongs in a virtual environment and not in
 a machine's own Python. And it buys importing, not collection: plain pytest
@@ -269,7 +269,7 @@ be reserved without the grammar learning it.
 
 ---
 
-## Chapter III — The Lesser Rites
+## Chapter III: The Lesser Rites
 
 *Thirty-eight words. The adept commits them to memory, or to a wafer, or to
 an implant. There is no dishonour in the wafer.*
@@ -398,7 +398,7 @@ $ liturgy chant reliquary.lit
 
 ---
 
-## Chapter IV — Sanctioned Builtins
+## Chapter IV: Sanctioned Builtins
 
 *Five only. The Cult does not multiply names without cause, and every name
 taken is a name the adept may no longer use for his own purposes.*
@@ -416,7 +416,7 @@ described in Chapter VII, so growth is a considered act rather than a reflex.
 
 ---
 
-## Chapter V — Of Curses and Their Reading
+## Chapter V: Of Curses and Their Reading
 
 *When the machine spirit is displeased it does not fall silent. It tells you
 precisely what offended it, in what rite, and at what word. The adept who does
@@ -465,8 +465,8 @@ Four things are true of this that are not true of a naive translation layer:
 - **The line numbers are the Liturgy line numbers.** The transform never adds
   or removes a line, so line N of the generated Python is line N of your
   source. Nothing is remapped because nothing moved.
-- **The carets point at the Liturgy columns.** Words do change width —
-  `should` is six characters and `if` is two — so a column map is kept and
+- **The carets point at the Liturgy columns.** Words do change width
+  (`should` is six characters and `if` is two), so a column map is kept and
   consulted when a curse is rendered.
 - **The source shown is what actually ran.** The exact text compiled is
   recorded at compile time, so editing the file after import does not cause
@@ -474,8 +474,8 @@ Four things are true of this that are not true of a naive translation layer:
 - **"at the threshold of"** marks module-level code. Module level is not a
   rite, and the curse does not claim it is.
 
-Frames belonging to Liturgy itself — the loader, the transform, the import
-machinery — are suppressed, exactly as CPython hides its own import internals.
+Frames belonging to Liturgy itself (the loader, the transform, the import
+machinery) are suppressed, exactly as CPython hides its own import internals.
 Frames from libraries your litany called into are kept, because those are your
 answer rather than noise.
 
@@ -497,7 +497,7 @@ it wherever you would expect.
 
 ### `--profane`
 
-*There are occasions — the reporting of a fault to a distant forge, chiefly —
+*There are occasions (the reporting of a fault to a distant forge, chiefly)
 when the plain tongue serves better than the proper one. It is permitted. It
 is not encouraged.*
 
@@ -506,13 +506,13 @@ $ liturgy --profane chant prayer.lit
 ```
 
 Renders an ordinary Python traceback. `LITURGY_PROFANE=1` does the same.
-The flag is accepted before or after the verb — with one caveat inherited
+The flag is accepted before or after the verb, with one caveat inherited
 from `python file.py` itself: anything after `chant`'s file belongs to the
 litany, so for `chant` the flag goes before the filename.
 
 ---
 
-## Chapter VI — The Three Prohibitions
+## Chapter VI: The Three Prohibitions
 
 *The reservation of words binds the adept's own naming. It cannot bind the
 naming of others. A pattern drawn from a distant forge may call its own parts
@@ -523,7 +523,7 @@ Substitution is therefore forbidden in three positions.
 ### The first: after a dot
 
 A name following `.` is never substituted. Without this, `template.render()`
-would become `template.return()` — a syntax error — and every library with a
+would become `template.return()`, a syntax error, and every library with a
 `.render()`, `.pattern` or `.span()` would break on contact.
 
 ```
@@ -549,7 +549,7 @@ A name immediately followed by `=` inside a call is never substituted, so
 The rule makes one exception, for the f-string debug form. In `f"{measure=}"`
 the `=` is not a keyword argument, so substitution proceeds and the value is
 printed as `f"{len=}"` intends. Note that this means the label in the output
-is the generated Python's — `f"{measure(x)=}"` prints `len(x)=2` — because an
+is the generated Python's (`f"{measure(x)=}"` prints `len(x)=2`), because an
 f-string fixes its debug text at compile time, after substitution.
 
 ### The third: within an invocation
@@ -569,11 +569,11 @@ $ liturgy chant invocation.lit
 ```
 
 `loads` is untouched; `within`, `invoke` and `styled` are translated. Relative
-invocations work as expected — `within . invoke sibling`, and deeper.
+invocations work as expected: `within . invoke sibling`, and deeper.
 
 ---
 
-## Chapter VII — Of Words Reserved
+## Chapter VII: Of Words Reserved
 
 *A word given to the Machine God is no longer yours. Choose your own names
 knowing which are already spoken for.*
@@ -591,14 +591,14 @@ SyntaxError: invalid syntax (render is Liturgy for return)
 ```
 
 The parenthesis is the curse renderer's doing: when a syntax error points
-into — or hard against — a word a substitution produced, the word is named,
+into, or hard against, a word a substitution produced, the word is named,
 so the message describes the litany rather than the Python it became.
 
 ### The quiet ones
 
 Eight of the substituted words fail quietly instead, and these are the ones
-to know. The five builtin aliases — `intone`, `measure`, `span`, `unseal`,
-`hearken` — translate to `print`, `len`, `range`, `open` and `input`, which
+to know. The five builtin aliases (`intone`, `measure`, `span`, `unseal`,
+`hearken`) translate to `print`, `len`, `range`, `open` and `input`, which
 are names, not keywords, so assigning to them is legal Python:
 
 ```
@@ -640,13 +640,13 @@ pattern litany:
 Every line of that compiles. `consecrated` and `unsanctioned` are the two
 that are not quiet: each can only ever be a header or a modifier, so
 `consecrated = 5` and `unsanctioned = 5` are both loud heresies. One
-spelling of `augur` is refused as well: a bare, valueless annotation —
-`augur: b != 0` — reads exactly like a one-line augury wherever it stands,
+spelling of `augur` is refused as well: a bare, valueless annotation,
+`augur: b != 0`, reads exactly like a one-line augury wherever it stands,
 and treating it as the annotation it technically is would check nothing. An
 augury's conditions belong on the lines beneath `augur:`, and the heresy says
 so; an annotation *with* a value (`augur: int = 5`) is unmistakably yours and
-compiles. Ten of the sixty-four words are quiet, then — the five builtins,
-the three soft keywords, `litany`, `augur` — and the rest are loud.
+compiles. Ten of the sixty-four words are quiet, then (the five builtins,
+the three soft keywords, `litany`, `augur`), and the rest are loud.
 
 `span` in particular is a natural name for a range of text, and it is
 precisely the wrong one. Eight of the ten no longer have to be carried in
@@ -654,15 +654,15 @@ your head: the builtins and the soft keywords each *become* another word,
 and `liturgy augur` reports every binding that does. Chapter XI sets it down.
 
 `litany` and `augur` are not reported, and should not be. A construct word is
-never substituted, so there is nothing it silently becomes — the only hazard
+never substituted, so there is nothing it silently becomes; the only hazard
 is the one above, that you may one day want the construct on a line whose name
 you have already spent. That one stays yours to track.
 
 ### The machine's own names
 
 Three names appear in no table and are reserved all the same:
-`__consecrated__`, `__litany__` and `__augur__` — the private names the
-construct compiler claims for itself — along with every name
+`__consecrated__`, `__litany__` and `__augur__` (the private names the
+construct compiler claims for itself), along with every name
 beginning `__liturgy_`, which the retry loop mints its bookkeeping under. A
 litany that spoke one would be indistinguishable from the machinery itself,
 so speaking one anywhere but after a dot is a loud heresy:
@@ -699,7 +699,7 @@ pattern Template:
 
 Calling `t.render()` is fine. Naming a rite `render` is not. If you must
 implement an interface whose method name is a reserved word, that method must
-be written in a `.py` file — which a litany may freely import.
+be written in a `.py` file, which a litany may freely import.
 
 ### The limits of consecrated
 
@@ -708,7 +708,7 @@ is worth being exact about what its enforcement covers, because the word
 "enforced" invites more confidence than the mechanism can support. The
 rejection happens at compile time, against the AST the compiler can see:
 rebindings, a second `consecrated` of the same name, a `consecrated` inside
-a loop body. What the compiler cannot see, it cannot stop — `setattr`,
+a loop body. What the compiler cannot see, it cannot stop: `setattr`,
 `globals()`, assignment through the module object, and `exec` all get
 through untouched. This is enforcement, not a guarantee.
 
@@ -724,7 +724,7 @@ lines earlier, and the rebinding goes through.
 9
 ```
 
-Within a single entry — one line, or one block typed across several — the
+Within a single entry (one line, or one block typed across several) the
 rejection is exactly as it is in a file:
 
 ```
@@ -738,15 +738,15 @@ rejection is exactly as it is in a file:
 ```
 
 (`<commune:1>` numbers the prompt entry. Every entry keeps its own recorded
-source, which is what lets a curse — this one, or a runtime failure in a rite
-defined many entries ago — quote the Liturgy that was actually typed.)
+source, which is what lets a curse (this one, or a runtime failure in a rite
+defined many entries ago) quote the Liturgy that was actually typed.)
 
 A litany is a file. The prompt is a conversation, and a conversation
 remembers values, not declarations.
 
 ---
 
-## Chapter VIII — Of Heresy
+## Chapter VIII: Of Heresy
 
 *The rites have names. Use them.*
 
@@ -763,9 +763,9 @@ $ liturgy run hello.lit
 Ave Omnissiah
 ```
 
-The rebuke escalates across invocations — *the omission is noted*, then *the
+The rebuke escalates across invocations: *the omission is noted*, then *the
 transgression is recorded in your permanent record*, then *the Inquisition has
-been notified* — and saturates there.
+been notified*, and saturates there.
 
 Three properties are deliberate:
 
@@ -777,7 +777,7 @@ Three properties are deliberate:
 
 ---
 
-## Chapter IX — Rites Not Yet Written
+## Chapter IX: Rites Not Yet Written
 
 *The Quest for Knowledge is not concluded. Most of these pages are left
 blank deliberately; do not report their blankness as a fault. One entry
@@ -788,7 +788,7 @@ below was struck rather than left blank, and that is recorded too.*
 Three constructs of the second spec are built; Chapter X sets them down in
 full. A fourth was designed alongside them and did not survive: `noospheric`,
 a binding placed in a process-wide registry rather than module scope. It was
-**cut, not deferred** — it is a service locator, and Liturgy generates code
+**cut, not deferred**: it is a service locator, and Liturgy generates code
 with no runtime of its own for a registry like that to live in. There is no
 clean place left to put it.
 
@@ -808,7 +808,7 @@ formatter done improperly eats your source, and was built only once it could
 check that it had not.
 
 `anoint` is unbuilt because there is still no feature behind it. It is the
-last of the reserved names, held rather than planned — and holding it is the
+last of the reserved names, held rather than planned, and holding it is the
 point. A name still unspent is worth more than a name spent on something
 trivial. No page is being left blank for it.
 
@@ -816,14 +816,14 @@ trivial. No page is being left blank for it.
 is both Chapter X's source construct (preconditions) and Chapter XI's CLI
 verb (lint); `purge` is both Chapter III's keyword alias for `del` and
 Chapter XI's CLI verb (clearing caches). A source word and a CLI verb cannot
-actually collide — they live in entirely different namespaces — but the same
+actually collide, since they live in entirely different namespaces, but the same
 word meaning two different things in the same project is exactly the kind of
 thing worth spelling out rather than leaving implicit.
 
 `litany` is the one word that looks doubled and is not. A litany is one
 prayer, and Chapter X's construct chants one again until it takes, so the
 construct holds the word exactly. The suffix a source file carries is `.lit`
-for *Liturgy*, the language — not for `litany` — and a file is a whole
+for *Liturgy*, the language, not for `litany`, and a file is a whole
 ceremony rather than a single prayer. Nothing is being told apart here; the
 resemblance is the whole of it.
 
@@ -831,23 +831,23 @@ resemblance is the whole of it.
 closer pair of the three: both are source words. `Sanctioned` is Chapter
 III's alias for `True`; `unsanctioned` is Chapter XII's modifier waiving the
 archetype rule, and one is not the negation of the other. They are told apart
-by case and by position — one is a value, the other stands at the head of a
-statement — and no table can confuse them, since `unsanctioned` has no Python
+by case and by position (one is a value, the other stands at the head of a
+statement), and no table can confuse them, since `unsanctioned` has no Python
 spelling to be substituted for. It is written down here rather than
 discovered later.
 
 ---
 
-## Chapter X — The Greater Rites
+## Chapter X: The Greater Rites
 
-*Three constructs the second spec adds. Python has no word for any of them —
+*Three constructs the second spec adds. Python has no word for any of them;
 Liturgy needed new grammar, not new spelling, to say what they say.*
 
 Each is a compile-time transformation, not a call into some runtime library.
 A carrier pass rewrites the construct's header, in place, into ordinary
 Python that parses; a second pass over the resulting tree then restructures
 it into real semantics, or rejects the misuse outright. Nothing beyond the
-standard library is imported to make any of the three work — there is no
+standard library is imported to make any of the three work; there is no
 Liturgy runtime for them to depend on.
 
 `consecrated` is the one that no longer needs a carrier at all. It used to
@@ -857,17 +857,17 @@ slot; what the header declared now travels beside the generated Python
 instead, and `consecrated PORT: int = 8080` generates exactly
 `PORT: int = 8080`.
 
-### consecrated — a binding that will not move
+### consecrated: a binding that will not move
 
 ```
 consecrated PORT: int = 8080
 ```
 
 `consecrated NAME = value` declares a binding once. Every later assignment
-to that name that the compiler can see, in the scope where it was declared —
-a plain assignment, an augmented assignment, an annotated assignment, a
+to that name that the compiler can see, in the scope where it was declared
+(a plain assignment, an augmented assignment, an annotated assignment, a
 walrus, a `foreach` target, a `with ... styled` target, `purge`, a binding
-`invoke`/`within`, or a name reached through destructuring — is rejected
+`invoke`/`within`, or a name reached through destructuring) is rejected
 before the litany runs. So is a second `consecrated` of the same name, and a
 `consecrated` written inside a loop body, which would rebind on every
 iteration while reading like one declaration.
@@ -886,7 +886,7 @@ used to reach the compiler through it.
 Chapter VII, "The limits of consecrated," sets down what this enforcement
 does not reach.
 
-### litany — a rite re-chanted on failure
+### litany: a rite re-chanted on failure
 
 ```
 litany(thrice, resting=2, curse=TimeoutError):
@@ -894,9 +894,9 @@ litany(thrice, resting=2, curse=TimeoutError):
 ```
 
 `litany(count, resting=..., curse=...):` runs its body once, and if it
-raises one of the exceptions named by `curse=`, runs it again — up to
+raises one of the exceptions named by `curse=`, runs it again, up to
 `count` **total attempts**, not `count` retries. `curse=` is required and
-must be passed by keyword — spelled out, not smuggled in through a `**`
+must be passed by keyword: spelled out, not smuggled in through a `**`
 expansion; there is no spelling of `litany` that catches everything, on the
 view that a retry block silently swallowing an exception it was never told
 about is worse than no retry block at all. `resting=` is
@@ -905,7 +905,7 @@ generates no timing code whatsoever. Exhausting every attempt re-raises the
 last failure, unchanged.
 
 `count` and `resting` are each evaluated exactly once, however they are
-spelled — a bare `thrice`, a variable, or a call — and each is guarded the
+spelled (a bare `thrice`, a variable, or a call), and each is guarded the
 same two-tier way: a count below one, or a negative resting, is rejected at
 compile time when written as a literal and at run time when computed. The
 run-time check fires before the first attempt, so a bad value is its own
@@ -915,10 +915,10 @@ failing again.
 `cease` and `persist` written directly in a litany's own body are rejected
 at compile time, because they would bind to the retry loop the construct
 generates, not to anything the author wrote. The same two words inside a
-real `foreach` or `whilst` nested in that body are untouched — there, they
+real `foreach` or `whilst` nested in that body are untouched; there, they
 bind to that loop, exactly as expected.
 
-### augur — a precondition, not an assertion
+### augur: a precondition, not an assertion
 
 ```
 rite divide(a: float, b: float) -> float:
@@ -928,8 +928,8 @@ rite divide(a: float, b: float) -> float:
     render a / b
 ```
 
-`augur:` opens a rite — after its docstring if it has one, never after any
-other statement — with one bare condition per line, the `augur:` itself
+`augur:` opens a rite (after its docstring if it has one, never after any
+other statement) with one bare condition per line, the `augur:` itself
 standing alone on its own. Each condition is
 checked before the rite's own body runs. The first one that is false raises
 `ImpureOffering`, with a message that quotes the *Liturgy* source of that
@@ -937,7 +937,7 @@ condition, not the compiled Python it became: `the omens forbid it -- b !=
 0`. Anything in the block that is not a bare condition is rejected at
 compile time: a statement of any kind, a constant (a docstring is not a
 condition), a walrus assignment. A call is accepted, and its *truth* is the
-omen — `augur:` over `seen.append(x)` fails every time, because `append`
+omen: `augur:` over `seen.append(x)` fails every time, because `append`
 renders Void. The augury judges the value of what you wrote; it cannot know
 what you meant to check.
 
@@ -945,7 +945,7 @@ It is a contract, not an assertion, and the distinction is load-bearing: it
 survives `chant`ing under `-O`, where a Python `assert` would compile away
 to nothing. It raises `ImpureOffering` rather than some purpose-built
 exception class of its own, because there is no Liturgy runtime package for
-generated code to import from — its exceptions have to be ones Python
+generated code to import from; its exceptions have to be ones Python
 already provides.
 
 A nested rite's own opening augury is independent of any augury on the rite
@@ -953,7 +953,7 @@ that contains it; each rite's opening belongs to that rite alone.
 
 ---
 
-## Chapter XI — The Reading of Omens
+## Chapter XI: The Reading of Omens
 
 *Two verbs chant. Six do not. A seventh chants only what you wrote to be
 chanted. An adept who only ever chants learns of his errors from the
@@ -965,9 +965,9 @@ first.*
 writes one, `forge` compiles one without chanting it, `consecrate` checks
 the seals across all of them, `sanctify` sets one's form in order, and
 `purge` clears what chanting left behind. `prove` is the exception that
-does run a litany — but only the trials you wrote to be run.
+does run a litany, but only the trials you wrote to be run.
 
-### augur — the omens read before the chant
+### augur: the omens read before the chant
 
 Not to be confused with Chapter X's `augur:` construct, which is source and
 guards a rite. This is a command-line verb, and it guards a file.
@@ -996,17 +996,17 @@ finding without it is a collision that will announce itself loudly somewhere;
 a finding with it is one that will not.
 
 Arguments may be files or directories, and a directory is walked for `.lit`
-and `.py` files — `augur` reads plain Python too, because a `.py` file in a
+and `.py` files; `augur` reads plain Python too, because a `.py` file in a
 Liturgy project is a file whose names a litany may one day import. The walk
 prunes the usual noise: names beginning with a dot, `__pycache__`, and any
-directory holding a `pyvenv.cfg` — a vendored virtual environment would
+directory holding a `pyvenv.cfg`, since a vendored virtual environment would
 otherwise drown real findings under every third-party `.py` that binds
 `render` or `span`. A directory named directly as an argument is always
 read, hidden or not: naming it is asking. Arguments that overlap report
 each finding once. The exit
 status is 0 when nothing was reported and 1 when anything was. A directory
 reached through a symlink, or a hidden `.lit`/`.py` file inside a walked
-directory, is named in the report rather than passed over in silence — a
+directory, is named in the report rather than passed over in silence, since a
 reader that quietly does not read a file is worse than no reader. (A
 symlinked directory the walk would prune anyway, a symlinked `.venv` say, is
 pruned as quietly as a real one.)
@@ -1018,15 +1018,15 @@ for it.
 
 **Words that become another word, used as your own names.** A binding
 collides two ways, and both are reported. Either you wrote the reserved word
-and the substitution produced the bound name — `span = ...` becoming
-`range = ...` — or one of Chapter VI's exemptions protected the word from
+and the substitution produced the bound name (`span = ...` becoming
+`range = ...`), or one of Chapter VI's exemptions protected the word from
 substitution and left you bound to it whole.
 
 This check reaches the sixty words that have a Python spelling, not all
 sixty-four. The four construct words are outside it by construction: they
 are never substituted, so no binding of one can quietly come to mean
-something else. `consecrated` and `unsanctioned` are still caught — by the
-second check, as a compile failure — and `litany` and `augur` are genuinely
+something else. `consecrated` and `unsanctioned` are still caught, by the
+second check, as a compile failure, and `litany` and `augur` are genuinely
 not faults. The machine's own names (Chapter VII) are within it: they have no
 Python spelling to become, but a `.py` file that binds one is a file no
 litany can import by that name, and the finding says so.
@@ -1040,8 +1040,8 @@ without being taught anything.
 
 There is deliberately no third *standing* check. No line-length rule, no
 unused-import check, no naming convention. `augur` reports the class of fault
-that is specific to Liturgy — the class no other tool in your setup can
-see — and leaves the rest to the tools that already do it well. It is not a
+that is specific to Liturgy, the class no other tool in your setup can
+see, and leaves the rest to the tools that already do it well. It is not a
 general linter and is not going to become one.
 
 The third check is asked for, and being asked for is the whole of the
@@ -1061,7 +1061,7 @@ under a reserved name stays bound under it:
 within json invoke loads styled render
 ```
 
-`render` is not substituted here — the exemption protects it — so the module
+`render` is not substituted here (the exemption protects it), so the module
 is genuinely bound to the name `render`. Every *later* mention of `render` is
 outside the exemption and becomes `return`, so the litany fails at the point
 of use, with a syntax error that says nothing about the import that caused
@@ -1083,7 +1083,7 @@ and only the last of them is yours to have got wrong.
 Chapter VI's exemptions govern what is substituted. They say nothing about
 what is safe to be bound to, and the two are not the same question.
 
-### `--archetypes` — the third check, and the one that is asked for
+### `--archetypes`: the third check, and the one that is asked for
 
 Chapter XII requires that an archetype be *written*. This reads whether it is
 *true*. The two are not the same question, and neither answers the other.
@@ -1145,7 +1145,7 @@ and what a `# type: ignore[...]` would have to name.
 The finding on line 6 is owed to the previous release. Before the
 `consecrated` carrier was moved out of the annotation slot,
 `consecrated PORT: int = 8080` generated `PORT: __consecrated__ = 8080`, and
-a checker told that could not know `PORT`'s archetype at all — never mind
+a checker told that could not know `PORT`'s archetype at all, never mind
 that it is the wrong one to hand `greet`. That change was worth making on its
 own merits; this is what it bought.
 
@@ -1168,8 +1168,8 @@ $ liturgy augur --archetypes iter.lit
    mypy's own words: "int" has no attribute "__iter__"; maybe "__int__"? (not iterable)  [attr-defined]
 ```
 
-A half-translated diagnostic — Liturgy words inside a Python sentence, or a
-type name mangled by an over-eager substitution — would be worse than an
+A half-translated diagnostic (Liturgy words inside a Python sentence, or a
+type name mangled by an over-eager substitution) would be worse than an
 honest untranslated one, so the shapes that are recognised are translated
 whole and every other one is passed through untouched and attributed. This is
 the discipline `sanctify` keeps when it refuses rather than guesses.
@@ -1193,7 +1193,7 @@ the trials. Without it the verb refuses, before it walks a single path:
 ```
 
 That refusal is the shape of the whole check. **An empty report means the
-checker ran, was understood, and found nothing — it never means the reading
+checker ran, was understood, and found nothing; it never means the reading
 did not happen.** Every other outcome, a checker that crashed or timed out or
 said something the translator could not parse, is reported against the litany
 as `archetypes unread` and exits 1. A reader that pronounces a litany clean
@@ -1204,7 +1204,7 @@ Only litanies are read this way. A `.py` file is still scanned by the two
 standing checks, but it carries no substitutions and so no map, and anything
 this verb said about it would be mypy's own report wearing Liturgy's banner.
 Run mypy on your Python directly; its output will be better than this could
-relay. A `.py` beside litanies is simply skipped — but ask for archetypes and
+relay. A `.py` beside litanies is simply skipped, but ask for archetypes and
 give no litany at all, and the verb says that too, rather than handing back
 the empty report of a check that never ran:
 
@@ -1213,7 +1213,7 @@ the empty report of a check that never ran:
    only .lit files carry the substitutions this check maps back
 ```
 
-### transcribe — a Python file rendered into the proper tongue
+### transcribe: a Python file rendered into the proper tongue
 
 ```
 $ liturgy transcribe greet.py
@@ -1236,7 +1236,7 @@ The warning is Chapter XII's, and unannotated Python earns it by definition:
 Python does not require archetypes and Liturgy does, so a faithful
 transcription of a bare `def` is a litany that will not chant until an adept
 annotates it or marks it `unsanctioned`. Nothing is prepended on the adept's
-behalf — an `unsanctioned` line ahead of the litany would break the
+behalf, because an `unsanctioned` line ahead of the litany would break the
 round-trip self-check below, which is the whole reason the verb can be
 trusted. Python that *was* annotated transcribes to a litany that chants, and
 is not warned about at all.
@@ -1254,8 +1254,8 @@ before a rite to exempt it -- or alone at the margin to exempt the file.
 ```
 
 `transcribe` refuses in preference to producing something subtly wrong. It
-refuses a source that will not parse, a source it cannot decode, and — the
-case that matters — a source binding a name Liturgy reserves, because no
+refuses a source that will not parse, a source it cannot decode, and, in the
+case that matters, a source binding a name Liturgy reserves, because no
 correct Liturgy spelling of that program exists:
 
 ```
@@ -1270,8 +1270,8 @@ verbs cannot drift apart about what counts as a collision.
 
 The last line of defence is broader than the collision rule: the output is
 compiled before anything is written or printed. A Python program only the
-compile can catch — one that binds a bare `consecrated`, or speaks one of
-the machine's own names in a position the binding scan does not see — is
+compile can catch (one that binds a bare `consecrated`, or speaks one of
+the machine's own names in a position the binding scan does not see) is
 refused as one no litany can express. That compile asks whether the output is
 a *program*, not whether it satisfies Chapter XII: the archetype rule is
 suppressed for it, which is why a missing annotation is the warning above and
@@ -1285,7 +1285,7 @@ rewrite or rename what it names, then transcribe again
 ```
 
 The same rule is applied a second time, to the Liturgy about to be written.
-Transcription can introduce a collision the Python never had — `input` is
+Transcription can introduce a collision the Python never had: `input` is
 rendered `hearken`, and `hearken` is reserved. That output is not wrong: it
 round-trips, and its words are faithful. So it is a warning, not a refusal:
 
@@ -1324,7 +1324,7 @@ compared again. Line endings and the source's declared encoding are carried
 through unchanged, so the transcribed file differs from its source in its
 words and in nothing else.
 
-### forge — the bytecode beaten out beforehand
+### forge: the bytecode beaten out beforehand
 
 `forge` compiles litanies to bytecode ahead of the import that would
 otherwise have to do it. Given no paths it works on the current directory,
@@ -1396,7 +1396,7 @@ The exit status is 0 when everything asked for was forged or already
 current, and 1 if the interpreter refused the whole run or any single litany
 failed.
 
-### consecrate — the seals read across every litany
+### consecrate: the seals read across every litany
 
 Chapter VII sets out what `consecrated` can and cannot enforce, and is exact
 about the boundary: rejection happens at compile time, against the AST the
@@ -1405,7 +1405,7 @@ reaching in through the module object is, to the compiler, another file
 entirely.
 
 `consecrate` reads the whole tree instead of one unit at a time. It walks
-twice — once to learn what is sealed, once to find what reaches a seal — and
+twice, once to learn what is sealed and once to find what reaches a seal, and
 reports the pair:
 
 ```
@@ -1423,7 +1423,7 @@ $ liturgy consecrate
 Three shapes are read: assignment through the module object
 (`config.PORT = 9`), `setattr` with a literal name, and deletion. All three
 are named plainly enough in the source for a walk to find them. A `.py` file
-counts as much as a litany — it imports through the same hook, and can reach
+counts as much as a litany: it imports through the same hook, and can reach
 the same attribute.
 
 ### What consecrate still cannot see
@@ -1433,7 +1433,7 @@ time; it tells you the rebinding is written down somewhere.
 
 Two of Chapter VII's escapes remain invisible, and are not guessed at.
 `globals()["PORT"] = 9` names nothing a walk can match. Neither does
-`setattr(config, name, 9)`, where the attribute is computed — the literal
+`setattr(config, name, 9)`, where the attribute is computed: the literal
 form is read, the computed form is not, and reporting a maybe would make the
 verb worth less than silence.
 
@@ -1458,7 +1458,7 @@ server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here
 The exit status is 0 when every seal held, and 1 when any was reached or any
 litany could not be read.
 
-### sanctify — a litany's form set in order
+### sanctify: a litany's form set in order
 
 `sanctify` reshapes the whitespace between a litany's tokens and changes
 nothing else. Indentation becomes four spaces to the level, trailing
@@ -1479,7 +1479,7 @@ $ liturgy sanctify
 form a chant-hall's own trials want.
 
 Only `.lit` files are touched. Formatting Python is `ruff`'s work or
-`black`'s, and neither of them can read a litany — which is the whole reason
+`black`'s, and neither of them can read a litany, which is the whole reason
 this verb exists.
 
 ### What sanctify refuses to do
@@ -1506,8 +1506,8 @@ gets wrong:
 ### The guarantee, checked rather than claimed
 
 Before returning anything, `sanctify` reads its own output back and compares
-two things against the original: every token that carries meaning —
-comments emphatically included — and the tree the litany compiles to. If
+two things against the original: every token that carries meaning (comments
+emphatically included) and the tree the litany compiles to. If
 either differs, the verb refuses and the file is left exactly as it was.
 
 ```
@@ -1521,7 +1521,7 @@ Encoding, line endings and a BOM are preserved exactly as `transcribe`
 preserves them. A litany that does not parse is refused and left untouched,
 and one refusal does not end the walk.
 
-### prove — the trials of a litany
+### prove: the trials of a litany
 
 `prove` runs pytest with the import hook installed and `test_*.lit`
 collected. That is the whole verb.
@@ -1542,8 +1542,8 @@ test_rites.lit:5: AssertionError
 ========================= 1 failed, 1 passed in 0.01s ==========================
 ```
 
-The failure quotes Liturgy — `rite`, `attest`, `measure`, at the litany's own
-line number — because the loader does not override `get_source`, and pytest
+The failure quotes Liturgy (`rite`, `attest`, `measure`, at the litany's own
+line number) because the loader does not override `get_source`, and pytest
 reads the source the same way a traceback does.
 
 Every argument goes straight to pytest: paths, `-k`, `-x`, `-v`, any of it.
@@ -1596,7 +1596,7 @@ for a litany. `attest measure("cog") == 99` reports `AssertionError` and the
 source line, not `3 == 99`. The rewriting works on Python source pytest
 itself imports, and a litany arrives already compiled by our loader.
 
-### purge — the clearing of relics
+### purge: the clearing of relics
 
 `purge` removes every `__pycache__` directory beneath the working directory,
 and, given `--heresies`, the heresy record of Chapter VIII along with them.
@@ -1614,7 +1614,7 @@ Symlinked directories are never entered.
 
 The reporting is guarded in the same spirit. Each removal is named on its own
 line, and that line is printed only once the delete beneath it has actually
-succeeded — the report never claims a deletion that did not happen. A
+succeeded, so the report never claims a deletion that did not happen. A
 directory that will not go, for want of permission or because it vanished
 between the walk and the delete, is reported and stepped over rather than
 raising; one unreadable cache must not strand the rest. The run ends with a
@@ -1629,7 +1629,7 @@ refused or any single removal failed.
 
 ---
 
-## Chapter XII — The Declaration of Archetypes
+## Chapter XII: The Declaration of Archetypes
 
 *An offering laid before the machine without its nature declared is an
 offering the machine must guess at, and the machine does not guess. Name the
@@ -1665,7 +1665,7 @@ rite greet(name):
 ```
 
 Declare the parameter and the fault moves to the return, reported against the
-rite's own name — the AST gives a function's name no position of its own, so
+rite's own name: the AST gives a function's name no position of its own, so
 the caret is placed by hand:
 
 ```
@@ -1746,17 +1746,17 @@ you and the third check.
 Four exemptions, and each is a thing the rule could not ask for without
 asking for the impossible.
 
-**`self` and `cls`** — in the *first* positional slot of a method, and only
+**`self` and `cls`**: in the *first* positional slot of a method, and only
 there. A receiver's archetype is the pattern it is declared in, and spelling
 it out is noise that every Python type checker also waives. A later parameter
 named `self` is an ordinary parameter wearing the name and gets no pass.
 
-**`versicle`** — a lambda, entirely. Python has no syntax for annotating
+**`versicle`**: a lambda, entirely. Python has no syntax for annotating
 one's parameters; `versicle x: int = 1` is not a stricter lambda, it is a
 syntax error. A rule requiring what cannot be written would forbid the
 construct outright, so the rule stops at the door.
 
-**`commune`** — the prompt does not enforce. Every entry is its own
+**`commune`**: the prompt does not enforce. Every entry is its own
 compilation unit, so there is nowhere to put an exemption that would still be
 in force on the next line, and a prompt that rejects `rite f(x):` is not a
 prompt anyone will use twice. Chapter VII's note about `consecrated` being
@@ -1771,10 +1771,10 @@ from the other side.
 Ave adept
 ```
 
-**`.py` files** — Liturgy compiles `.lit`. A Python file is Python's own
+**`.py` files**: Liturgy compiles `.lit`. A Python file is Python's own
 business, whether a litany imports it or `augur` reads it.
 
-### unsanctioned — the omission spoken aloud
+### unsanctioned: the omission spoken aloud
 
 The fifth exemption is not something the machine works out. It is something
 you say, and `unsanctioned` is the word for saying it. It is the one word this
@@ -1791,14 +1791,14 @@ unsanctioned rite legacy(x):
 unsanctioned consecrated PORT = 8080
 ```
 
-It reaches a `remote rite` as well — the word between the modifier and `rite`
+It reaches a `remote rite` as well: the word between the modifier and `rite`
 is `async`, and an exemption that stopped at the sight of it would be a rule
 about spelling rather than about rites.
 
 **An exempted rite exempts everything nested inside it.** A closure or a
 `pattern` written within an `unsanctioned` rite is exempt too. The
-alternative — waiving the header and then nagging about a two-line helper
-three lines below it — would make the modifier useless on exactly the old
+alternative (waiving the header and then nagging about a two-line helper
+three lines below it) would make the modifier useless on exactly the old
 code it exists for, and there is no second word to reach for. A nested rite
 that wants the rule back can be lifted out of the exempted one.
 
@@ -1848,7 +1848,7 @@ project spends twice, and the pair is on it.
 
 ### Why the annotation itself gained no word
 
-An earlier design gave the annotation operator a ritual spelling of its own —
+An earlier design gave the annotation operator a ritual spelling of its own:
 `anoint`, then `wrought`, then `designated`. Each was cut, and the reasons are
 worth keeping.
 
@@ -1859,17 +1859,17 @@ cannot collide.
 
 Any such word also solves only half the problem. A rite's return is spelled
 `->`, so `rite f(x wrought int) begets str:` needs a *second* reserved word to
-stay consistent — two words for what Python spells with punctuation, and two
+stay consistent: two words for what Python spells with punctuation, and two
 more names an adept may not use.
 
 And the annotations themselves already worked. `:` and `->` have always been
 legal in a litany; what was missing was the requirement, and a requirement
 needs no vocabulary of its own. `archetype` is `type`, `pattern` is `class`,
-and the type vocabulary is spent — spent well, and spent already.
+and the type vocabulary is spent, spent well, and spent already.
 
 ---
 
-## Appendix — The Full Concordance
+## Appendix: The Full Concordance
 
 Liturgy to Python, then Python to Liturgy. The mapping is a bijection: no two
 ritual words share a Python word, and no Python word has two ritual spellings.

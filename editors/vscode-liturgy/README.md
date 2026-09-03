@@ -1,6 +1,6 @@
 # Liturgy for VS Code
 
-Syntax highlighting for `.lit` files — [Liturgy](https://github.com/Another-workation-farang/tech-priest-liturgy),
+Syntax highlighting for `.lit` files from [Liturgy](https://github.com/Another-workation-farang/tech-priest-liturgy),
 the superset of Python spoken in the ritual tongue of the Adeptus Mechanicus.
 
 ## Installing
@@ -26,7 +26,7 @@ All sixty-three reserved words, painted to match their Python kin: ritual
 keywords as keywords, `Sanctioned`/`Heretical`/`Void` as constants,
 `likewise`/`elsewise`/`nay`/`be`/`among` as word operators, the five builtin
 aliases as builtins, the fifteen curse names as exceptions, `twice`/`thrice`
-as numbers. Plain Python spellings highlight too — a `.lit` file is still
+as numbers. Plain Python spellings highlight too, because a `.lit` file is still
 Python underneath. The machine's own names (`__litany__` and kin) paint as
 illegal, because speaking one is a loud heresy.
 
@@ -34,7 +34,7 @@ It also approximates the transform's context rules:
 
 - **Attribute position** (Rule 1): `template.render()` leaves `render` plain.
 - **Keyword-argument position** (Rule 2): `func(intone=True)` leaves `intone`
-  plain. The approximation is broader than the real rule — any ritual word
+  plain. The approximation is broader than the real rule: any ritual word
   directly before a single `=` goes unpainted, so `span = 1` renders as a
   plain name. That happens to read as a warning: a binding of `span` is the
   quiet collision `liturgy augur` exists to catch.
@@ -50,7 +50,7 @@ It also approximates the transform's context rules:
   word outright, and the grammar simply leaves it plain rather than
   guessing at `invalid.illegal`.
 
-A TextMate grammar cannot be exact about any of this — for compiler-exact
+A TextMate grammar cannot be exact about any of this. For compiler-exact
 highlighting (docs, pipelines), use the Pygments lexer that ships with the
 package itself: `pip install "liturgy[highlight]"`, then `pygmentize
 prayer.lit`. Known approximations here: a one-line compound statement
