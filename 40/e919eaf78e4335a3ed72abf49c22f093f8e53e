@@ -1,0 +1,87 @@
+docs/index.html
+  s_d162ead593e4de::t_0fb24c9af3cb2f 270-274
+  s_d162ead593e4de::t_d0f3d79e5a9f8e 123-124,133-138,214,233,249-269,275-288,312,316-317
+tests/test_forge.py
+  s_d162ead593e4de::t_5387ce9226379e 21,47,70,82,92,96,104,106,123,136,156,179
+tests/test_sanction.py
+  s_d162ead593e4de::t_f3f5ff4d765a48 1-20,22-463,466-477,482,489-500,502-510,512-539
+  s_d162ead593e4de::t_920fabb771a341 21
+  s_d162ead593e4de::t_92d45ef3755270 464-465,478-481,483-488,501,511
+  s_d162ead593e4de::t_cf698812ea18a7 540-590
+tests/test_transcribe.py
+  s_d162ead593e4de::t_cf698812ea18a7 249-336
+tests/test_curse.py
+  s_d162ead593e4de::t_651f8cf0c44c14 18,115,144,152,173,264,297,318,331,466,661,665,778,810-811,826-827
+tests/test_augur_verb.py
+  s_d162ead593e4de::t_3800688a6cb6a8 59,72
+README.md
+  s_d162ead593e4de::t_77b39a47655b9e 345-357
+  s_d162ead593e4de::t_a826b48285a036 29-31,37-41,269,272,279,284,311-312
+docs/liturgy-data-slate.html
+  s_d162ead593e4de::t_920fabb771a341 700-772
+  s_d162ead593e4de::t_6a098872f90a65 259,264-266,301-303,371,377,485-488
+docs/LIBER-LITURGIAE.md
+  s_d162ead593e4de::t_70761a3d424e29 720-728,743-749,753,771-775,814,1262
+  s_d162ead593e4de::t_4d88520bc4c316 1358-1384
+  s_d162ead593e4de::t_d845431736ffaf 78,279,282,530,536-538,586,592
+  s_d162ead593e4de::t_606cfe5d907e8e 919,925-928
+tests/test_compiler.py
+  s_d162ead593e4de::t_86e498e8d391c2 64-66,68,71,73-74,76,79,81-82
+tests/test_augur.py
+  s_d162ead593e4de::t_e7f91200cc2dd1 13,54,72,79,87,90,103,126,139,155,172,188
+src/liturgy/rewrite.py
+  s_d162ead593e4de::t_894422d60b40ca 26
+  s_d162ead593e4de::t_5e07d0000069aa 10,18
+  s_d162ead593e4de::t_3b1fcd0d7f2233 386-405,412-418,420
+  s_d162ead593e4de::t_8ad0de98ae2a49 165-277,279-284,289,291,293-301
+  s_d162ead593e4de::t_866d90153b57ea 365-371
+  s_d162ead593e4de::t_0f44127a33c82a 539-540
+  s_d162ead593e4de::t_e13e22d700509c 29,302
+  s_d162ead593e4de::t_52848b8a9d4713 51-52,62-64
+  s_d162ead593e4de::t_3dd94c97675df4 27-28
+  s_d162ead593e4de::t_5889e03c157169 278,285-288,290,292
+  s_d162ead593e4de::t_88d54ea6fb0c92 39,53-61
+src/liturgy/compiler.py
+  s_d162ead593e4de::t_88d54ea6fb0c92 48,69-70,76-79,90,94-103,109
+tests/test_positions.py
+  s_d162ead593e4de::t_01d3b64ce5f323 165-175,186-189,193-195,197
+  s_d162ead593e4de::t_c3b0f7fcddfdcf 16,19,24,27
+tests/test_consecrated.py
+  s_d162ead593e4de::t_8a43dd027e3bb9 14,18,24,45,55,62,68,75,117,128,143-144,146,159-161,174,185,199-201,203,218,231,236,244-245,274,284-285,290,310,321,327,333,403,407
+  s_d162ead593e4de::t_6aa3b588dc164f 374
+tests/test_constructs.py
+  s_d162ead593e4de::t_20144f1ebbdafc 114
+tests/test_loader.py
+  s_d162ead593e4de::t_d4658f9152647b 14
+docs/liber-liturgiae.html
+  s_d162ead593e4de::t_9a8a6d623a7667 805-808,1022-1028,1051-1054,1201-1202,1209-1212
+  s_d162ead593e4de::t_4eea8fcf56e2ef 1055
+  s_d162ead593e4de::t_71e4daf9afc17c 235,1610-1642
+  s_d162ead593e4de::t_3632857c928002 310,539,542,794,800,856,860,995-1004,1031,1093,1522
+src/liturgy/tooling.py
+  s_d162ead593e4de::t_f332f1e7dbb614 351
+  s_d162ead593e4de::t_09bed2e5be9b47 16
+  s_d162ead593e4de::t_00f1fa2ba46978 270-278,302-306,310-350,352,422-431,434
+tests/test_review_fixes.py
+  s_d162ead593e4de::t_4c333ac1588e85 112,120,126,242
+tests/test_prove.py
+  s_d162ead593e4de::t_5a9b1252f3e1e9 13-14,57,73,75,83
+tests/test_litany.py
+  s_d162ead593e4de::t_5e7b9749a72cae 75,137,173,179,282,333
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "40e919eaf78e4335a3ed72abf49c22f093f8e53e",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": null
+    }
+  }
+}
