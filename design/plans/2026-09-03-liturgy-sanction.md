@@ -21,7 +21,7 @@ identically for `chant`, `augur` and `prove`.
 - Python 3.12 floor. Standard library only, no third-party runtime deps.
 - **The transform never adds or removes a line.** `_splice` refuses any
   substitution containing `\n`. Length changes are fine and routine
-  (`Sanctioned` → `True` already shortens by 6).
+  (`Sanctioned` -> `True` already shortens by 6).
 - **`ast` and `traceback` count UTF-8 bytes; everything else counts
   characters.** Any offset from either goes through `sourcemap.char_offset`.
 - **No `ast.walk` in `src/`** except `collisions.py` and `seals.py`, which

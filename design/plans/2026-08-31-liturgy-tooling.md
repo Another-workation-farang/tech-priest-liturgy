@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Three CLI verbs (`augur` (lint), `transcribe` (Python → Liturgy), `purge` (clear caches)) so Liturgy is usable on code you did not write in it, and so the one class of mistake the compiler cannot catch is catchable.
+**Goal:** Three CLI verbs (`augur` (lint), `transcribe` (Python -> Liturgy), `purge` (clear caches)) so Liturgy is usable on code you did not write in it, and so the one class of mistake the compiler cannot catch is catchable.
 
 **Architecture:** Both real verbs rest on one primitive, `find_collisions`, which reuses `rewrite._stored_names` for binding analysis and the alias pass's own `Substitution` list for positions. The reverse pass is promoted out of the test tree and becomes `transcribe`'s engine.
 

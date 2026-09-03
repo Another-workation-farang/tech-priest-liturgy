@@ -56,7 +56,7 @@ CPython's import machinery**.
 | Module | Purpose | Depends on |
 |---|---|---|
 | `lexicon.py` | Alias tables; pure data plus lookup | none |
-| `sourcemap.py` | `SourceMap`: `(line, col)` ↔ `(line, col)` | none |
+| `sourcemap.py` | `SourceMap`: `(line, col)` <-> `(line, col)` | none |
 | `transform.py` | `transform(src) -> (str, SourceMap)` | lexicon, sourcemap |
 | `loader.py` | Path hook, `LiturgyLoader`, `chant` execution | transform, curse |
 | `curse.py` | Traceback remapping and rendering | sourcemap, lexicon |
@@ -72,16 +72,16 @@ suite therefore runs with no import hook, no subprocess, and no mutation of
 ```
 prayer.lit
    │
-   ├─ tokenize ──────────►  token stream
-   │                          • AliasPass: rite→def, should→if, render→return
+   ├─ tokenize ──────────>  token stream
+   │                          • AliasPass: rite->def, should->if, render->return
    │                          • INVARIANT: never add or remove a line
    │                          • emits SourceMap (column deltas only)
    │
-   ├─ ast.parse ─────────►  AST        [Spec II transforms here]
+   ├─ ast.parse ─────────>  AST        [Spec II transforms here]
    │
-   ├─ compile ───────────►  code object
+   ├─ compile ───────────>  code object
    │
-   └─ MachineCurse ──────►  traceback themed and column-remapped
+   └─ MachineCurse ──────>  traceback themed and column-remapped
 ```
 
 ## Lexicon
@@ -121,22 +121,22 @@ CURSES    = {...}   # exception types
 
 ### SOFTWORDS (initial set, deliberately small)
 
-`intone`→`print`, `measure`→`len`, `span`→`range`, `unseal`→`open`,
-`hearken`→`input`.
+`intone`->`print`, `measure`->`len`, `span`->`range`, `unseal`->`open`,
+`hearken`->`input`.
 
 Kept minimal in Core. Each addition widens the reserved-word surface, so
 growth is a considered act, not a reflex.
 
 ### CURSES
 
-`MachineCurse`→`Exception`, `PrimalCurse`→`BaseException`,
-`ImpureOffering`→`ValueError`, `PatternMismatch`→`TypeError`,
-`LostPattern`→`KeyError`, `BeyondTheManifest`→`IndexError`,
-`AbsentAugmetic`→`AttributeError`, `DivisionByTheVoid`→`ZeroDivisionError`,
-`ForbiddenLore`→`ImportError`, `RelicNotFound`→`FileNotFoundError`,
-`SpiralOfMadness`→`RecursionError`, `TheRiteIsEnded`→`StopIteration`,
-`UnknownInvocation`→`NameError`, `MotiveFailure`→`RuntimeError`,
-`RiteUnwritten`→`NotImplementedError`.
+`MachineCurse`->`Exception`, `PrimalCurse`->`BaseException`,
+`ImpureOffering`->`ValueError`, `PatternMismatch`->`TypeError`,
+`LostPattern`->`KeyError`, `BeyondTheManifest`->`IndexError`,
+`AbsentAugmetic`->`AttributeError`, `DivisionByTheVoid`->`ZeroDivisionError`,
+`ForbiddenLore`->`ImportError`, `RelicNotFound`->`FileNotFoundError`,
+`SpiralOfMadness`->`RecursionError`, `TheRiteIsEnded`->`StopIteration`,
+`UnknownInvocation`->`NameError`, `MotiveFailure`->`RuntimeError`,
+`RiteUnwritten`->`NotImplementedError`.
 
 `TechHeresy` is reserved for Spec II and defined by it.
 
@@ -187,9 +187,9 @@ requirements, not polish:
 
 | Rule | Failure it prevents |
 |---|---|
-| Skip a NAME whose previous significant token is `.` | `template.render()` → `template.return()`, a syntax error. Any library with `.render()`, `.pattern`, `.span()` breaks instantly. |
-| Skip a NAME immediately followed by `=` at paren-depth > 0 | `func(intone=True)` → `func(print=True)`, silently wrong. |
-| Substitute nothing inside `import` / `from` statements except the statement keywords | `from jinja2 import render` → `... import return`, a syntax error. |
+| Skip a NAME whose previous significant token is `.` | `template.render()` -> `template.return()`, a syntax error. Any library with `.render()`, `.pattern`, `.span()` breaks instantly. |
+| Skip a NAME immediately followed by `=` at paren-depth > 0 | `func(intone=True)` -> `func(print=True)`, silently wrong. |
+| Substitute nothing inside `import` / `from` statements except the statement keywords | `from jinja2 import render` -> `... import return`, a syntax error. |
 
 The reservation rule covers identifiers *you* write. These three cover
 everyone else's, which you do not control.
@@ -230,7 +230,7 @@ entries violate it (`persist`/`continue` is shorter, `be`/`is` and `nay`/`not`
 are merely equal), so adopting padding would mean renaming words to satisfy the
 transform rather than the theme.
 
-Rejected primarily because Spec II makes it impossible: `consecrated X = 1` →
+Rejected primarily because Spec II makes it impossible: `consecrated X = 1` ->
 `X: __Consecrated__ = 1` *expands*, and no padding shrinks it back. Building
 padding in Core means deleting it in Spec II.
 
@@ -337,8 +337,8 @@ $ liturgy run prayer.lit
 - Written to **stderr**, never stdout, so piped output stays clean.
 - **Exit code unchanged.** Heresy is a moral failing, not a runtime failure.
 - Silenced by `LITURGY_PIOUS=0` or `--absolved`, so CI logs are not flooded.
-- The rebuke escalates across invocations (noted → recorded in your permanent
-  record → the Inquisition has been notified) via a counter in a small JSON
+- The rebuke escalates across invocations (noted -> recorded in your permanent
+  record -> the Inquisition has been notified) via a counter in a small JSON
   state file.
 - If the state file cannot be written, fail silently. The CLI must never break
   over the joke.
@@ -383,7 +383,7 @@ the failures that would make Liturgy unusable against real libraries.
 
 - The four constructs (`consecrated`, `litany`, `augur`, `noospheric`): Spec II.
 - Remaining CLI verbs: Spec III.
-- `transcribe` (Python → Liturgy): Spec III; bijectivity is maintained now so
+- `transcribe` (Python -> Liturgy): Spec III; bijectivity is maintained now so
   it stays possible.
 - A PEP 263 codec. Rejected outright: a codec is text-to-text and runs before
   the parser, so it can never perform Spec II's AST work. Offering one for the

@@ -55,16 +55,16 @@ def compile_litany(src: str, filename: str) -> types.CodeType
 ```
 prayer.lit
    │
-   ├─ transform() ───────►  Python text + SourceMap
+   ├─ transform() ───────>  Python text + SourceMap
    │                          • AliasPass      (Spec I)
    │                          • CarrierPass    (Spec II, appended)
    │                          • INVARIANT: never add or remove a line
    │
-   ├─ ast.parse ─────────►  AST
+   ├─ ast.parse ─────────>  AST
    │                          • ConstructPass  (Spec II)
    │                          • restructures freely; text is not touched
    │
-   └─ compile ───────────►  code object
+   └─ compile ───────────>  code object
 ```
 
 `loader.LiturgyLoader.source_to_code`, `loader.chant` and `commune` change from
