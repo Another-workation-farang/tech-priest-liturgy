@@ -1,0 +1,44 @@
+docs/liturgy-data-slate.html
+  s_d162ead593e4de::t_af59043eba733c 234,762
+README.md
+  s_d162ead593e4de::t_af59043eba733c 200,396
+src/liturgy/lexicon.py
+  s_d162ead593e4de::t_32923167ba3ade 31-38
+  s_d162ead593e4de::t_af59043eba733c 39
+docs/index.html
+  s_d162ead593e4de::t_af59043eba733c 297
+src/liturgy/rewrite.py
+  s_d162ead593e4de::t_af59043eba733c 225,543,545,548
+tests/test_consecrated.py
+  s_d162ead593e4de::t_af59043eba733c 322,325,333,342
+  s_d162ead593e4de::t_31fbd1adeb4724 330
+tests/test_constructs.py
+  s_d162ead593e4de::t_af59043eba733c 80
+editors/vscode-liturgy/syntaxes/liturgy.tmLanguage.json
+  s_d162ead593e4de::t_af59043eba733c 109
+docs/liber-liturgiae.html
+  s_d162ead593e4de::t_b235cdccf1ad85 996-1003
+  s_d162ead593e4de::t_af59043eba733c 410,1891-1892,2031
+tests/test_sanction.py
+  s_d162ead593e4de::t_31fbd1adeb4724 164,171
+  s_d162ead593e4de::t_af59043eba733c 166,168,174
+docs/LIBER-LITURGIAE.md
+  s_d162ead593e4de::t_af59043eba733c 183,1650-1651,1790
+  s_d162ead593e4de::t_32923167ba3ade 719-725
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "f314e5801a518b6273bb3dff911deaf32306387a",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
