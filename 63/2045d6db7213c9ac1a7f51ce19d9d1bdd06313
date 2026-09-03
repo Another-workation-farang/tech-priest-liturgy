@@ -1,0 +1,19 @@
+pyproject.toml
+  s_d6334b4c21be27::t_cd66d60a79df6d 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "632045d6db7213c9ac1a7f51ce19d9d1bdd06313",
+  "prompts": {},
+  "sessions": {
+    "s_d6334b4c21be27": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "16a8b7fa-9088-4ffd-baf0-782bda96086f",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
