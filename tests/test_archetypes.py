@@ -8,12 +8,16 @@ all. Only the handful of end-to-end tests at the bottom need the real thing.
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import pathlib
+import subprocess
 import sys
+import tempfile
 
 import pytest
 
+from liturgy import archetypes
 from liturgy.archetypes import (
     ArchetypesUnread,
     Diagnostic,
@@ -23,6 +27,7 @@ from liturgy.archetypes import (
     MypyUnintelligible,
     OracleRun,
     _module_stem,
+    _utf8_cookie,
     check,
     interpret,
     mypy_available,
@@ -761,3 +766,323 @@ def test_a_real_note_is_never_translated():
     assert notes
     assert all(f.translated is False for f in notes)
     assert notes[0].message == "This violates the Liskov substitution principle"
+
+
+# --- the temp copy's encoding ----------------------------------------------
+#
+# `augur` decodes a litany with `importlib.util.decode_source`, honouring a
+# BOM or a PEP 263 cookie exactly as `chant` does. The temp copy is written
+# UTF-8, so a cookie carried through unchanged would have mypy decode those
+# bytes with the *declared* codec -- and index columns into a string that is
+# not the one `py_lines` describes.
+
+
+@pytest.mark.parametrize(
+    "first,expected",
+    [
+        ("# -*- coding: latin-1 -*-", "# -*- coding: utf-8 -*-"),
+        ("# coding: cp1252", "# coding: utf-8"),
+        ("#!/usr/bin/env python", "#!/usr/bin/env python"),
+        ("# -*- coding: utf-8 -*-", "# -*- coding: utf-8 -*-"),
+        ("# -*- coding: UTF_8 -*-", "# -*- coding: UTF_8 -*-"),
+        ("# nothing to declare", "# nothing to declare"),
+    ],
+)
+def test_a_cookie_on_the_first_line_is_made_to_say_utf8(first, expected):
+    out = _utf8_cookie(f"{first}\nintone('ave')\n")
+    assert out.split("\n")[0] == expected
+
+
+def test_a_cookie_on_the_second_line_is_found_too():
+    out = _utf8_cookie("#!/usr/bin/env python\n# coding: latin-1\nx = 1\n")
+    assert out.split("\n")[1] == "# coding: utf-8"
+
+
+def test_a_cookie_below_the_first_two_lines_is_not_a_cookie():
+    # PEP 263 only looks at the first two lines, and only while they are
+    # blank or comments. Rewriting a comment further down would be editing
+    # the litany, not neutralising a declaration.
+    src = "x = 1\n# coding: latin-1\n# coding: latin-1\n"
+    assert _utf8_cookie(src) == src
+
+
+def test_neutralising_a_cookie_never_changes_the_line_count():
+    # Rule 1, and the whole feasibility argument: line N of the generated
+    # Python is line N of the litany.
+    src = "# -*- coding: latin-1 -*-\nintone('ave')\nintone('ave')\n"
+    assert len(split_lines(_utf8_cookie(src))) == len(split_lines(src))
+
+
+def test_the_copy_handed_to_mypy_declares_the_codec_it_is_written_in():
+    written = {}
+
+    def run(path, cache_dir):
+        written["bytes"] = path.read_bytes()
+        return OracleRun("", "", 0)
+
+    check("# -*- coding: latin-1 -*-\nintone('café')\n", "prayer.lit", oracle=run)
+    # The file is UTF-8 on disk, so it must say so: decoding it the way
+    # Python itself would has to give back what was written.
+    assert written["bytes"].decode("utf-8").startswith("# -*- coding: utf-8 -*-")
+    assert importlib.util.decode_source(written["bytes"]).splitlines()[1] == (
+        "print('café')"
+    )
+
+
+def test_a_bom_alone_needs_no_neutralising():
+    # `decode_source` has already eaten the BOM, so nothing reaches here
+    # carrying one and nothing here should add or remove one.
+    src = "intone('café')\n"
+    assert _utf8_cookie(src) == src
+
+
+# --- staging the copy, when the filesystem will not have it ----------------
+
+
+def test_a_temp_directory_that_cannot_be_made_is_archetypes_unread(monkeypatch):
+    # A missing TMPDIR is ordinary on CI and after a macOS reboot. `augur`
+    # is an `-> int`; a traceback out of a reading verb is not a verdict.
+    def boom(*a, **k):
+        raise FileNotFoundError(2, "No such file or directory")
+
+    monkeypatch.setattr(tempfile, "TemporaryDirectory", boom)
+    with pytest.raises(ArchetypesUnread) as e:
+        check("intone('ave')\n", "prayer.lit", oracle=refuse)
+    assert "could not be staged" in str(e.value)
+
+
+def test_a_copy_that_cannot_be_written_is_archetypes_unread(monkeypatch):
+    def boom(self, *a, **k):
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(pathlib.Path, "write_text", boom)
+    with pytest.raises(ArchetypesUnread) as e:
+        check("intone('ave')\n", "prayer.lit", oracle=refuse)
+    assert "No space left on device" in str(e.value)
+
+
+# --- a diagnostic about some other file, or some other line ----------------
+
+
+def test_a_diagnostic_naming_another_file_is_not_read_against_the_litany():
+    # The line passes through untouched and the column is mapped through
+    # *this* file's substitutions; neither means anything about another
+    # file, so a caret drawn from it would be an invention.
+    with pytest.raises(MypyUnintelligible) as e:
+        check(
+            "intone('ave')\n",
+            "prayer.lit",
+            oracle=fake_oracle(
+                'elsewhere.py:1:1: error: Name "zzz" is not defined  [name-defined]\n',
+                status=1,
+            ),
+        )
+    assert "elsewhere.py" in str(e.value) and "prayer.py" in str(e.value)
+
+
+@pytest.mark.parametrize("line", [0, 2, 9999])
+def test_a_diagnostic_on_a_line_the_litany_does_not_have_is_unread(line):
+    with pytest.raises(MypyUnintelligible):
+        check(
+            "intone('ave')\n",
+            "prayer.lit",
+            oracle=fake_oracle(
+                f"prayer.py:{line}:1: error: Boom  [misc]\n", status=1
+            ),
+        )
+
+
+def test_the_file_check_is_off_when_no_name_is_given():
+    # `interpret` stays testable on "what mypy said" alone.
+    lines, smap = mapping_of("intone('ave')\n")
+    (f,) = interpret(
+        OracleRun("anything.py:1:1: error: Boom  [misc]\n", "", 1), lines, smap
+    )
+    assert f.line == 1
+
+
+# --- the flags, and the guarantees written down about them -----------------
+
+
+def capturing(recorded, stdout="", status=0):
+    """A stand-in for `subprocess.run` that records the argv it was given."""
+
+    def run(argv, **kwargs):
+        recorded.append((argv, kwargs))
+        return subprocess.CompletedProcess(argv, status, stdout, "")
+
+    return run
+
+
+def test_the_oracle_passes_the_flags_the_guarantees_rest_on(monkeypatch):
+    # Each of these is a documented promise: no user config can move the
+    # verdict, imports are not followed, and the cache is the temp one.
+    recorded = []
+    monkeypatch.setattr(archetypes, "mypy_available", lambda exe=None: True)
+    monkeypatch.setattr(subprocess, "run", capturing(recorded))
+    mypy_oracle()(pathlib.Path("prayer.py"), pathlib.Path("/tmp/cache"))
+    (argv, _kwargs), = recorded
+    assert "--config-file=" in argv
+    assert "--follow-imports=skip" in argv
+    assert "--cache-dir=/tmp/cache" in argv
+
+
+def test_a_checker_that_never_finishes_is_archetypes_unread(monkeypatch):
+    # The documented timeout path. `subprocess.TimeoutExpired` is not an
+    # OSError and would otherwise escape a verb that promises an int.
+    def hang(argv, **kwargs):
+        raise subprocess.TimeoutExpired(argv, kwargs.get("timeout", 0))
+
+    monkeypatch.setattr(archetypes, "mypy_available", lambda exe=None: True)
+    monkeypatch.setattr(subprocess, "run", hang)
+    with pytest.raises(MypyFailed) as e:
+        mypy_oracle(timeout=0.25)(pathlib.Path("p.py"), pathlib.Path("/tmp/c"))
+    assert "did not finish within 0.25s" in str(e.value)
+
+
+# --- a callee the transform itself substituted -----------------------------
+#
+# A wholly Liturgy sentence must not name a Python builtin the author never
+# wrote. Type names stay verbatim -- a litany may spell either -- but a
+# callee is different: `SourceMap.span_at` can prove what was written.
+
+
+def check_saying(src, stdout, filename="prayer.lit"):
+    return check(src, filename, oracle=fake_oracle(stdout, status=1))
+
+
+def test_a_substituted_callee_is_said_in_the_word_the_litany_used():
+    (f,) = check_saying(
+        "y: int = measure(5)\n",
+        'prayer.py:1:14: error: Argument 1 to "len" has incompatible type '
+        '"int"; expected "Sized"  [arg-type]\n',
+    )
+    assert f.message == "argument 1 to measure is an int where measure declares a Sized"
+    assert f.translated is True
+    assert "len" not in f.message
+
+
+def test_a_substituted_curse_name_in_a_callee_position_is_said_in_liturgy():
+    (f,) = check_saying(
+        "proclaim ImpureOffering(1, 2, 3, 4)\n",
+        'prayer.py:1:10: error: Too many arguments for "ValueError"  [call-arg]\n',
+    )
+    assert f.message == "ImpureOffering is given more arguments than it declares"
+
+
+def test_a_callee_the_litany_spelled_in_python_is_left_alone():
+    # `len` is not a Liturgy word, so nothing substituted it and nothing
+    # here may claim it did.
+    (f,) = check_saying(
+        "y: int = len(5)\n",
+        'prayer.py:1:14: error: Argument 1 to "len" has incompatible type '
+        '"int"; expected "Sized"  [arg-type]\n',
+    )
+    assert f.message == "argument 1 to len is an int where len declares a Sized"
+
+
+def test_a_line_spelling_the_callee_both_ways_keeps_mypy_s_spelling():
+    # `len(measure(x))`: one occurrence a substitution put there and one the
+    # author typed, and mypy's column names the argument, not the callee.
+    # Nothing can say which was meant, so nothing guesses.
+    (f,) = check_saying(
+        "y: int = len(measure(5))\n",
+        'prayer.py:1:14: error: Argument 1 to "len" has incompatible type '
+        '"int"; expected "Sized"  [arg-type]\n',
+    )
+    assert "measure" not in f.message
+    assert f.message.startswith("argument 1 to len ")
+
+
+def test_a_type_name_is_still_copied_verbatim():
+    # The accepted rule, unchanged: `range` here is the *type* of the value,
+    # not a word the transform placed on this line's caret, and a litany may
+    # spell either `ValueError` or `ImpureOffering` in an annotation.
+    (f,) = check_saying(
+        "span(3).shout\n",
+        'prayer.py:1:1: error: "range" has no attribute "shout"  '
+        "[attr-defined]\n",
+    )
+    assert f.message == "a range bears no attribute shout"
+
+
+def test_translate_alone_still_names_what_mypy_named():
+    # Without a source map there is nothing to prove a substitution with,
+    # and `translate`'s documented rule is verbatim.
+    text, translated = translate(
+        'Argument 1 to "len" has incompatible type "int"; expected "Sized"',
+        "arg-type",
+    )
+    assert translated is True
+    assert text == "argument 1 to len is an int where len declares a Sized"
+
+
+# --- end to end, with a real mypy: the encoding, the flags, the callee -----
+
+
+@needs_mypy
+def test_a_coding_cookie_does_not_move_the_caret():
+    # mypy re-reads the temp copy with the codec the file declares. Written
+    # UTF-8 under a latin-1 cookie, the string it counts columns into is not
+    # the one `py_lines` describes, and every line holding a non-ASCII
+    # character lands one column adrift.
+    body = 'intone("café" + 1)\nintone("plain" + 2)\n'
+    bare = check(body, "prayer.lit", oracle=mypy_oracle(MYPY))
+    cooked = check(
+        "# -*- coding: latin-1 -*-\n" + body, "prayer.lit", oracle=mypy_oracle(MYPY)
+    )
+    assert [(f.line, f.col) for f in bare] == [(1, 16), (2, 17)]
+    # Same litany, one line lower, same columns.
+    assert [(f.line - 1, f.col) for f in cooked] == [(1, 16), (2, 17)]
+
+
+@needs_mypy
+def test_a_litany_with_a_cookie_is_read_not_refused():
+    # `chant` runs this and `augur` calls it clean; the third check must not
+    # report it unreadable with a coordinate in a file the user never saw.
+    src = '# -*- coding: latin-1 -*-\nnaïve = "café"\nx: int = naïve\n'
+    (f,) = check(src, "prayer.lit", oracle=mypy_oracle(MYPY))
+    assert (f.line, f.code) == (3, "assignment")
+
+
+@needs_mypy
+def test_the_users_own_mypy_configuration_cannot_move_the_verdict(
+    tmp_path, monkeypatch
+):
+    # `--config-file=` is what this rests on: a litany is told the same
+    # thing about itself wherever it is checked from.
+    home = tmp_path / "home"
+    (home / ".config" / "mypy").mkdir(parents=True)
+    (home / ".mypy.ini").write_text("[mypy]\nignore_errors = True\n")
+    (home / ".config" / "mypy" / "config").write_text(
+        "[mypy]\nignore_errors = True\n"
+    )
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    findings = check(
+        "rite greet(name: str) -> int:\n    render name\n",
+        "prayer.lit",
+        oracle=mypy_oracle(MYPY),
+    )
+    assert [f.code for f in findings] == ["return-value"]
+
+
+@needs_mypy
+def test_imports_are_not_followed(tmp_path, monkeypatch):
+    # Documented plainly: one litany at a time. The sidecar has a fault of
+    # its own and is misused here, and neither is this litany's report.
+    side = tmp_path / "side"
+    side.mkdir()
+    (side / "sidecar.py").write_text('def f(a: int) -> int:\n    return "no"\n')
+    monkeypatch.setenv("MYPYPATH", str(side))
+    src = "invoke sidecar\nintone(sidecar.f(nay 1))\n"
+    assert check(src, "prayer.lit", oracle=mypy_oracle(MYPY)) == []
+
+
+@needs_mypy
+def test_a_real_substituted_callee_arrives_in_liturgy():
+    (f,) = check("y: int = measure(5)\n", "prayer.lit", oracle=mypy_oracle(MYPY))
+    assert f.message == (
+        "argument 1 to measure is an int where measure declares a Sized"
+    )
+    assert f.translated is True

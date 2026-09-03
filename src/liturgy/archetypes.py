@@ -91,6 +91,14 @@ _DIAGNOSTIC = re.compile(
 
 _QUOTED = re.compile(r'"([^"]+)"')
 
+# PEP 263's own shape, on one of a file's first two lines. The codec's name
+# is a group of its own because it is the only part `_utf8_cookie` rewrites.
+_COOKIE = re.compile(
+    r"^(?P<head>[ \t\f]*#.*?coding[:=][ \t]*)(?P<name>[-_.a-zA-Z0-9]+)"
+)
+
+_UTF8_NAMES = frozenset({"utf-8", "utf8", "utf-8-sig", "u8", "utf"})
+
 
 class ArchetypesUnread(Exception):
     """The checker reached no verdict.
@@ -339,6 +347,53 @@ def _word(python: str) -> str:
 # certain. Those messages pass through whole instead.
 _SYMBOLIC_OPERATOR = re.compile(r"^[^\w\s]{1,3}$")
 
+# A Python name -> the word the litany actually spelled there. Handed to the
+# builders below so that only the positions that have earned it -- callees --
+# are asked, and every other name stays exactly as mypy quoted it.
+Spoken = Callable[[str], str]
+
+
+def _verbatim(name: str) -> str:
+    """The resolver used when there is no line to check against."""
+    return name
+
+
+def _spoken_on(py_line: str, line: int, smap) -> Spoken:
+    """A resolver for the callee names on one generated-Python line.
+
+    mypy names the function it is complaining about, and where the transform
+    put that name there -- `measure` became `len` -- a wholly Liturgy
+    sentence would otherwise name a Python builtin the author never wrote,
+    with no `mypy's own words:` to warn them. `SourceMap.span_at` answers
+    "did a substitution put this word here", so substituting back is a
+    lookup and not a guess.
+
+    It refuses rather than guesses in the one ambiguous case: a line that
+    also spells the Python word itself -- `len(measure(x))` -- has an
+    occurrence no substitution covers, and mypy's column names the argument
+    rather than the callee, so nothing here can say which one it meant. That
+    line keeps mypy's spelling.
+
+    Type names are never asked. `ImpureOffering` and `ValueError` are both
+    things a litany may write and `translate`'s docstring keeps them
+    verbatim; a callee is different only because the map can prove what was
+    written.
+    """
+
+    def resolve(name: str) -> str:
+        lit = INVERSE.get(name)
+        if lit is None or smap is None or not py_line:
+            return name
+        seen = False
+        for m in re.finditer(rf"\b{re.escape(name)}\b", py_line):
+            span = smap.span_at(line, m.start())
+            if span is None or (span.py_start, span.py_end) != (m.start(), m.end()):
+                return name
+            seen = True
+        return lit if seen else name
+
+    return resolve
+
 
 def _a(archetype: str) -> str:
     """`a` or `an`, for a type name that is printed verbatim after it.
@@ -350,53 +405,58 @@ def _a(archetype: str) -> str:
     return "an" if archetype[:1].lower() in "aeiou" else "a"
 
 
-def _incompatible_return(m: re.Match[str]) -> str:
+def _incompatible_return(m: re.Match[str], spoken: Spoken) -> str:
+    del spoken
     return (
         f"this {_word('def')} {_word('return')}s {_a(m['got'])} {m['got']} "
         f"where it declared {_a(m['want'])} {m['want']}"
     )
 
 
-def _no_return_expected(m: re.Match[str]) -> str:
-    del m
+def _no_return_expected(m: re.Match[str], spoken: Spoken) -> str:
+    del m, spoken
     return (
         f"this {_word('def')} {_word('return')}s a value "
         f"where it declared {_word('None')}"
     )
 
 
-def _missing_return(m: re.Match[str]) -> str:
-    del m
+def _missing_return(m: re.Match[str], spoken: Spoken) -> str:
+    del m, spoken
     return (
         f"this {_word('def')} declares an {_word('type')} "
         f"it never {_word('return')}s"
     )
 
 
-def _bad_argument(m: re.Match[str]) -> str:
+def _bad_argument(m: re.Match[str], spoken: Spoken) -> str:
     which = m["which"].strip('"')
+    callee = spoken(m["callee"])
     owner = f" of {m['owner']}" if m["owner"] else ""
     return (
-        f"argument {which} to {m['callee']}{owner} is {_a(m['got'])} {m['got']} "
-        f"where {m['callee']} declares {_a(m['want'])} {m['want']}"
+        f"argument {which} to {callee}{owner} is {_a(m['got'])} {m['got']} "
+        f"where {callee} declares {_a(m['want'])} {m['want']}"
     )
 
 
-def _bad_assignment(m: re.Match[str]) -> str:
+def _bad_assignment(m: re.Match[str], spoken: Spoken) -> str:
+    del spoken
     return (
         f"this binds {_a(m['got'])} {m['got']} to a name "
         f"declared {_a(m['want'])} {m['want']}"
     )
 
 
-def _bad_inherited_assignment(m: re.Match[str]) -> str:
+def _bad_inherited_assignment(m: re.Match[str], spoken: Spoken) -> str:
+    del spoken
     return (
         f"this binds {_a(m['got'])} {m['got']} where the {_word('class')} "
         f"{m['base']} declared {_a(m['want'])} {m['want']}"
     )
 
 
-def _bad_operands(m: re.Match[str]) -> str | None:
+def _bad_operands(m: re.Match[str], spoken: Spoken) -> str | None:
+    del spoken
     if not _SYMBOLIC_OPERATOR.match(m["op"]):
         return None
     return (
@@ -405,26 +465,29 @@ def _bad_operands(m: re.Match[str]) -> str | None:
     )
 
 
-def _undefined_name(m: re.Match[str]) -> str:
+def _undefined_name(m: re.Match[str], spoken: Spoken) -> str:
+    del spoken
     return f"nothing named {m['name']} is known here"
 
 
-def _missing_attribute(m: re.Match[str]) -> str:
+def _missing_attribute(m: re.Match[str], spoken: Spoken) -> str:
+    del spoken
     return f"{_a(m['owner'])} {m['owner']} bears no attribute {m['attr']}"
 
 
-def _too_many_arguments(m: re.Match[str]) -> str:
-    return f"{m['callee']} is given more arguments than it declares"
+def _too_many_arguments(m: re.Match[str], spoken: Spoken) -> str:
+    return f"{spoken(m['callee'])} is given more arguments than it declares"
 
 
-def _missing_arguments(m: re.Match[str]) -> str:
+def _missing_arguments(m: re.Match[str], spoken: Spoken) -> str:
     names = _QUOTED.findall(m["names"])
     noun = "argument" if len(names) == 1 else "arguments"
-    return f"{m['callee']} is called without its {noun} {', '.join(names)}"
+    callee = spoken(m["callee"])
+    return f"{callee} is called without its {noun} {', '.join(names)}"
 
 
-def _unexpected_keyword(m: re.Match[str]) -> str:
-    return f"{m['callee']} declares no parameter {m['name']}"
+def _unexpected_keyword(m: re.Match[str], spoken: Spoken) -> str:
+    return f"{spoken(m['callee'])} declares no parameter {m['name']}"
 
 
 # code -> the message shapes translated under it, in order. A shape that
@@ -433,7 +496,7 @@ def _unexpected_keyword(m: re.Match[str]) -> str:
 # patterns are anchored end to end deliberately: mypy appends hints to some
 # of these ("; maybe \"__int__\"? (not iterable)"), and a suffix nobody
 # accounted for must fail to match rather than be silently dropped.
-_Shape = tuple[re.Pattern[str], Callable[[re.Match[str]], str | None]]
+_Shape = tuple[re.Pattern[str], Callable[[re.Match[str], Spoken], str | None]]
 
 _TRANSLATORS: dict[str, tuple[_Shape, ...]] = {
     "return-value": (
@@ -516,7 +579,10 @@ _TRANSLATORS: dict[str, tuple[_Shape, ...]] = {
 
 
 def translate(
-    message: str, code: str | None, severity: str = "error"
+    message: str,
+    code: str | None,
+    severity: str = "error",
+    spoken: Spoken | None = None,
 ) -> tuple[str, bool]:
     """`message` in Liturgy, and whether it could be said in Liturgy at all.
 
@@ -534,8 +600,8 @@ def translate(
     checker's commentary on its own reasoning rather than a statement about
     the litany.
 
-    Names and type names are copied out of the match and printed verbatim,
-    never substituted. `archetype` is Liturgy's word for `type`, but `int` is
+    Type names are copied out of the match and printed verbatim, never
+    substituted. `archetype` is Liturgy's word for `type`, but `int` is
     still `int`, and a type name is arbitrary Python type syntax rather than
     a word: rewriting `ValueError` inside `dict[str, ValueError]` needs a
     parser for that syntax, and `ImpureOffering` is not certainly what the
@@ -543,14 +609,22 @@ def translate(
     keyword positions -- what a `rite` does, what a `pattern` declares -- are
     this module's to translate; the names in them are the author's, and mypy
     quoted them for the same reason.
+
+    The one exception is a **callee**, and only because there the guess can
+    be removed: `spoken` is a resolver built from the source map, and it
+    substitutes a called name back only where a substitution demonstrably
+    put it there. Without one -- `translate` called on a message alone --
+    every name stays exactly as mypy quoted it, which is what the paragraph
+    above describes.
     """
     if severity != "error" or code is None:
         return message, False
+    resolve = _verbatim if spoken is None else spoken
     for pattern, build in _TRANSLATORS.get(code, ()):
         m = pattern.match(message)
         if m is None:
             continue
-        text = build(m)
+        text = build(m, resolve)
         if text is not None:
             return text, True
     return message, False
@@ -561,7 +635,9 @@ def to_finding(diag: Diagnostic, py_lines: list[str], smap) -> Finding:
 
     The message goes through `translate` on the way, so a `Finding` carries
     Liturgy where Liturgy could be spoken confidently and mypy's own words,
-    marked as such, where it could not.
+    marked as such, where it could not. The generated line is read first
+    rather than only for the column, because `_spoken_on` needs it to say
+    which callee names the transform put there.
 
     The line passes through untouched -- that is the whole feasibility
     argument. The column takes the two steps every offset in this project
@@ -569,12 +645,17 @@ def to_finding(diag: Diagnostic, py_lines: list[str], smap) -> Finding:
     becomes a 0-based character offset via `char_offset`, and `to_lit` then
     carries it back across the substitutions to the litany.
     """
-    message, translated = translate(diag.message, diag.code, diag.severity)
+    py_line = py_lines[diag.line - 1] if 0 <= diag.line - 1 < len(py_lines) else ""
+    message, translated = translate(
+        diag.message,
+        diag.code,
+        diag.severity,
+        _spoken_on(py_line, diag.line, smap),
+    )
     if diag.col is None:
         return Finding(
             diag.line, None, message, diag.code, diag.severity, translated
         )
-    py_line = py_lines[diag.line - 1] if 0 <= diag.line - 1 < len(py_lines) else ""
     col = smap.to_lit(diag.line, char_offset(py_line, diag.col - 1))
     return Finding(diag.line, col, message, diag.code, diag.severity, translated)
 
@@ -583,6 +664,7 @@ def interpret(
     run: OracleRun,
     py_lines: list[str],
     smap,
+    path_name: str | None = None,
 ) -> list[Finding]:
     """What the oracle's answer means, or why it means nothing.
 
@@ -600,6 +682,16 @@ def interpret(
     Carrier noise is filtered *after* those guards, so a run whose every
     diagnostic is noise still returns an honest empty list.
 
+    `path_name` is the bare filename the oracle was handed. When it is
+    given, a diagnostic naming some other file -- or a row that is not a row
+    of this file -- is `MypyUnintelligible` rather than something rendered
+    against the litany with a caret it has no right to. mypy under
+    `_MYPY_FLAGS` is not known to do either; the point is that a checker
+    which one day does must not be believed, since neither the line (which
+    passes through untouched) nor the column (which `to_lit` maps through
+    *this* file's substitutions) means anything about another file. It
+    defaults to None so that "what mypy said" stays testable on its own.
+
     Raises:
         MypyFailed: mypy did not reach a verdict.
         MypyUnintelligible: mypy's output could not be read.
@@ -608,6 +700,17 @@ def interpret(
         detail = (run.stderr.strip() or run.stdout.strip() or "no output")
         raise MypyFailed(f"mypy exited {run.status}: {detail}")
     diags = parse_diagnostics(run.stdout)
+    for d in diags:
+        if path_name is not None and d.path != path_name:
+            raise MypyUnintelligible(
+                f"mypy reported {d.path!r}, which is not the file it was "
+                f"given ({path_name!r})"
+            )
+        if not 1 <= d.line <= len(py_lines):
+            raise MypyUnintelligible(
+                f"mypy reported line {d.line} of a file with "
+                f"{len(py_lines)} line(s)"
+            )
     errors = [d for d in diags if d.severity == "error"]
     if run.status == 1 and not errors:
         raise MypyFailed(
@@ -633,6 +736,44 @@ def _module_stem(filename: str) -> str:
     """
     stem = re.sub(r"[^A-Za-z0-9_.-]", "_", pathlib.PurePath(filename).stem)
     return stem.strip("._-") or "litany"
+
+
+def _utf8_cookie(python: str) -> str:
+    """`python` with any PEP 263 `coding:` cookie made to say utf-8.
+
+    The temp copy is written UTF-8, and mypy re-reads it with whatever codec
+    the file itself declares. A litany carrying `# -*- coding: latin-1 -*-`
+    would therefore be decoded from bytes it was never encoded in, and the
+    string mypy counts columns into is not the string `py_lines` describes:
+    a caret one column adrift on every line holding a non-ASCII character,
+    or an `Invalid character` refusal for a litany that `chant` runs
+    happily. This is the project's byte-vs-character class one layer above
+    `char_offset`, and `augur`'s own walk guards the same hazard by decoding
+    with `importlib.util.decode_source` rather than assuming UTF-8.
+
+    Only the codec's *name* is replaced, never the line: the transform's
+    rule is that line N of the generated Python is line N of the litany, and
+    a cookie line replaced by two lines -- or by none -- would break every
+    diagnostic below it. The columns the shorter name shifts are columns on
+    a comment, where no diagnostic can land.
+
+    A BOM is not touched, and needs no touching: `decode_source` has already
+    consumed it, so nothing here carries one.
+    """
+    lines = python.split("\n")
+    for i in range(min(2, len(lines))):
+        line = lines[i]
+        m = _COOKIE.match(line)
+        if m is not None:
+            if m["name"].lower().replace("_", "-") in _UTF8_NAMES:
+                return python
+            lines[i] = m["head"] + "utf-8" + line[m.end():]
+            return "\n".join(lines)
+        # PEP 263 only looks past the first line while the lines are blank
+        # or comments, and so does this.
+        if line.strip() and not line.lstrip().startswith("#"):
+            break
+    return python
 
 
 def check(
@@ -664,11 +805,23 @@ def check(
     parse_named(out.python, filename, src, out.source_map)
 
     run_oracle = mypy_oracle() if oracle is None else oracle
-    with tempfile.TemporaryDirectory(prefix="liturgy-archetypes-") as tmp:
-        root = pathlib.Path(tmp)
-        cache = root / "cache"
-        path = root / f"{_module_stem(filename)}.py"
-        path.write_text(out.python, encoding="utf-8")
-        run = run_oracle(path, cache)
+    # What mypy will actually read, and therefore what its columns index
+    # into. `_utf8_cookie` changes at most one comment line and never the
+    # line count, so `split_lines` of it still describes the litany's rows.
+    written = _utf8_cookie(out.python)
+    try:
+        with tempfile.TemporaryDirectory(prefix="liturgy-archetypes-") as tmp:
+            root = pathlib.Path(tmp)
+            cache = root / "cache"
+            path = root / f"{_module_stem(filename)}.py"
+            path.write_text(written, encoding="utf-8")
+            run = run_oracle(path, cache)
+    except OSError as err:
+        # A missing TMPDIR or a full disk is not a verdict. `augur` is an
+        # `-> int` and a reading verb; "archetypes unread" is the designed
+        # answer and a traceback out of the walk is not. `mypy_oracle`
+        # wraps its own OSError already, so what reaches here is the
+        # staging: making the directory, writing the file, unwinding both.
+        raise MypyFailed(f"the litany could not be staged for mypy: {err}") from None
 
-    return interpret(run, split_lines(out.python), out.source_map)
+    return interpret(run, split_lines(written), out.source_map, path.name)

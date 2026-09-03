@@ -156,7 +156,10 @@ def augur(
     no `SourceMap`, which means nothing this verb could say about it would
     be in Liturgy coordinates -- it would be mypy's own report, wearing
     Liturgy's banner. Running mypy on Python is mypy's job, and the user
-    can run it directly and get better output than this could relay.
+    can run it directly and get better output than this could relay. A
+    `.py` beside litanies is simply skipped; a run whose files held **no**
+    litany at all says so and exits 1, because a check that was asked for
+    and never happened must not read as a check that found nothing.
 
     `oracle` is the seam `archetypes.check` documents, passed straight
     through: the trials use it to run a real mypy from an environment the
@@ -179,6 +182,11 @@ def augur(
         return 1
 
     files, notes = _gather(paths)
+    # Whether the third check had anything it could be run on. Asked for and
+    # never run is the silent success this module's docstring calls the worst
+    # outcome available, and it has to be said out loud rather than left to
+    # an empty report the reader will read as "clean".
+    saw_litany = False
 
     for d, message in notes:
         troubled = True
@@ -204,6 +212,7 @@ def augur(
             continue
 
         liturgy = path.suffix == ".lit"
+        saw_litany = saw_litany or liturgy
         try:
             collisions = find_collisions(src, str(path), liturgy=liturgy)
         except UnfinishedLitany:
@@ -267,6 +276,19 @@ def augur(
                 path, src, lines, plain=plain, oracle=oracle, out=out
             ):
                 troubled = True
+
+    if archetypes and not saw_litany:
+        # The same shape as the missing-mypy refusal above, and for the same
+        # reason: the reader asked for archetypes and got none, and an empty
+        # report plus exit 0 would let them believe a check happened. Only
+        # when *no* litany was read at all -- a .py beside litanies is the
+        # documented, harmless case and says nothing.
+        print("++ NO ARCHETYPES WERE READ: no litany was given ++", file=out)
+        print(
+            "   only .lit files carry the substitutions this check maps back",
+            file=out,
+        )
+        troubled = True
 
     return 1 if troubled else 0
 

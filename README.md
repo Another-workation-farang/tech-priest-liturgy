@@ -625,7 +625,8 @@ Three limits, stated rather than implied:
 - **Only litanies are read.** A `.py` file still gets the two standing
   checks, but it has no substitutions and no source map, so anything reported
   would be mypy's own output wearing Liturgy's banner. Run mypy on it
-  directly.
+  directly. Ask for archetypes and name no litany at all and the verb says
+  so, rather than exiting clean on a check that never ran.
 
 mypy is an optional extra, and without it the verb refuses before it walks a
 single path rather than reporting litanies it never read:

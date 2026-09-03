@@ -309,9 +309,60 @@ def test_python_files_are_not_read_for_archetypes(tmp_path):
         {"plain.py": "def f(x: int) -> int:\n    return 'no'\n"},
         oracle=lambda p, c: called.append(p) or OracleRun("", "", 0),
     )
-    assert code == 0
     assert called == []
+    # ...but not in silence. An empty report and exit 0 would be a clean
+    # bill of health for a check that never ran.
+    assert code == 1
+    assert "++ NO ARCHETYPES WERE READ: no litany was given ++" in out
+
+
+def test_asking_for_archetypes_and_getting_none_is_never_silent(tmp_path):
+    # The shape the module docstring calls the worst outcome available:
+    # asked for, never run, reported as nothing found.
+    code, out = run(
+        tmp_path, {"plain.py": "x = 1\n"}, oracle=lambda p, c: OracleRun("", "", 0)
+    )
+    assert code == 1
+    assert "NO ARCHETYPES WERE READ" in out
+    assert "only .lit files" in out
+
+
+def test_the_flag_unasked_says_nothing_about_python_files(tmp_path):
+    # Without `--archetypes` a clean .py is clean and silent, exactly as
+    # before: the notice belongs to the flag, not to the walk.
+    code, out = run(tmp_path, {"plain.py": "x = 1\n"}, archetypes=False)
+    assert code == 0
     assert out == ""
+
+
+def test_a_python_file_beside_a_litany_is_skipped_without_a_word(tmp_path):
+    # The documented, harmless case. The litany *was* read, so nothing was
+    # silently missed and there is nothing to announce.
+    code, out = run(
+        tmp_path,
+        {"plain.py": "x = 1\n", "p.lit": TRUE},
+        oracle=lambda p, c: OracleRun("", "", 0),
+        paths=["."],
+    )
+    assert code == 0
+    assert out == ""
+
+
+def test_a_filesystem_that_will_not_stage_the_copy_does_not_end_the_walk(
+    tmp_path, monkeypatch
+):
+    # A missing TMPDIR is ordinary on CI and after a macOS reboot. `augur`
+    # promises an int; "archetypes unread" is the designed answer and a
+    # traceback out of a reading verb is not.
+    import tempfile
+
+    def boom(*a, **k):
+        raise FileNotFoundError(2, "No such file or directory")
+
+    monkeypatch.setattr(tempfile, "TemporaryDirectory", boom)
+    code, out = run(tmp_path, {"p.lit": TRUE}, plain=True, oracle=lambda p, c: None)
+    assert code == 1
+    assert "archetypes unread: the litany could not be staged for mypy" in out
 
 
 # --- end to end, with a real mypy ------------------------------------------

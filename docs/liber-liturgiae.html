@@ -1360,13 +1360,18 @@ did not happen.</b> Every other outcome, a checker that crashed or timed out
 or said something the translator could not parse, is reported against the
 litany as <code>archetypes unread</code> and exits 1. A reader that pronounces
 a litany clean having read nothing is the worst failure available here, and
-there is no path to it.</p>
+every way of reaching it says so instead.</p>
 
 <p>Only litanies are read this way. A <code>.py</code> file is still scanned
 by the two standing checks, but it carries no substitutions and so no map, and
 anything this verb said about it would be mypy's own report wearing Liturgy's
 banner. Run mypy on your Python directly; its output will be better than this
-could relay.</p>
+could relay. A <code>.py</code> beside litanies is simply skipped — but ask for
+archetypes and give no litany at all, and the verb says that too, rather than
+handing back the empty report of a check that never ran:</p>
+
+<div class="warning"><pre>++ NO ARCHETYPES WERE READ: no litany was given ++
+   only .lit files carry the substitutions this check maps back</pre></div>
 
 <h3>transcribe — a Python file rendered into the proper tongue</h3>
 
