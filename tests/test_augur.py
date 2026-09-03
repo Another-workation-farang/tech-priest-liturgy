@@ -207,11 +207,12 @@ def test_the_unparse_fallback_triggers_when_the_slice_cannot_work():
 
     from liturgy.rewrite import ConstructPass
     from liturgy.sourcemap import SourceMap
+    from liturgy.transform import ConstructFacts
 
     smap = SourceMap()
     smap.freeze()
     lines = ["line one\n"]
-    cp = ConstructPass("prayer.lit", lines, smap, lines)
+    cp = ConstructPass("prayer.lit", lines, smap, lines, ConstructFacts())
     node = ast.parse("x > 0", mode="eval").body
     node.lineno = 99
     node.end_lineno = 99

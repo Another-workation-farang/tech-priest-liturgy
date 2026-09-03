@@ -59,7 +59,7 @@ class LiturgyConsole(code.InteractiveConsole):
             # construct header unparseable, so the incompleteness probe
             # below would report `consecrated PORT = 8080` as a syntax
             # error and compile_litany would never be reached.
-            py, _smap = transform(source, _PASSES, filename=name)
+            py = transform(source, _PASSES, filename=name).python
         except UnfinishedLitany:
             # Unterminated bracket or string: not an error, just unfinished.
             # transform() reports this as a SyntaxError subclass so file

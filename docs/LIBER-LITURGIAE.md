@@ -557,8 +557,8 @@ you have already spent. That one stays yours to track.
 ### The machine's own names
 
 Three names appear in no table and are reserved all the same:
-`__consecrated__`, `__litany__` and `__augur__` — the private carriers the
-construct pass writes into the generated Python — along with every name
+`__consecrated__`, `__litany__` and `__augur__` — the private names the
+construct compiler claims for itself — along with every name
 beginning `__liturgy_`, which the retry loop mints its bookkeeping under. A
 litany that spoke one would be indistinguishable from the machinery itself,
 so speaking one anywhere but after a dot is a loud heresy:

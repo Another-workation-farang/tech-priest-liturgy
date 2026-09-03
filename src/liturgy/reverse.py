@@ -27,4 +27,4 @@ def _reverse_pass(toks: list[tokenize.TokenInfo]) -> list[_t.Substitution]:
 
 
 def to_liturgy(src: str) -> str:
-    return _t.transform(src, passes=(_reverse_pass,))[0]
+    return _t.transform(src, passes=(_reverse_pass,)).python

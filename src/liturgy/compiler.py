@@ -49,7 +49,7 @@ def _artifacts(
 ) -> tuple[ast.AST, str, SourceMap]:
     """The rewritten tree, plus the generated Python and map it came from."""
     try:
-        py, smap = transform(src, _PASSES, filename=filename)
+        out = transform(src, _PASSES, filename=filename)
     except TechHeresy as err:
         # The carrier pass raises for the two commonest construct typos --
         # `consecrated = 5` and `litany 3:` -- and cannot name the file.
@@ -63,9 +63,10 @@ def _artifacts(
         if err.filename == _UNKNOWN:
             err.filename = filename
         raise
+    py, smap = out.python, out.source_map
     tree = parse_named(py, filename, src, smap, mode)
     tree = ConstructPass(
-        filename, split_lines(src), smap, split_lines(py)
+        filename, split_lines(src), smap, split_lines(py), out.facts
     ).visit(tree)
     ast.fix_missing_locations(tree)
     return tree, py, smap

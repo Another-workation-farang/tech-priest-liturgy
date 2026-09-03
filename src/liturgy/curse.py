@@ -143,8 +143,8 @@ def _transformed(path: str) -> tuple[list[str], SourceMap | None]:
     """
     if path not in _map_cache:
         try:
-            py, smap = transform(_read_source(path), _PASSES)
-            _map_cache[path] = (split_lines(py), smap)
+            out = transform(_read_source(path), _PASSES)
+            _map_cache[path] = (split_lines(out.python), out.source_map)
         except UnfinishedLitany as err:
             # Source that never finishes tokenising still has a usable map
             # for everything before the failure -- which is where the caret

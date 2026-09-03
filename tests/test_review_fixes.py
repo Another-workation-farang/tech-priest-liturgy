@@ -261,11 +261,11 @@ class TestNestedColon:
     def test_a_dict_colon_does_not_open_an_import_statement(self):
         # `invoke` after `{1:` used to set in_import, which suppressed the
         # substitution of every later word on the line.
-        py, _ = transform("x = {1: invoke, 2: measure}\n")
+        py = transform("x = {1: invoke, 2: measure}\n").python
         assert "len" in py
 
     def test_a_one_line_compound_import_still_translates(self):
-        py, _ = transform("should Sanctioned: invoke json\n")
+        py = transform("should Sanctioned: invoke json\n").python
         assert py == "if True: import json\n"
 
 

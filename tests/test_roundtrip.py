@@ -163,7 +163,7 @@ def test_python_to_liturgy_and_back_is_identity(src, required):
     lit = to_liturgy(src)
     for word in required:
         assert _has_word(lit, word), f"expected {word!r} in reverse output: {lit!r}"
-    assert transform(lit)[0] == src
+    assert transform(lit).python == src
 
 
 # --- I9: the same property over real Python files ---------------------------
@@ -335,10 +335,10 @@ def test_real_python_files_round_trip_through_liturgy(capsys):
             # the carrier pass firing on somebody's ordinary identifier,
             # which is the Spec I failure this whole design exists to avoid.
             carried = carrier_pass(toks)
-            if carried:
+            if carried.subs or carried.facts:
                 failures.append(f"{path}: carrier_pass produced {carried!r}")
                 continue
-            back = transform(to_liturgy(src))[0]
+            back = transform(to_liturgy(src)).python
         except Exception as exc:  # noqa: BLE001 - report, do not mask
             failures.append(f"{path}: {type(exc).__name__}: {exc}")
             continue

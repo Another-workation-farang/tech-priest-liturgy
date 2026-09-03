@@ -10,11 +10,11 @@ import ast
 
 from .constructs import (
     AUGUR_CARRIER,
-    CONSECRATED_CARRIER,
     LITANY_CARRIER,
     heresy,
 )
 from .sourcemap import char_offset
+from .transform import Consecration, ConstructFacts
 
 # The two litany guards fire either at compile time (a literal) or at run
 # time (a computed value); one spelling per fault, shared by both tiers, so
@@ -25,12 +25,22 @@ _NO_NEGATIVE_REST = "a litany cannot rest for a negative span"
 
 class ConstructPass(ast.NodeTransformer):
     def __init__(
-        self, filename: str, lines: list[str], smap, py_lines: list[str]
+        self,
+        filename: str,
+        lines: list[str],
+        smap,
+        py_lines: list[str],
+        facts: ConstructFacts,
     ) -> None:
         self.filename = filename
         self.lines = lines
         self.smap = smap
         self.py_lines = py_lines
+        self.facts = facts
+        # Every `Consecration` matched to a statement. What is left over at
+        # the end of a module is a header that generated valid Python of
+        # the wrong shape -- see `_reject_unsealed`.
+        self._sealed: set[Consecration] = set()
         self._litany_seq = 0
 
     def _heresy(self, node: ast.AST, message: str):
@@ -51,6 +61,86 @@ class ConstructPass(ast.NodeTransformer):
         py_line = self.py_lines[line - 1] if line - 1 < len(self.py_lines) else ""
         col = char_offset(py_line, node.col_offset or 0)
         return heresy(message, self.filename, line, col + 1, text)
+
+    def _lit_col(self, node) -> int:
+        """A node's 0-based column in the Liturgy line it came from.
+
+        The same two-step every column here makes: `col_offset` is a UTF-8
+        *byte* offset into the **generated Python** line (an `ast` quirk),
+        so `char_offset` converts it against that line before the SourceMap
+        -- which speaks characters throughout -- carries it back to Liturgy.
+        """
+        line = node.lineno
+        py_line = self.py_lines[line - 1] if line - 1 < len(self.py_lines) else ""
+        return self.smap.to_lit(line, char_offset(py_line, node.col_offset or 0))
+
+    def _consecrated_target(self, stmt) -> ast.Name | None:
+        """The name this statement consecrates, or None if it consecrates none.
+
+        Nothing in the generated Python says a binding is consecrated any
+        more -- that is the point; the annotation slot is the author's. The
+        carrier pass recorded each header's row, column and name in
+        `ConstructFacts`, and this is where the record is matched back to
+        the statement it came from.
+
+        The column is what makes the match exact, and dropping it would be a
+        silent defect twice over: `consecrated A = 1; consecrated B = 2`
+        puts two declarations on one row, and
+        `consecrated PORT = 8080; PORT = 9` puts a declaration and a
+        rebinding of the same name there -- which must still be rejected as
+        a rebinding, not mistaken for a second declaration.
+        """
+        if isinstance(stmt, ast.Assign):
+            if len(stmt.targets) != 1:
+                return None
+            target = stmt.targets[0]
+        elif isinstance(stmt, ast.AnnAssign):
+            # An annotation with no value binds nothing, and `consecrated
+            # NAME` with no value never reached here even as a carrier.
+            if stmt.value is None:
+                return None
+            target = stmt.target
+        else:
+            return None
+        if not isinstance(target, ast.Name):
+            return None
+        seal = Consecration(target.lineno, self._lit_col(target), target.id)
+        if seal not in self.facts.consecrated:
+            return None
+        self._sealed.add(seal)
+        return target
+
+    def _reject_unsealed(self) -> None:
+        """Every `consecrated` header must have become a binding.
+
+        While the construct travelled through the annotation slot, the
+        shapes it does not accept were rejected for free: `consecrated
+        A, B = 1, 2` generated `A: __consecrated__, B = 1, 2` and
+        `consecrated A += 1` generated an annotated augmented assignment,
+        and neither parses. Now the generated Python is whatever the author
+        wrote minus one word -- all of those are ordinary valid Python --
+        and nothing but this stands between the author and a name they
+        believe is sealed and is not.
+
+        `consecrated A: int` with no value is the same fault, and is new:
+        the freed annotation slot is what makes it expressible at all.
+        """
+        unsealed = sorted(
+            self.facts.consecrated - self._sealed, key=lambda s: (s.row, s.col)
+        )
+        if not unsealed:
+            return
+        seal = unsealed[0]
+        text = self.lines[seal.row - 1] if seal.row - 1 < len(self.lines) else ""
+        # A `Consecration` is in Liturgy coordinates and every other heresy
+        # raised here is in generated-Python ones, which is what the curse
+        # renderer maps back through the SourceMap. Hand it the same, or the
+        # caret is mapped a second time and lands off the end of the line.
+        raise heresy(
+            f"{seal.name} is consecrated but not bound to a single value",
+            self.filename, seal.row, self.smap.to_py(seal.row, seal.col) + 1,
+            text,
+        )
 
     def _liturgy_source(self, node: ast.expr) -> str:
         """The Liturgy text of an expression, for an augury's message.
@@ -101,7 +191,12 @@ class ConstructPass(ast.NodeTransformer):
 
     # -- scopes ------------------------------------------------------
     def visit_Module(self, node):
-        return self._scope(node)
+        node = self._scope(node)
+        # The root's visit is the last one to finish -- `_scope` descends
+        # into every nested scope before returning -- so this is where the
+        # whole file's consecrations have all been accounted for.
+        self._reject_unsealed()
+        return node
 
     def visit_Interactive(self, node):
         # `commune` compiles with mode="single", which parses to Interactive,
@@ -109,7 +204,9 @@ class ConstructPass(ast.NodeTransformer):
         # rebinding check, and -- worse -- no consecrated carrier ever
         # desugared, so on 3.12/3.13 the eagerly-evaluated annotation made
         # every `consecrated` at the prompt a NameError.
-        return self._scope(node)
+        node = self._scope(node)
+        self._reject_unsealed()
+        return node
 
     def visit_FunctionDef(self, node):
         return self._scope(node)
@@ -122,7 +219,9 @@ class ConstructPass(ast.NodeTransformer):
 
     def _scope(self, node):
         _reject_misplaced_auguries(node, self._heresy)
-        consecrated = _collect_consecrated(node, self._heresy)
+        consecrated = _collect_consecrated(
+            node, self._heresy, self._consecrated_target
+        )
         if consecrated:
             _reject_rebindings(node, consecrated, self._heresy)
         self.generic_visit(node)
@@ -297,51 +396,42 @@ def _repeats(node) -> bool:
     )
 
 
-def _collect_consecrated(scope, mkerr) -> dict[str, ast.AST]:
-    """Find every `NAME: __consecrated__ = v` belonging to this scope.
+def _collect_consecrated(scope, mkerr, target_of) -> dict[str, ast.AST]:
+    """Every `consecrated` declaration belonging to this scope, by name.
 
-    Rewrites each into a plain assignment as it goes, and records the
-    *replacement* node -- the rebinding check compares against these by
-    identity, so recording the original would make every declaration look
-    like a rebinding of itself. Nested function and class scopes are left
-    for their own visit.
+    `target_of` answers "does this statement consecrate a name, and which" --
+    `ConstructPass._consecrated_target`, which reads the carrier pass's
+    `ConstructFacts`. Nothing is rewritten: the generated Python for a
+    declaration is already the plain (or annotated) assignment it should be.
+    The statement itself is recorded, because the rebinding check compares
+    by identity, and `_stored_names` reports an assignment against the
+    statement node.
+
+    Nested function and class scopes are left for their own visit.
 
     Recursion is by child node, like every other walker here. It used to
     recurse only into fields that were a list whose first element was an
     `ast.stmt`, which silently skipped `Try.handlers` (a list of
     `ExceptHandler`) and `Match.cases` (a list of `match_case`) -- neither
     element type is a statement, so a `consecrated` in a `curse` or a
-    `wherein` block was never desugared at all. The carrier survived into the
-    compiled tree, enforcement was off, and on Python 3.12/3.13 -- where a
-    module-scope annotation is still evaluated eagerly -- the module died
-    with `NameError: __consecrated__`.
+    `wherein` block was never seen at all, and enforcement was simply off
+    there.
     """
     found: dict[str, ast.AST] = {}
 
-    def declare(stmt, body, index, in_loop):
-        name = stmt.target.id
+    def declare(stmt, target, in_loop):
+        name = target.id
         if in_loop:
             raise mkerr(stmt, f"{name} is consecrated inside a loop")
         if name in found:
             raise mkerr(stmt, f"{name} is already consecrated")
-        stmt.target.ctx = ast.Store()
-        plain = ast.Assign(targets=[stmt.target], value=stmt.value)
-        ast.copy_location(plain, stmt)
-        ast.fix_missing_locations(plain)
-        body[index] = plain
-        found[name] = plain
+        found[name] = stmt
 
     def descend(node, in_loop):
-        """Visit `node`'s children. Statement lists are handled by index,
-        because a declaration has to be *replaced* in the list holding it."""
         for _field, value in ast.iter_fields(node):
             if isinstance(value, list):
-                for index, item in enumerate(value):
-                    if not isinstance(item, ast.AST):
-                        continue
-                    if _is_consecrated(item):
-                        declare(item, value, index, in_loop)
-                    else:
+                for item in value:
+                    if isinstance(item, ast.AST):
                         visit(item, in_loop)
             elif isinstance(value, ast.AST):
                 visit(value, in_loop)
@@ -349,20 +439,14 @@ def _collect_consecrated(scope, mkerr) -> dict[str, ast.AST]:
     def visit(node, in_loop):
         if isinstance(node, _BOUNDARIES):
             return  # its own visit will collect its own declarations
+        target = target_of(node)
+        if target is not None:
+            declare(node, target, in_loop)
+            return  # a declaration holds no further declarations
         descend(node, in_loop or _repeats(node))
 
     descend(scope, False)
     return found
-
-
-def _is_consecrated(stmt) -> bool:
-    return (
-        isinstance(stmt, ast.AnnAssign)
-        and isinstance(stmt.annotation, ast.Name)
-        and stmt.annotation.id == CONSECRATED_CARRIER
-        and isinstance(stmt.target, ast.Name)
-        and stmt.value is not None
-    )
 
 
 def _reaching_declaration(scope):

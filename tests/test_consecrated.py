@@ -331,3 +331,114 @@ def test_a_comprehension_target_is_its_own_binding():
 def test_a_walrus_at_our_own_scope_is_still_a_rebinding():
     with pytest.raises(TechHeresy, match="may not be rebound"):
         compile_litany("consecrated PORT = 8080\n(PORT := 1)\n", "prayer.lit")
+
+
+# --- Spec IV: a consecrated name may declare its archetype ------------------
+#
+# The construct used to reach the AST through the annotation slot, so the
+# slot was never the author's to spend: `consecrated PORT: int = 8080` was
+# `SyntaxError: invalid syntax (PORT is Liturgy for PORT: __consecrated__)`.
+# Consecration travels beside the source now, in `ConstructFacts`, and the
+# annotation means what it means in Python.
+
+
+def annotations_of(ns):
+    """A module namespace's annotations, on both sides of PEP 649.
+
+    From 3.14 a module's annotations are lazy: the namespace carries
+    `__annotate__` and materialises `__annotations__` only when something
+    asks, which an `exec` into a plain dict never does. Calling the
+    annotate function with format 1 (VALUE) is that asking.
+    """
+    if "__annotations__" in ns:
+        return ns["__annotations__"]
+    annotate = ns.get("__annotate__")
+    return annotate(1) if annotate is not None else {}
+
+
+def test_a_consecrated_name_may_declare_its_archetype():
+    assert run("consecrated PORT: int = 8080\n")["PORT"] == 8080
+
+
+def test_the_declared_archetype_reaches_the_module():
+    assert annotations_of(run("consecrated PORT: int = 8080\n")) == {"PORT": int}
+
+
+def test_a_subscripted_archetype_is_carried_whole():
+    ns = run("consecrated TABLE: dict[str, int] = {'a': 1}\n")
+    assert ns["TABLE"] == {"a": 1}
+    assert annotations_of(ns) == {"TABLE": dict[str, int]}
+
+
+def test_an_archetype_may_be_declared_inside_a_rite():
+    ns = run("rite f():\n    consecrated INNER: int = 1\n    render INNER\n")
+    assert ns["f"]() == 1
+
+
+def test_an_annotated_consecrated_name_still_refuses_a_rebinding():
+    with pytest.raises(TechHeresy, match="may not be rebound"):
+        compile_litany("consecrated PORT: int = 8080\nPORT = 9\n", "prayer.lit")
+
+
+def test_an_annotated_name_may_not_be_consecrated_twice():
+    src = "consecrated P: int = 1\nconsecrated P: int = 2\n"
+    with pytest.raises(TechHeresy, match="already consecrated"):
+        compile_litany(src, "prayer.lit")
+
+
+def test_an_annotated_consecration_inside_a_loop_is_still_rejected():
+    src = "foreach i among span(3):\n    consecrated X: int = i\n"
+    with pytest.raises(TechHeresy, match="loop"):
+        compile_litany(src, "prayer.lit")
+
+
+# --- one row, two meanings --------------------------------------------------
+#
+# A consecration is recorded by row, column and name. The column is the part
+# that earns its keep: these two rows are indistinguishable by row and name.
+
+
+def test_a_declaration_and_a_rebinding_on_one_row_are_told_apart():
+    with pytest.raises(TechHeresy, match="may not be rebound"):
+        compile_litany("consecrated PORT = 8080; PORT = 9\n", "prayer.lit")
+
+
+def test_two_declarations_on_one_row_both_hold():
+    ns = run("consecrated A = 1; consecrated B = 2\nA_ = A; B_ = B\n")
+    assert (ns["A_"], ns["B_"]) == (1, 2)
+
+
+def test_two_declarations_of_one_name_on_one_row_are_still_a_repeat():
+    with pytest.raises(TechHeresy, match="already consecrated"):
+        compile_litany("consecrated A = 1; consecrated A = 2\n", "prayer.lit")
+
+
+# --- headers that bind no single name ---------------------------------------
+#
+# While consecration travelled through the annotation slot, every shape below
+# generated Python that would not parse -- `A: __consecrated__, B = 1, 2` and
+# the like -- so the parser refused them for free. The generated Python is now
+# the author's own minus one word, and all of these are perfectly valid
+# Python: without an explicit check the author would be left holding a name
+# they believe is sealed and is not.
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "consecrated PORT",
+        "consecrated PORT: int",
+        "consecrated PORT += 1",
+        "consecrated PORT, OTHER = 1, 2",
+        "consecrated PORT = OTHER = 1",
+        "consecrated cfg.PORT = 1",
+        "consecrated cfg[0] = 1",
+    ],
+)
+def test_a_header_that_binds_no_single_name_is_rejected(header):
+    with pytest.raises(TechHeresy, match="not bound to a single value") as exc:
+        compile_litany(header + "\n", "prayer.lit")
+    assert exc.value.lineno == 1
+    # Where the caret lands is asserted end-to-end in `test_curse.py`: the
+    # offset here is a generated-Python column and only the renderer, which
+    # maps it back through the SourceMap, can be held to the Liturgy one.

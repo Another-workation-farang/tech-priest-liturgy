@@ -19,9 +19,8 @@ import ast
 from dataclasses import dataclass
 
 from .compiler import _PASSES, parse_named
-from .constructs import CONSECRATED_CARRIER
 from .sourcemap import char_offset
-from .transform import split_lines, transform
+from .transform import Consecration, ConstructFacts, split_lines, transform
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,9 +56,10 @@ def _parsed(src: str, filename: str, *, liturgy: bool):
     ordinary correct code.
     """
     if not liturgy:
-        return ast.parse(src, filename), None, []
-    py, smap = transform(src, _PASSES, filename=filename)
-    return parse_named(py, filename, src, smap), smap, split_lines(py)
+        return ast.parse(src, filename), None, [], ConstructFacts()
+    out = transform(src, _PASSES, filename=filename)
+    py, smap = out.python, out.source_map
+    return parse_named(py, filename, src, smap), smap, split_lines(py), out.facts
 
 
 def _attr_at(node: ast.Attribute) -> tuple[int, int]:
@@ -104,22 +104,40 @@ def find_seals(src: str, filename: str, *, liturgy: bool = True) -> list[Seal]:
         # `consecrated` is Liturgy-only. A .py file cannot declare one.
         return []
 
-    tree, smap, py_lines = _parsed(src, filename, liturgy=True)
+    tree, smap, py_lines, facts = _parsed(src, filename, liturgy=True)
     module = filename.rsplit("/", 1)[-1].rsplit(".", 1)[0]
 
     seals = []
     # Module body only -- not ast.walk. A consecrated inside a rite is not
     # reachable as `module.NAME`, so no other file can breach it.
     for stmt in tree.body:
-        if (
-            isinstance(stmt, ast.AnnAssign)
-            and isinstance(stmt.annotation, ast.Name)
-            and stmt.annotation.id == CONSECRATED_CARRIER
-            and isinstance(stmt.target, ast.Name)
-        ):
-            line, col = _at(stmt.target, smap, py_lines)
-            seals.append(Seal(stmt.target.id, module, line, col))
+        target = _assigned_name(stmt)
+        if target is None:
+            continue
+        # The generated Python no longer marks a consecration -- the carrier
+        # pass reports it in `ConstructFacts` instead -- so a plain binding
+        # and a sealed one are the same statement shape and only the facts
+        # tell them apart. `_at` yields exactly the coordinates the pass
+        # recorded: 1-based row, 0-based Liturgy column of the name.
+        line, col = _at(target, smap, py_lines)
+        if Consecration(line, col, target.id) in facts.consecrated:
+            seals.append(Seal(target.id, module, line, col))
     return seals
+
+
+def _assigned_name(stmt) -> ast.Name | None:
+    """The single Name this statement binds, if that is what it does.
+
+    Both shapes a `consecrated` header can generate: `NAME = v` and
+    `NAME: T = v`, the second being what the freed annotation slot buys.
+    """
+    if isinstance(stmt, ast.Assign):
+        target = stmt.targets[0] if len(stmt.targets) == 1 else None
+    elif isinstance(stmt, ast.AnnAssign) and stmt.value is not None:
+        target = stmt.target
+    else:
+        return None
+    return target if isinstance(target, ast.Name) else None
 
 
 def _module_aliases(tree) -> dict[str, str]:
@@ -167,7 +185,7 @@ def find_breaches(
         SyntaxError: `src` does not parse.
         UnfinishedLitany: `src` ends mid-bracket or mid-string.
     """
-    tree, smap, py_lines = _parsed(src, filename, liturgy=liturgy)
+    tree, smap, py_lines, _facts = _parsed(src, filename, liturgy=liturgy)
     aliases = _module_aliases(tree)
     if not aliases:
         return []

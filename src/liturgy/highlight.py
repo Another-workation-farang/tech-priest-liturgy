@@ -93,12 +93,10 @@ def _remap(text: str) -> dict[int, _TokenType] | None:
     # Construct headers. `carrier_pass` raises the machine-name heresy and
     # the malformed-header heresies; a highlighter reports nothing, so on
     # any heresy the headers simply go unpainted and the machine-name scan
-    # below still runs. A header can carry more than one substitution --
-    # `consecrated NAME = v` also rewrites NAME -- so only the substitution
-    # sitting on the construct word itself is painted; the name is the
-    # author's own.
+    # below still runs. Only the substitution sitting on the construct word
+    # itself is painted; anything else on the header is the author's own.
     try:
-        for s in carrier_pass(toks):
+        for s in carrier_pass(toks).subs:
             word = lines[s.row - 1][s.col_start : s.col_end]
             if word.split(None, 1)[:1] and word.split(None, 1)[0] in (
                 "consecrated", "litany", "augur"

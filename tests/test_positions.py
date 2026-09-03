@@ -42,9 +42,12 @@ def _tree_before_fixup(src: str, filename: str = "prayer.lit") -> ast.AST:
     by hand here, stopping short of the fixup, is what makes a missing
     `copy_location` actually observable.
     """
-    py, smap = transform(src, _PASSES, filename=filename)
+    out = transform(src, _PASSES, filename=filename)
+    py, smap, facts = out.python, out.source_map, out.facts
     tree = ast.parse(py, filename, "exec")
-    return ConstructPass(filename, split_lines(src), smap, split_lines(py)).visit(tree)
+    return ConstructPass(
+        filename, split_lines(src), smap, split_lines(py), facts
+    ).visit(tree)
 
 
 @pytest.mark.parametrize("name", sorted(SOURCES))

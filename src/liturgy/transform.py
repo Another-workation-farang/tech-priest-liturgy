@@ -7,6 +7,7 @@ import re
 import token as tokmod
 import tokenize
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from typing import NamedTuple, Protocol
 
 from .lexicon import LEXICON
@@ -36,10 +37,62 @@ class Substitution(NamedTuple):
     text: str
 
 
+@dataclass(frozen=True, slots=True)
+class Consecration:
+    """One `consecrated NAME` header, located in *Liturgy* coordinates.
+
+    `row` is 1-based and `col` is the 0-based column of NAME -- not of the
+    keyword. Both halves are load-bearing. The row alone cannot identify a
+    declaration: `consecrated A = 1; consecrated B = 2` puts two on one row,
+    and `consecrated PORT = 8080; PORT = 9` puts a declaration and a
+    rebinding of the same name there, which the compiler must tell apart to
+    reject the second.
+    """
+
+    row: int
+    col: int
+    name: str
+
+
+@dataclass(frozen=True, slots=True)
+class ConstructFacts:
+    """What a token pass learned that the generated Python no longer says.
+
+    A construct used to smuggle itself through the syntax it generated --
+    `consecrated NAME = v` became `NAME: __consecrated__ = v`, and the AST
+    pass read the consecration back off the annotation. That cost the
+    annotation slot, so a consecrated name could never declare an archetype.
+    The knowledge travels out of band instead: the pass that recognised the
+    header says so here, and the generated Python is left to be exactly the
+    Python the author meant.
+
+    Deliberately not keyed by row alone -- see `Consecration`.
+    """
+
+    consecrated: frozenset[Consecration] = frozenset()
+
+    def merge(self, other: "ConstructFacts") -> "ConstructFacts":
+        return ConstructFacts(consecrated=self.consecrated | other.consecrated)
+
+    def __bool__(self) -> bool:
+        return bool(self.consecrated)
+
+
+class PassResult(NamedTuple):
+    """A pass's substitutions, and anything it learned along the way.
+
+    A pass may return a bare `list[Substitution]` instead; almost all of
+    them have nothing out of band to report and should.
+    """
+
+    subs: list[Substitution]
+    facts: ConstructFacts = ConstructFacts()
+
+
 class TokenPass(Protocol):
     def __call__(
         self, toks: list[tokenize.TokenInfo]
-    ) -> list[Substitution]: ...
+    ) -> "list[Substitution] | PassResult": ...
 
 
 # Tokens that carry no syntactic weight when looking backwards.
@@ -210,15 +263,30 @@ class UnfinishedLitany(SyntaxError):
     sourcemap: SourceMap | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class TransformResult:
+    """The generated Python, its column map, and what the passes learned.
+
+    Deliberately neither a tuple nor iterable. The arity of what `transform`
+    returns grew, and a caller left unconverted must say so at once rather
+    than unpack two of three and carry on with a plausible-looking pair.
+    """
+
+    python: str
+    source_map: SourceMap
+    facts: ConstructFacts
+
+
 def transform(
     src: str,
     passes: Sequence[TokenPass] = DEFAULT_PASSES,
     *,
     filename: str = "<litany>",
-) -> tuple[str, SourceMap]:
+) -> TransformResult:
     """Translate Liturgy source into Python, preserving lines exactly.
 
-    Returns the generated Python and the column map from it back to `src`.
+    Returns the generated Python, the column map from it back to `src`, and
+    the `ConstructFacts` the passes reported out of band.
 
     Raises:
         UnfinishedLitany: the source ends mid-bracket or mid-string.
@@ -234,11 +302,19 @@ def transform(
     mapping through the SourceMap serves both sources of error.
     """
     toks, unfinished = _tokenize(src, filename)
-    subs = [s for p in passes for s in p(toks)]
+    subs: list[Substitution] = []
+    facts = ConstructFacts()
+    for p in passes:
+        out = p(toks)
+        if isinstance(out, PassResult):
+            subs.extend(out.subs)
+            facts = facts.merge(out.facts)
+        else:
+            subs.extend(out)
     py, smap = _splice(src, subs)
     if unfinished is not None:
         raise _unfinished_litany(unfinished, py, smap, filename)
-    return py, smap
+    return TransformResult(py, smap, facts)
 
 
 def _tokenize(

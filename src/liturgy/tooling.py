@@ -348,7 +348,7 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
     # one real file: if the output does not transform back to the input, the
     # output is wrong and must not reach disk claiming otherwise.
     try:
-        back, _ = transform(litany, filename=str(path))
+        back = transform(litany, filename=str(path)).python
     except SyntaxError:
         back = None
     if back != src:

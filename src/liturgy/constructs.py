@@ -2,6 +2,11 @@
 
 The carrier pass rewrites a construct header in place, on one line, into
 valid Python that parses. The AST pass in `rewrite` then restructures it.
+
+A construct that needs no carrier reports itself out of band instead, in the
+`ConstructFacts` the pass returns alongside its substitutions. `consecrated`
+does: the annotation it used to hide in is the author's to spend on an
+archetype.
 """
 
 from __future__ import annotations
@@ -10,7 +15,15 @@ import token as tokmod
 import tokenize
 
 from .lexicon import CONSTRUCT_KEYWORDS
-from .transform import _CLOSERS, _INSIGNIFICANT, _OPENERS, Substitution
+from .transform import (
+    _CLOSERS,
+    _INSIGNIFICANT,
+    _OPENERS,
+    Consecration,
+    ConstructFacts,
+    PassResult,
+    Substitution,
+)
 
 
 # Statements whose depth-zero `:` opens a block. Both spellings appear,
@@ -42,6 +55,12 @@ _BLOCK_OPENERS = frozenset(
 # matching both use these constants, and MACHINE_NAMES is built from them,
 # so a fourth construct cannot be added without its carrier name joining
 # the reserved set.
+#
+# `__consecrated__` is the exception, and stays reserved on purpose: no pass
+# writes it any more -- `consecrated` travels in `ConstructFacts` now -- but
+# a name the machine has ever claimed does not become the author's again.
+# Un-reserving it would turn `x: __consecrated__ = 5`, which is loud today,
+# into an ordinary annotation.
 CONSECRATED_CARRIER = "__consecrated__"
 LITANY_CARRIER = "__litany__"
 AUGUR_CARRIER = "__augur__"
@@ -172,11 +191,16 @@ def is_machine_name(name: str) -> bool:
     )
 
 
-def carrier_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
-    """Rewrite construct headers, in place, into parseable Python."""
+def carrier_pass(toks: list[tokenize.TokenInfo]) -> PassResult:
+    """Rewrite construct headers, in place, into parseable Python.
+
+    Returns the substitutions and the facts no substitution can carry --
+    every `consecrated` header this pass recognised.
+    """
     significant = [t for t in toks if t.type not in _INSIGNIFICANT]
     starts = statement_starts(significant)
     subs: list[Substitution] = []
+    consecrated: list[Consecration] = []
 
     # Before anything is rewritten: a machine name spelled by the author.
     # Only attribute position is spared, on Rule 1's reasoning -- another
@@ -198,19 +222,28 @@ def carrier_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
         if tok.type != tokmod.NAME or tok.string not in CONSTRUCT_KEYWORDS:
             continue
         if tok.string == "consecrated":
-            subs.extend(_consecrated_carrier(significant, i))
+            header, seal = _consecrated_carrier(significant, i)
+            subs.extend(header)
+            consecrated.append(seal)
         elif tok.string == "litany":
             subs.extend(_litany_carrier(significant, i))
         elif tok.string == "augur":
             subs.extend(_augur_carrier(significant, i))
 
-    return subs
+    return PassResult(subs, ConstructFacts(consecrated=frozenset(consecrated)))
 
 
 def _consecrated_carrier(
     significant: list[tokenize.TokenInfo], i: int
-) -> list[Substitution]:
-    """`consecrated NAME = v` -> `NAME: __consecrated__ = v`."""
+) -> tuple[list[Substitution], Consecration]:
+    """`consecrated NAME = v` -> `NAME = v`, plus the fact that it was one.
+
+    The annotation slot is left alone, so `consecrated NAME: T = v`
+    -> `NAME: T = v` and a sealed name may declare its archetype like any
+    other. Nothing in the generated Python says the binding is consecrated;
+    the returned `Consecration` is the only record, and `rewrite` matches it
+    back to the statement by row, column and name.
+    """
     kw = significant[i]
     name = significant[i + 1] if i + 1 < len(significant) else None
     if name is None or name.type != tokmod.NAME:
@@ -232,14 +265,14 @@ def _consecrated_carrier(
             "consecrated and its name must share a line",
             "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
         )
-    return [
+    return (
         # Swallow the keyword and the space after it, keeping indentation.
-        Substitution(kw.start[0], kw.start[1], name.start[1], ""),
-        Substitution(
-            name.start[0], name.start[1], name.end[1],
-            f"{name.string}: {CONSECRATED_CARRIER}",
-        ),
-    ]
+        [Substitution(kw.start[0], kw.start[1], name.start[1], "")],
+        # `name.start[1]` is a character column in the *Liturgy* line, which
+        # is the coordinate system `SourceMap.to_lit` hands back and the one
+        # `rewrite` compares against.
+        Consecration(name.start[0], name.start[1], name.string),
+    )
 
 
 def _litany_carrier(

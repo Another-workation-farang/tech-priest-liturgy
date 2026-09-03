@@ -173,7 +173,7 @@ not control a library's.
 
 One family of names is reserved beyond the tables below: `__consecrated__`,
 `__litany__`, `__augur__` and anything beginning `__liturgy_` — the private
-carriers and bookkeeping the construct compiler writes into generated code.
+names and bookkeeping the construct compiler claims for itself.
 A litany that spelled one would be indistinguishable from the machinery, so
 using one anywhere but after a dot is a loud compile error rather than a
 silent rewrite.

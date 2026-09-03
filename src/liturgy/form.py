@@ -119,7 +119,7 @@ def _significant(src: str) -> list[tuple[int, str]]:
 
 def _tree(src: str) -> str:
     """A dump of what the litany compiles to, for the before/after check."""
-    py, _ = transform(src, _PASSES, filename="<sanctify>")
+    py = transform(src, _PASSES, filename="<sanctify>").python
     return ast.dump(ast.parse(py))
 
 

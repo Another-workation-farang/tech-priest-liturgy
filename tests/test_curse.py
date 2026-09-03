@@ -803,10 +803,10 @@ def test_an_ascii_caret_is_unchanged(tmp_path):
 def test_a_runtime_caret_on_a_consecrated_header_is_not_shifted_by_the_carrier(
     tmp_path,
 ):
-    # `consecrated NAME = ` is swallowed and `NAME` grows an
-    # `: __consecrated__` annotation -- a net carrier delta of 5 columns.
+    # `consecrated ` is swallowed -- a carrier delta of 12 columns (it was
+    # 5 while the keyword was traded for a `: __consecrated__` annotation).
     # Without the carrier pass in curse's own map, the caret for the
-    # TypeError raised evaluating "a" + Void lands 5 columns too far right.
+    # TypeError raised evaluating "a" + Void lands 12 columns too far right.
     out = _chant(tmp_path, 'consecrated NAME = "a" + Void\n')
     line = 'consecrated NAME = "a" + Void'
     start, width = _caret_span(out)
@@ -819,8 +819,8 @@ def test_a_techheresy_caret_on_a_consecrated_rebinding_is_not_shifted_by_the_car
 ):
     # The `TechHeresy` half of the same defect class: rebinding a
     # `consecrated` name is caught by `ConstructPass`, which raises with a
-    # single-character caret at the second `PORT`. The same 5-column carrier
-    # delta on the *first* `consecrated` header shifted it -- this is the
+    # single-character caret at the second `PORT`. The same carrier delta on
+    # the *first* `consecrated` header shifted it -- this is the
     # defect class `de88d60` ("carets in characters, not UTF-8 bytes") was
     # written to fix; shipping this would undercut it.
     out = _chant(tmp_path, "consecrated PORT = 8080; PORT = 9\n")
@@ -871,3 +871,17 @@ def test_a_carrier_typo_renders_clean_and_names_the_file(tmp_path, name):
     assert "<unknown>" not in rendered, rendered
     for frame in PLUMBING:
         assert frame not in rendered, f"{frame} frame leaked:\n{rendered}"
+
+
+def test_a_caret_on_an_unbound_consecrated_header_points_at_the_name(tmp_path):
+    # Spec IV. `_reject_unsealed` is the one heresy raised from a position
+    # the compiler was *told* -- a `Consecration`, in Liturgy coordinates --
+    # rather than one read off a node in generated-Python coordinates. The
+    # renderer maps every offset back through the SourceMap, so an offset
+    # handed over in Liturgy columns is mapped a second time and the caret
+    # lands 12 columns past the name (or off the end of the line entirely).
+    out = _chant(tmp_path, "consecrated PORT: int\n")
+    assert "not bound to a single value" in out
+    # One caret, at the P of PORT -- column 12 of the litany, and column 0
+    # of the `PORT: int` the transform generated from it.
+    assert _caret_span(out) == (12, 1), out
