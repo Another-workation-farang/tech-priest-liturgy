@@ -68,6 +68,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "--plain", action="store_true",
         help="emit file:line:col: messages for editors and CI",
     )
+    # A flag, and never a default. augur's contract is that it is fast
+    # enough to run on every keystroke; mypy is not. The two checks augur
+    # always runs behave identically whether or not this is passed.
+    p_augur.add_argument(
+        "--archetypes", action="store_true",
+        help="also read litanies for false archetypes (needs liturgy[archetypes])",
+    )
 
     p_trans = verbs.add_parser("transcribe", help="render Python into Liturgy")
     _add_global_flags(p_trans, default=argparse.SUPPRESS)
@@ -163,7 +170,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.verb == "augur":
         from .tooling import augur
 
-        return augur(args.paths, plain=args.plain)
+        return augur(args.paths, plain=args.plain, archetypes=args.archetypes)
 
     if args.verb == "transcribe":
         from .tooling import transcribe

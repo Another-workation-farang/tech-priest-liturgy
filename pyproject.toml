@@ -8,6 +8,7 @@ license-files = ["LICENSE"]
 dependencies = []
 
 [project.optional-dependencies]
+archetypes = ["mypy>=1.8"]
 highlight = ["Pygments>=2.14"]
 trials = ["pytest>=7"]
 
