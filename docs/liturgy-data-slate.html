@@ -203,6 +203,29 @@ Ave Omnissiah
 &gt;&gt;&gt; intone("Ave Omnissiah")
 Ave Omnissiah
 </pre>
+
+<p class="desc"><b>THE CODEX.</b> A DIRECTORY OF LITANIES HOLDING AN
+<span class="lower amber">__init__.lit</span> IS AN ORDINARY PYTHON PACKAGE; THE BOUND
+COLLECTION IS CALLED A CODEX. ALL THREE IMPORT FORMS HOLD — THE CODEX ITSELF,
+A DOTTED SUBMODULE, AND A RELATIVE IMPORT WRITTEN INSIDE IT. THE TWO FILE
+KINDS MIX IN BOTH DIRECTIONS: A <span class="lower amber">.py</span> SUBMODULE INSIDE A
+<span class="lower amber">.lit</span> CODEX, AND A <span class="lower amber">.lit</span> SUBMODULE
+INSIDE A <span class="lower amber">.py</span> PACKAGE. THE PATH HOOK CARRIES THE STANDARD
+LOADER DETAILS ALONGSIDE ITS OWN, SO ONE DIRECTORY MAY HOLD BOTH. EVERY
+TOOLING VERB TAKES A CODEX AS IT TAKES ANY DIRECTORY;
+<span class="lower amber">forge</span> WRITES ORDINARY <span class="lower amber">.pyc</span> UNDER
+<span class="lower amber">__pycache__</span>. THERE IS NO <span class="lower amber">codex</span>
+KEYWORD — PYTHON HAS NO PACKAGE KEYWORD TO ALIAS, AND
+<span class="lower amber">__init__.lit</span> IS FIXED BY THE IMPORT MACHINERY.</p>
+
+<pre>
+<span class="dim">$</span> liturgy chant prayer.lit
+Ave Omnissiah, Magos
+relic 1 wakened
+relic 2 wakened
+3
+spoken in the sanctum
+</pre>
 </section>
 
 <section>

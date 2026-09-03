@@ -98,6 +98,110 @@ within reliquary invoke bless
 invoke json
 ```
 
+### The codex — litanies bound into one
+
+One file is a litany. A directory of them with an `__init__.lit` inside is a
+Python package, and the bound collection at the end of the hierarchy has its
+own name: a **codex**.
+
+```
+reliquary/            sanctum/
+    __init__.lit          __init__.py
+    conf.lit              orison.lit
+    relics.lit
+    tally.py
+```
+
+`__init__.lit` is the codex's own litany. It is executed when the codex is
+first invoked, and the names it binds are the codex's names:
+
+```
+within .relics invoke waken
+
+
+rite bless(name: str) -> str:
+    render f"Ave Omnissiah, {name}"
+```
+
+Three ways of reaching in are open, and each is the ordinary Python import
+spelled in the proper tongue:
+
+- `within reliquary invoke bless` — a name bound by the codex's own litany.
+- `within reliquary.relics invoke waken` — a name from a submodule, reached
+  through the dot.
+- `within .relics invoke waken` — a relative import, resolved against the
+  codex rather than against `sys.path`, and legible only from inside it. The
+  first line of `__init__.lit` above is exactly that, which is why `waken` is
+  reachable as `reliquary.waken` as well as `reliquary.relics.waken`.
+
+### Both tongues bound in one codex
+
+The two kinds of file interleave freely, and in both directions. A `.py`
+submodule may sit inside a `.lit` codex, and a `.lit` submodule inside a
+`.py` package — `tally.py` and `orison.lit` in the tree above are each of
+these:
+
+```
+within reliquary.tally invoke tally
+within sanctum.orison invoke orison
+```
+
+That is not a happy accident. The path hook Liturgy registers carries the
+standard loader details — `ExtensionFileLoader`, `SourceFileLoader` and
+`SourcelessFileLoader` — alongside its own, because a hook carrying only the
+`.lit` details would still match every directory, shadow the stdlib's own
+`FileFinder`, and break every `.py` import in the program. The tuple that
+keeps ordinary Python working is the same tuple that lets one directory hold
+both kinds of file, so the mixing costs nothing and was never a separate
+feature.
+
+The whole of it, chanted:
+
+```
+$ liturgy chant prayer.lit
+Ave Omnissiah, Magos
+relic 1 wakened
+relic 2 wakened
+3
+spoken in the sanctum
+```
+
+### The verbs read a codex as they read a directory
+
+Chapter XI's verbs already take directories, so a codex asks nothing new of
+any of them. `forge` compiles a codex's litanies and writes ordinary `.pyc`
+files under `reliquary/__pycache__/`, which is where the import machinery
+looks for them — a forged codex is simply a codex that imports without
+compiling:
+
+```
+$ liturgy forge reliquary/
+   forged reliquary/__init__.lit
+   forged reliquary/conf.lit
+   forged reliquary/relics.lit
+++ 3 litanies forged ++
+```
+
+`augur reliquary/` reads every litany beneath it, and every `.py` file too,
+for the reason given in Chapter XI. And `consecrate`, which walks the whole
+tree rather than one compilation unit at a time, traces a seal set inside a
+codex to a breach written outside it:
+
+```
+$ liturgy consecrate --plain .
+override.lit:3:6: PORT is consecrated in reliquary/conf.lit line 1 and assigned here
+```
+
+### Why codex is no word of the tongue
+
+There is no `codex` keyword, and there will be none. Every word in the
+concordance aliases a Python spelling, and Python has no keyword for a
+package to alias: a package is a directory, declared by the presence of a
+file rather than by any statement. The filename cannot be improved on
+either. `__init__.lit` is what the import machinery looks for, and renaming
+it to something more fitting would only mean the machinery no longer finds
+it. `codex` is what the thing is called in prose, and prose is all it is.
+
 ### When the hook must outlive the verb
 
 "Which both verbs do for you" is the whole of it: `chant`, `commune` and

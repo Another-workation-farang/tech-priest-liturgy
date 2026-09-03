@@ -328,6 +328,108 @@ may import Liturgy.</p>
 <div class="code-block"><pre><span class="kw">within</span> reliquary <span class="kw">invoke</span> bless
 <span class="kw">invoke</span> json</pre></div>
 
+<h3>The codex — litanies bound into one</h3>
+
+<p>One file is a litany. A directory of them with an
+<code>__init__.lit</code> inside is a Python package, and the bound
+collection at the end of the hierarchy has its own name: a <b>codex</b>.</p>
+
+<div class="code-block"><pre>reliquary/            sanctum/
+    __init__.lit          __init__.py
+    conf.lit              orison.lit
+    relics.lit
+    tally.py</pre></div>
+
+<p><code>__init__.lit</code> is the codex's own litany. It is executed when
+the codex is first invoked, and the names it binds are the codex's names:</p>
+
+<div class="code-block"><pre><span class="kw">within</span> .relics <span class="kw">invoke</span> waken
+
+
+<span class="kw">rite</span> bless(name: str) -&gt; str:
+    <span class="kw">render</span> f"Ave Omnissiah, {name}"</pre></div>
+
+<p>Three ways of reaching in are open, and each is the ordinary Python
+import spelled in the proper tongue:</p>
+
+<ul>
+  <li><code>within reliquary invoke bless</code> — a name bound by the
+  codex's own litany.</li>
+  <li><code>within reliquary.relics invoke waken</code> — a name from a
+  submodule, reached through the dot.</li>
+  <li><code>within .relics invoke waken</code> — a relative import,
+  resolved against the codex rather than against <code>sys.path</code>, and
+  legible only from inside it. The first line of <code>__init__.lit</code>
+  above is exactly that, which is why <code>waken</code> is reachable as
+  <code>reliquary.waken</code> as well as
+  <code>reliquary.relics.waken</code>.</li>
+</ul>
+
+<h3>Both tongues bound in one codex</h3>
+
+<p>The two kinds of file interleave freely, and in both directions. A
+<code>.py</code> submodule may sit inside a <code>.lit</code> codex, and a
+<code>.lit</code> submodule inside a <code>.py</code> package —
+<code>tally.py</code> and <code>orison.lit</code> in the tree above are each
+of these:</p>
+
+<div class="code-block"><pre><span class="kw">within</span> reliquary.tally <span class="kw">invoke</span> tally
+<span class="kw">within</span> sanctum.orison <span class="kw">invoke</span> orison</pre></div>
+
+<p>That is not a happy accident. The path hook Liturgy registers carries the
+standard loader details — <code>ExtensionFileLoader</code>,
+<code>SourceFileLoader</code> and <code>SourcelessFileLoader</code> —
+alongside its own, because a hook carrying only the <code>.lit</code>
+details would still match every directory, shadow the stdlib's own
+<code>FileFinder</code>, and break every <code>.py</code> import in the
+program. The tuple that keeps ordinary Python working is the same tuple that
+lets one directory hold both kinds of file, so the mixing costs nothing and
+was never a separate feature.</p>
+
+<p>The whole of it, chanted:</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy chant prayer.lit
+Ave Omnissiah, Magos
+relic 1 wakened
+relic 2 wakened
+3
+spoken in the sanctum</pre>
+
+<h3>The verbs read a codex as they read a directory</h3>
+
+<p>Chapter XI's verbs already take directories, so a codex asks nothing new
+of any of them. <code>forge</code> compiles a codex's litanies and writes
+ordinary <code>.pyc</code> files under
+<code>reliquary/__pycache__/</code>, which is where the import machinery
+looks for them — a forged codex is simply a codex that imports without
+compiling:</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy forge reliquary/
+   forged reliquary/__init__.lit
+   forged reliquary/conf.lit
+   forged reliquary/relics.lit
+++ 3 litanies forged ++</pre>
+
+<p><code>augur reliquary/</code> reads every litany beneath it, and every
+<code>.py</code> file too, for the reason given in Chapter XI. And
+<code>consecrate</code>, which walks the whole tree rather than one
+compilation unit at a time, traces a seal set inside a codex to a breach
+written outside it:</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy consecrate --plain .
+override.lit:3:6: PORT is consecrated in reliquary/conf.lit line 1 and assigned here</pre>
+
+<h3>Why codex is no word of the tongue</h3>
+
+<p>There is no <code>codex</code> keyword, and there will be none. Every
+word in the concordance aliases a Python spelling, and Python has no keyword
+for a package to alias: a package is a directory, declared by the presence
+of a file rather than by any statement. The filename cannot be improved on
+either. <code>__init__.lit</code> is what the import machinery looks for,
+and renaming it to something more fitting would only mean the machinery no
+longer finds it. <code>codex</code> is what the thing is called in prose,
+and prose is all it is.</p>
+
 <h3>When the hook must outlive the verb</h3>
 
 <p>"Which both verbs do for you" is the whole of it: <code>chant</code>,
