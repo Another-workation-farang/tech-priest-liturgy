@@ -1,0 +1,52 @@
+tests/test_archetypes.py
+  s_d162ead593e4de::t_e8c1c0aec921d3 11,14,30
+  s_d162ead593e4de::t_0ab1b0bee1f7a1 16,20,837-940
+  s_d162ead593e4de::t_346991798ec855 1018-1088
+  s_d162ead593e4de::t_4e90de199d1f5b 769-836
+  s_d162ead593e4de::t_4d5fbae2be0e42 941-1017
+src/liturgy/archetypes.py
+  s_d162ead593e4de::t_2601362d1441d3 741-778
+  s_d162ead593e4de::t_e1c6fe696913de 350-396
+  s_d162ead593e4de::t_aa2f83f809ddc6 638-640
+  s_d162ead593e4de::t_5faf932d9e376a 603-604,612-618,622,627
+  s_d162ead593e4de::t_605bad355f3a93 685-694,703-713
+  s_d162ead593e4de::t_393f502e884e00 94-95,99-101
+  s_d162ead593e4de::t_7879201ad5ef86 648-654
+  s_d162ead593e4de::t_dc46377b2d6371 667
+  s_d162ead593e4de::t_926bfa1bda68ba 434,437-438,479,485-486,490,499
+  s_d162ead593e4de::t_c629c480efff43 808-827
+  s_d162ead593e4de::t_db222f04b6a570 96-98
+  s_d162ead593e4de::t_bf95b2e82fda73 408-409,416-417,424-425,432,442-443,450-451,458-459,468-469,473-474,478,482,489
+  s_d162ead593e4de::t_72e80250b69156 582-585
+src/liturgy/tooling.py
+  s_d162ead593e4de::t_f096a5233f0249 185-189,215,280-291
+  s_d162ead593e4de::t_42c41e63427229 159-162
+  s_d162ead593e4de::t_6b19fd95f1082b 292
+docs/LIBER-LITURGIAE.md
+  s_d162ead593e4de::t_8fc8911071a8ce 1089-1090,1096-1100
+README.md
+  s_d162ead593e4de::t_8fc8911071a8ce 628-629
+docs/liber-liturgiae.html
+  s_d162ead593e4de::t_8fc8911071a8ce 1363,1369-1374
+tests/test_archetypes_verb.py
+  s_d162ead593e4de::t_433e1308c71964 313-321,325-334,338-347
+  s_d162ead593e4de::t_27f6d583dccacc 322-324
+  s_d162ead593e4de::t_b9c2bc0a4f09a8 351-367
+  s_d162ead593e4de::t_17f2a7038c8ecd 348-350
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "188f1307a5d8f8b920dd695a8edec572711575b6",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
