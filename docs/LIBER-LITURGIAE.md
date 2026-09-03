@@ -475,8 +475,8 @@ invocations work as expected — `within . invoke sibling`, and deeper.
 knowing which are already spoken for.*
 
 Sixty-four words are reserved: thirty-eight rites, five builtins, fifteen
-curses, two numerals, and four construct words. Using one as your own identifier
-is an error. Most such errors are loud, and a loud error costs you a minute.
+curses, two numerals, and four construct words. Using one as your own
+identifier is an error. Most such errors are loud, and a loud error costs you a minute.
 
 ```
 render = compute()
@@ -520,9 +520,9 @@ identifiers anywhere they are not heading their own statement. So
 Two of the four construct words are quiet too, for a different reason. A
 construct word is only a construct in the position its header occupies;
 anywhere else it is an ordinary name, and the carrier pass leaves it alone.
-So `litany = 5`, `litany: int = 5`, `rite augur(x):` and `pattern litany:`
-all compile, and the name is yours until the day you want the construct on
-that line:
+So `litany = 5`, `litany: int = 5`, `rite augur(x: int) -> int:` and
+`pattern litany:` all compile, and the name is yours until the day you want
+the construct on that line:
 
 ```
 litany = 5
@@ -541,9 +541,8 @@ spelling of `augur` is refused as well: a bare, valueless annotation —
 and treating it as the annotation it technically is would check nothing. An
 augury's conditions belong on the lines beneath `augur:`, and the heresy says
 so; an annotation *with* a value (`augur: int = 5`) is unmistakably yours and
-compiles. Ten of the sixty-four words
-are quiet, then — the five builtins, the three soft keywords, `litany`,
-`augur` — and the rest are loud.
+compiles. Ten of the sixty-four words are quiet, then — the five builtins,
+the three soft keywords, `litany`, `augur` — and the rest are loud.
 
 `span` in particular is a natural name for a range of text, and it is
 precisely the wrong one. Eight of the ten no longer have to be carried in
@@ -969,6 +968,11 @@ what is safe to be bound to, and the two are not the same question.
 
 ```
 $ liturgy transcribe greet.py
+++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.py:1  name is unsanctioned; every parameter must declare its archetype
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone on the first line to exempt the file.
 rite greet(name):
     should nay name:
         render "Ave Omnissiah"
@@ -979,11 +983,25 @@ foreach i among span(2):
     intone(greet(""))
 ```
 
+The warning is Chapter XII's, and unannotated Python earns it by definition:
+Python does not require archetypes and Liturgy does, so a faithful
+transcription of a bare `def` is a litany that will not chant until an adept
+annotates it or marks it `unsanctioned`. Nothing is prepended on the adept's
+behalf — an `unsanctioned` line ahead of the litany would break the
+round-trip self-check below, which is the whole reason the verb can be
+trusted. Python that *was* annotated transcribes to a litany that chants, and
+is not warned about at all.
+
 Given `-o`, it writes the file instead of printing it and reports the count:
 
 ```
 $ liturgy transcribe greet.py -o greet.lit
 ++ 8 lines transcribed ++
+++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.lit:1  name is unsanctioned; every parameter must declare its archetype
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone on the first line to exempt the file.
 ```
 
 `transcribe` refuses in preference to producing something subtly wrong. It
@@ -1005,7 +1023,10 @@ The last line of defence is broader than the collision rule: the output is
 compiled before anything is written or printed. A Python program only the
 compile can catch — one that binds a bare `consecrated`, or speaks one of
 the machine's own names in a position the binding scan does not see — is
-refused as one no litany can express:
+refused as one no litany can express. That compile asks whether the output is
+a *program*, not whether it satisfies Chapter XII: the archetype rule is
+suppressed for it, which is why a missing annotation is the warning above and
+not a refusal here.
 
 ```
 $ liturgy transcribe cons.py
@@ -1017,15 +1038,19 @@ rewrite or rename what it names, then transcribe again
 The same rule is applied a second time, to the Liturgy about to be written.
 Transcription can introduce a collision the Python never had — `input` is
 rendered `hearken`, and `hearken` is reserved. That output is not wrong: it
-round-trips, and it chants exactly as the Python ran. So it is a warning,
-not a refusal:
+round-trips, and its words are faithful. So it is a warning, not a refusal:
 
 ```
 $ liturgy transcribe codec.py -o codec.lit
 ++ 2 lines transcribed ++
 ++ THE OUTPUT CARRIES 1 COLLISION ++
   codec.lit:1  hearken      -> reserved (input)
-augur will flag these; the litany is correct and chants as written
+augur will flag these; the words are faithful and run the same
+++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  codec.lit:1  input is unsanctioned; every parameter must declare its archetype
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone on the first line to exempt the file.
 ```
 
 When the litany goes to stdout the warning goes to stderr instead, so a

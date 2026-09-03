@@ -472,7 +472,7 @@ ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
    (ANYTHING HOLDING A pyvenv.cfg); A DIRECTORY NAMED DIRECTLY IS ALWAYS
    READ, AND OVERLAPPING ARGUMENTS REPORT EACH FINDING ONCE. EXACTLY TWO
    CHECKS, AND NO THIRD: BINDINGS WHOSE NAME IS ONE OF THE SIXTY WORDS THAT
-   BECOME ANOTHER WORD (THE MACHINE'S OWN CARRIER NAMES INCLUDED), AND —
+   BECOME ANOTHER WORD (THE MACHINE'S OWN NAMES INCLUDED), AND —
    FOR A .LIT FILE — THAT IT
    COMPILES, SO augur AND chant CANNOT DISAGREE. IT IS NOT A GENERAL LINTER
    AND WILL NOT BECOME ONE.</span>
@@ -517,12 +517,23 @@ SAY NOTHING ABOUT WHAT IS SAFE TO BE BOUND TO.</p>
              ROUND-TRIP OR WOULD NOT CHANT — THE OUTPUT IS COMPILED BEFORE
              ANYTHING IS WRITTEN. THE COLLISION RULE IS augur'S, FROM THE
              SAME CODE.
+   <span class="field">:that compile:</span> ASKS WHETHER THE OUTPUT IS A PROGRAM, NOT WHETHER IT MEETS
+                  SECTION [VIII]. THE ARCHETYPE RULE IS SUPPRESSED FOR IT.
+   <span class="field">:warns:</span> UNANNOTATED PYTHON TRANSCRIBES TO A LITANY THAT WILL NOT CHANT —
+           PYTHON DOES NOT REQUIRE ARCHETYPES AND LITURGY DOES. THE OMEN SAYS
+           SO; NOTHING IS PREPENDED, SINCE AN unsanctioned LINE WOULD BREAK
+           THE ROUND-TRIP SELF-CHECK. ANNOTATED PYTHON IS NOT WARNED ABOUT.
    <span class="field">:returns:</span> 0 IF WRITTEN, 1 IF REFUSED.</pre>
 </div>
 
 <pre>
 <span class="dim">$</span> liturgy transcribe greet.py -o greet.lit
 ++ 8 lines transcribed ++
+<span class="alert">++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.lit:1  name is unsanctioned; every parameter must declare its archetype</span>
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone on the first line to exempt the file.
 <span class="dim">$</span> liturgy transcribe shadow.py
 <span class="alert">++ CANNOT TRANSCRIBE: 1 COLLISION ++</span>
   shadow.py:1  span         -&gt; reserved (range)

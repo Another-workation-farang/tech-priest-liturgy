@@ -513,9 +513,9 @@ is well-formed.
 The four construct words are outside the first check and belong outside it:
 they are never substituted, so a binding of one cannot quietly come to mean
 something else. `consecrated = 5` and `unsanctioned = 5` are caught anyway, by
-the second check, as compile failures. `litany = 5` and `augur = 6` are reported by neither, because
-neither is a fault — the name is yours until the day you want the construct on
-that line.
+the second check, as compile failures — as is an undeclared archetype.
+`litany = 5` and `augur = 6` are reported by neither, because neither is a
+fault: the name is yours until the day you want the construct on that line.
 
 It stops there on purpose. There is no line-length rule, no unused-import
 check, no naming convention — `augur` is not a general linter and is not
@@ -536,6 +536,11 @@ linter.
 
 ```
 $ liturgy transcribe greet.py
+++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.py:1  name is unsanctioned; every parameter must declare its archetype
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone on the first line to exempt the file.
 rite greet(name):
     should nay name:
         render "Ave Omnissiah"
@@ -546,11 +551,25 @@ foreach i among span(2):
     intone(greet(""))
 ```
 
+That warning is Spec IV's, and every unannotated Python file earns it:
+Python does not require archetypes and Liturgy does, so a faithful
+transcription of unannotated Python is a litany that will not chant until you
+annotate it or mark it `unsanctioned`. Nothing is prepended for you — an
+`unsanctioned` line ahead of the litany would break `transcribe`'s own
+round-trip self-check, which is the thing that makes the verb trustworthy.
+Python that *was* annotated transcribes to a litany that chants, and is not
+warned about.
+
 With `-o`, it writes instead of printing:
 
 ```
 $ liturgy transcribe greet.py -o greet.lit
 ++ 8 lines transcribed ++
+++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.lit:1  name is unsanctioned; every parameter must declare its archetype
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone on the first line to exempt the file.
 ```
 
 `transcribe` refuses rather than producing something subtly wrong. It refuses
@@ -571,16 +590,21 @@ two verbs cannot drift apart about what counts.
 The rule is applied to the output as well, as a warning rather than a
 refusal. Rendering Python into Liturgy can *introduce* a collision the source
 never had — `def encode(self, input)` becomes `rite encode(self, hearken)`,
-and `hearken` is reserved. The file is correct and chants exactly as the
-Python ran, so it is written; `transcribe` just says what `augur` will say
-about it, instead of leaving you to find out:
+and `hearken` is reserved. The words are faithful and run the same, so the
+file is written; `transcribe` just says what `augur` will say about it,
+instead of leaving you to find out:
 
 ```
 $ liturgy transcribe codec.py -o codec.lit
 ++ 2 lines transcribed ++
 ++ THE OUTPUT CARRIES 1 COLLISION ++
   codec.lit:1  hearken      -> reserved (input)
-augur will flag these; the litany is correct and chants as written
+augur will flag these; the words are faithful and run the same
+++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  codec.lit:1  input is unsanctioned; every parameter must declare its archetype
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone on the first line to exempt the file.
 ```
 
 Writing to stdout instead, the warning goes to stderr, so a redirected file
@@ -592,7 +616,10 @@ the two differ, nothing is written and the failure is reported as a fault in
 Liturgy rather than in your file. The output is also compiled, so a Python
 program no litany can express — one binding a bare `consecrated`, or using a
 machine-reserved dunder — is refused as "the output would not chant" instead
-of written broken. A destination file gets a second, byte-level
+of written broken. That backstop asks whether the output is a *program*, not
+whether it meets the archetype policy: it compiles with the archetype rule
+suppressed, which is why an unannotated transcription is warned about rather
+than refused. A destination file gets a second, byte-level
 round-trip in the source's own declared encoding. Line endings and a PEP 263
 `coding:` cookie are preserved, so the output differs from the input in its
 words and in nothing else.

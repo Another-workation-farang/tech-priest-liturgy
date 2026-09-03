@@ -746,8 +746,8 @@ deeper.</p>
 knowing which are already spoken for.</p>
 
 <p>Sixty-four words are reserved: thirty-eight rites, five builtins, fifteen
-curses, two numerals, and four construct words. Using one as your own identifier
-is an error. Most such errors are loud, and a loud error costs you a
+curses, two numerals, and four construct words. Using one as your own
+identifier is an error. Most such errors are loud, and a loud error costs you a
 minute.</p>
 
 <div class="code-block"><pre><span class="kw">render</span> = compute()</pre></div>
@@ -1250,6 +1250,11 @@ question.</p>
 <h3>transcribe — a Python file rendered into the proper tongue</h3>
 
 <pre class="shell"><span class="prompt">$</span> liturgy transcribe greet.py
+<span class="alert">++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.py:1  name is unsanctioned; every parameter must declare its archetype</span>
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone on the first line to exempt the file.
 rite greet(name):
     should nay name:
         render "Ave Omnissiah"
@@ -1259,11 +1264,25 @@ rite greet(name):
 foreach i among span(2):
     intone(greet(""))</pre>
 
+<p>The warning is Chapter XII's, and unannotated Python earns it by
+definition: Python does not require archetypes and Liturgy does, so a
+faithful transcription of a bare <code>def</code> is a litany that will not
+chant until an adept annotates it or marks it <code>unsanctioned</code>.
+Nothing is prepended on the adept's behalf — an <code>unsanctioned</code>
+line ahead of the litany would break the round-trip self-check below, which
+is the whole reason the verb can be trusted. Python that <i>was</i> annotated
+transcribes to a litany that chants, and is not warned about at all.</p>
+
 <p>Given <code>-o</code>, it writes the file instead of printing it and
 reports the count:</p>
 
 <pre class="shell"><span class="prompt">$</span> liturgy transcribe greet.py -o greet.lit
-++ 8 lines transcribed ++</pre>
+++ 8 lines transcribed ++
+<span class="alert">++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.lit:1  name is unsanctioned; every parameter must declare its archetype</span>
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone on the first line to exempt the file.</pre>
 
 <p><code>transcribe</code> refuses in preference to producing something
 subtly wrong. It refuses a source that will not parse, a source it cannot
@@ -1282,7 +1301,10 @@ collision.</p>
 is compiled before anything is written or printed. A Python program only the
 compile can catch — one that binds a bare <code>consecrated</code>, or
 speaks one of the machine's own names in a position the binding scan does
-not see — is refused as one no litany can express:</p>
+not see — is refused as one no litany can express. That compile asks whether
+the output is a <i>program</i>, not whether it satisfies Chapter XII: the
+archetype rule is suppressed for it, which is why a missing annotation is the
+warning above and not a refusal here.</p>
 
 <pre class="shell"><span class="prompt">$</span> liturgy transcribe cons.py
 <span class="alert">++ CANNOT TRANSCRIBE: the output would not chant ++
@@ -1293,14 +1315,18 @@ rewrite or rename what it names, then transcribe again</pre>
 written. Transcription can introduce a collision the Python never had —
 <code>input</code> is rendered <code>hearken</code>, and
 <code>hearken</code> is reserved. That output is not wrong: it round-trips,
-and it chants exactly as the Python ran. So it is a warning, not a
-refusal:</p>
+and its words are faithful. So it is a warning, not a refusal:</p>
 
 <pre class="shell"><span class="prompt">$</span> liturgy transcribe codec.py -o codec.lit
 ++ 2 lines transcribed ++
-++ THE OUTPUT CARRIES 1 COLLISION ++
-  codec.lit:1  hearken      -&gt; reserved (input)
-augur will flag these; the litany is correct and chants as written</pre>
+<span class="alert">++ THE OUTPUT CARRIES 1 COLLISION ++
+  codec.lit:1  hearken      -&gt; reserved (input)</span>
+augur will flag these; the words are faithful and run the same
+<span class="alert">++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  codec.lit:1  input is unsanctioned; every parameter must declare its archetype</span>
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone on the first line to exempt the file.</pre>
 
 <p>When the litany goes to stdout the warning goes to stderr instead, so a
 redirected file receives the words and nothing else.</p>
