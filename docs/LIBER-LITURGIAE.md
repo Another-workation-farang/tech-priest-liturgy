@@ -391,7 +391,7 @@ file, the line, the source text and the column:
 `UnfinishedLitany` is a `SyntaxError` subclass, so `curse SyntaxError` catches
 it wherever you would expect.
 
-### --profane
+### `--profane`
 
 *There are occasions — the reporting of a fault to a distant forge, chiefly —
 when the plain tongue serves better than the proper one. It is permitted. It
@@ -972,7 +972,7 @@ and only the last of them is yours to have got wrong.
 Chapter VI's exemptions govern what is substituted. They say nothing about
 what is safe to be bound to, and the two are not the same question.
 
-### --archetypes — the third check, and the one that is asked for
+### `--archetypes` — the third check, and the one that is asked for
 
 Chapter XII requires that an archetype be *written*. This reads whether it is
 *true*. The two are not the same question, and neither answers the other.
