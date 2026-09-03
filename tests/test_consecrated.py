@@ -10,6 +10,20 @@ def run(src):
     return ns
 
 
+def annotations_of(ns):
+    """A module namespace's annotations, on both sides of PEP 649.
+
+    From 3.14 a module's annotations are lazy: the namespace carries
+    `__annotate__` and materialises `__annotations__` only when something
+    asks, which an `exec` into a plain dict never does. Calling the
+    annotate function with format 1 (VALUE) is that asking.
+    """
+    if "__annotations__" in ns:
+        return ns["__annotations__"]
+    annotate = ns.get("__annotate__")
+    return annotate(1) if annotate is not None else {}
+
+
 def test_a_consecrated_binding_holds_its_value():
     assert run("consecrated PORT: int = 8080\n")["PORT"] == 8080
 
@@ -17,7 +31,11 @@ def test_a_consecrated_binding_holds_its_value():
 def test_the_annotation_carrier_does_not_survive_into_the_module():
     ns = run("consecrated PORT: int = 8080\n")
     assert "__consecrated__" not in ns
-    assert ns.get("__annotations__", {}) == {}
+    # The slot holds what the author declared and nothing of the machine's.
+    # Asserting no annotation at all would pass on 3.14 for the wrong reason:
+    # PEP 649 makes a module's annotations lazy, so a plain `exec` namespace
+    # never materialises them and `{}` is what you see whatever is there.
+    assert annotations_of(ns) == {"PORT": int}
 
 
 def test_indentation_is_preserved():
@@ -119,7 +137,11 @@ def test_consecrated_is_desugared_inside_every_kind_of_block(name):
     ns = {}
     exec(compile_litany(src, "prayer.lit"), ns)
     assert "__consecrated__" not in ns
-    assert ns.get("__annotations__", {}) == {}
+    # Every block here is module-level, so whether the module carries the
+    # annotation depends on whether the body ran -- `should Sanctioned:` runs
+    # and a `curse` with nothing raised does not. Either is right; what must
+    # never appear is anything of the machine's own.
+    assert annotations_of(ns) in ({}, {"PORT": int})
 
 
 @pytest.mark.parametrize("name", sorted(NESTED_BLOCKS))
@@ -340,20 +362,6 @@ def test_a_walrus_at_our_own_scope_is_still_a_rebinding():
 # `SyntaxError: invalid syntax (PORT is Liturgy for PORT: __consecrated__)`.
 # Consecration travels beside the source now, in `ConstructFacts`, and the
 # annotation means what it means in Python.
-
-
-def annotations_of(ns):
-    """A module namespace's annotations, on both sides of PEP 649.
-
-    From 3.14 a module's annotations are lazy: the namespace carries
-    `__annotate__` and materialises `__annotations__` only when something
-    asks, which an `exec` into a plain dict never does. Calling the
-    annotate function with format 1 (VALUE) is that asking.
-    """
-    if "__annotations__" in ns:
-        return ns["__annotations__"]
-    annotate = ns.get("__annotate__")
-    return annotate(1) if annotate is not None else {}
 
 
 def test_a_consecrated_name_may_declare_its_archetype():
