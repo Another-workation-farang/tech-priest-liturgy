@@ -900,9 +900,10 @@ reader that quietly does not read a file is worse than no reader. (A
 symlinked directory the walk would prune anyway, a symlinked `.venv` say, is
 pruned as quietly as a real one.)
 
-### The two checks, and no third
+### The two checks, and the third that is asked for
 
-`augur` makes exactly two.
+`augur` makes two whenever it is run, and a third only when the flag asks
+for it.
 
 **Words that become another word, used as your own names.** A binding
 collides two ways, and both are reported. Either you wrote the reserved word
@@ -926,11 +927,18 @@ why Chapter XII's archetype rule needs no line of `augur`'s own: an
 undeclared parameter is a compile failure, so the second check reports it
 without being taught anything.
 
-There is deliberately no third. No line-length rule, no unused-import check,
-no naming convention. `augur` reports the class of fault that is specific to
-Liturgy — the class no other tool in your setup can see — and leaves the rest
-to the tools that already do it well. It is not a general linter and is not
-going to become one.
+There is deliberately no third *standing* check. No line-length rule, no
+unused-import check, no naming convention. `augur` reports the class of fault
+that is specific to Liturgy — the class no other tool in your setup can
+see — and leaves the rest to the tools that already do it well. It is not a
+general linter and is not going to become one.
+
+The third check is asked for, and being asked for is the whole of the
+difference. `--archetypes` reads whether the archetypes a litany declares are
+*true*, which means spawning a type checker, which is not something a verb
+you run on every keystroke may do unbidden. The two checks above behave
+identically whether the flag is passed or not. The section after next sets
+the third one down.
 
 ### The collision Chapter VI does not cover
 
@@ -963,6 +971,129 @@ and only the last of them is yours to have got wrong.
 
 Chapter VI's exemptions govern what is substituted. They say nothing about
 what is safe to be bound to, and the two are not the same question.
+
+### --archetypes — the third check, and the one that is asked for
+
+Chapter XII requires that an archetype be *written*. This reads whether it is
+*true*. The two are not the same question, and neither answers the other.
+
+Consider a litany in which every archetype is declared and two of them are
+lies:
+
+```
+consecrated PORT: int = 8080
+
+rite greet(name: str) -> int:
+    render name
+
+intone(greet(PORT))
+```
+
+The standing checks find nothing here, because there is nothing of theirs to
+find: no reserved word is bound, and the file compiles.
+
+```
+$ liturgy augur prayer.lit
+```
+
+Asked for the third, the same litany reads differently:
+
+```
+$ liturgy augur --archetypes prayer.lit
+++ THE OMENS ARE TROUBLED ++
+   prayer.lit, line 4
+           render name
+                  ^
+   this rite renders a str where it declared an int  [return-value]
+++ THE OMENS ARE TROUBLED ++
+   prayer.lit, line 6
+       intone(greet(PORT))
+                    ^
+   argument 1 to greet is an int where greet declares a str  [arg-type]
+```
+
+`--plain` serves this check as it serves the others, one parseable line per
+finding:
+
+```
+$ liturgy augur --archetypes --plain prayer.lit
+prayer.lit:4:12: this rite renders a str where it declared an int  [return-value]
+prayer.lit:6:14: argument 1 to greet is an int where greet declares a str  [arg-type]
+```
+
+Those findings are mypy's, said in Liturgy. **Liturgy does not need a type
+checker; it needs a translator.** Writing a checker is person-decades and
+mypy exists, and the transform already hands an existing one everything it
+requires: line N of the generated Python is line N of the litany, because the
+transform never adds or removes a line, so a diagnostic lands on the right row
+with no arithmetic whatever. Only the column moves, and it moves back through
+the same map that places the caret under a curse. The bracketed code at the
+end of each line is mypy's own, kept because it is what a reader greps for
+and what a `# type: ignore[...]` would have to name.
+
+The finding on line 6 is owed to the previous release. Before the
+`consecrated` carrier was moved out of the annotation slot,
+`consecrated PORT: int = 8080` generated `PORT: __consecrated__ = 8080`, and
+a checker told that could not know `PORT`'s archetype at all — never mind
+that it is the wrong one to hand `greet`. That change was worth making on its
+own merits; this is what it bought.
+
+**Where Liturgy cannot be spoken confidently, mypy speaks for itself and is
+named as its author.** A litany that iterates a number earns a diagnostic
+whose sentence is about Python's own protocols:
+
+```
+rite each(n: int) -> Void:
+    foreach x among n:
+        intone(x)
+```
+
+```
+$ liturgy augur --archetypes iter.lit
+++ THE OMENS ARE TROUBLED ++
+   iter.lit, line 2
+           foreach x among n:
+                           ^
+   mypy's own words: "int" has no attribute "__iter__"; maybe "__int__"? (not iterable)  [attr-defined]
+```
+
+A half-translated diagnostic — Liturgy words inside a Python sentence, or a
+type name mangled by an over-eager substitution — would be worse than an
+honest untranslated one, so the shapes that are recognised are translated
+whole and every other one is passed through untouched and attributed. This is
+the discipline `sanctify` keeps when it refuses rather than guesses.
+
+**Imports are not followed.** This version reads one litany at a time. A rite
+called from another file with an argument of the wrong archetype is not
+found, and this page will not imply otherwise: whole-project reading needs a
+shadow tree of transformed litanies mirroring the project's layout, which is
+designed and not scheduled. What is read is the file named, entire.
+
+**The judgement is advisory.** `chant` runs a litany mypy dislikes, exactly as
+it always did. This is a reading rite like the rest of Chapter XI: it reports,
+and refuses nothing.
+
+**mypy is an optional extra**, as Pygments is for the glyphs and pytest for
+the trials. Without it the verb refuses, before it walks a single path:
+
+```
+++ CANNOT READ ARCHETYPES: mypy is not installed ++
+   reading them needs it:  pip install 'liturgy[archetypes]'
+```
+
+That refusal is the shape of the whole check. **An empty report means the
+checker ran, was understood, and found nothing — it never means the reading
+did not happen.** Every other outcome, a checker that crashed or timed out or
+said something the translator could not parse, is reported against the litany
+as `archetypes unread` and exits 1. A reader that pronounces a litany clean
+having read nothing is the worst failure available here, and there is no path
+to it.
+
+Only litanies are read this way. A `.py` file is still scanned by the two
+standing checks, but it carries no substitutions and so no map, and anything
+this verb said about it would be mypy's own report wearing Liturgy's banner.
+Run mypy on your Python directly; its output will be better than this could
+relay.
 
 ### transcribe — a Python file rendered into the proper tongue
 
@@ -1474,17 +1605,23 @@ prayer.lit:1:1: TechHeresy: name is unsanctioned; every parameter must declare i
 true.**
 
 `rite count(n: str) -> int:` satisfies this rule completely while being a lie
-in both halves, and nothing in the language will ever say so. Checking that
-an archetype describes the value that actually arrives is a type checker's
-work, and a type checker is a different program of a different size. One has
-been designed. It is not scheduled, and until it exists this page will not
-imply it.
+in both halves, and nothing in *this* rule will ever say so. Checking that an
+archetype describes the value that actually arrives is a type checker's work,
+and a type checker is a different program of a different size.
+
+That work is now done by a different verb, and the division is worth holding
+on to. This chapter enforces that an archetype is **declared**, at compile
+time, and `chant` will not run a litany that omits one. Chapter XI's
+`augur --archetypes` reads whether a declared archetype is **true**, by
+delegating to mypy, and it is asked for rather than standing, reads one
+litany at a time, and refuses nothing: a litany it dislikes still chants.
+Presence is enforced; truth is reported.
 
 This is the same boundary Chapter VII draws around `consecrated`, drawn again
 for the same reason: the word "enforced" invites more confidence than the
-mechanism can support. What is enforced is that you thought about the
+mechanism can support. What is enforced here is that you thought about the
 archetype long enough to write one down. Whether you were right is between
-you and a type checker.
+you and the third check.
 
 ### What cannot be declared is exempt
 

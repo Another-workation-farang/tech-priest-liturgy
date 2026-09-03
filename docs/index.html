@@ -121,7 +121,8 @@
 <pre>
 <span class="dim">:status:</span>     <span class="ok">SPEC I (CORE) AND SPEC II (CONSTRUCTS) OPERATIONAL</span>
              <span class="ok">SPEC III (TOOLING) — SEVEN VERBS OF EIGHT</span>
-             <span class="ok">SPEC IV (SANCTION) — ARCHETYPES DECLARED, NOT CHECKED</span>
+             <span class="ok">SPEC IV (SANCTION) — ARCHETYPES DECLARED AT COMPILE TIME</span>
+             <span class="ok">SPEC V (ARCHETYPE TRUTH) — READ ON REQUEST, ONE LITANY AT A TIME</span>
 <span class="dim">:requires:</span>   <span class="amber">PYTHON &gt;= 3.12 (PEP 701 — SANCTIFIED F-STRING TOKENIZATION)</span>
 <span class="dim">:canonical:</span>  docs/LIBER-LITURGIAE.md — THE AUTHORITY
 </pre>
@@ -131,8 +132,8 @@
 <p>LITURGY IS A TOY, BUILT FOR FUN AND FOR THE EXCUSE IT GAVE TO GO RUMMAGING
 AROUND IN CPYTHON'S IMPORT MACHINERY. IT IS NOT A SERIOUS LANGUAGE AND IT IS
 NOT MAINTAINED AS ONE. IT IS INCOMPLETE — ONE OF THE THIRD SPEC'S EIGHT VERBS
-IS NOTHING BUT A RESERVED NAME, AND THE FOURTH SPEC REQUIRES ARCHETYPES TO BE
-WRITTEN WITHOUT CHECKING THAT ANY OF THEM IS TRUE. IT IS BREAKABLE, IN WAYS
+IS NOTHING BUT A RESERVED NAME, AND THE READING OF ARCHETYPES DOES NOT FOLLOW
+IMPORTS, SO IT JUDGES ONE LITANY AT A TIME. IT IS BREAKABLE, IN WAYS
 PART DOCUMENTED AND PART NOT: WRITTEN IN A FEW DAYS BY ONE PERSON AND REVIEWED
 BY NOBODY WHO HAS TO LIVE WITH IT. RUN IT ON PRAYERS YOU WOULD NOT MIND
 LOSING.</p>
@@ -201,7 +202,11 @@ LINE, AND ITS THREE COSTS.</p>
 ADDS A PYGMENTS LEXER DRIVEN BY THE COMPILER'S OWN TOKEN PASSES, SO THE THREE
 PROHIBITIONS HOLD IN THE COLOURS TOO, AND
 <span class="lower amber">editors/vscode-liturgy</span> CARRIES A TEXTMATE GRAMMAR
-FOR VS CODE.</p>
+FOR VS CODE. TWO MORE EXTRAS EXIST AND THE CORE NEEDS NEITHER:
+<span class="lower amber">.[archetypes]</span> ADDS THE MYPY THAT
+<span class="lower amber">augur --archetypes</span> DELEGATES TO, AND
+<span class="lower amber">.[trials]</span> THE PYTEST THAT
+<span class="lower amber">prove</span> RUNS.</p>
 
 <p>TWO VERBS RUN LITANIES. <span class="lower amber">chant</span> EXECUTES A LITANY WITH
 <span class="lower amber">__main__</span> SEMANTICS; <span class="lower amber">commune</span>
@@ -267,11 +272,25 @@ EVERY <span class="lower amber">consecrated</span> BINDING MUST DECLARE ONE.
    consecrated IT EXEMPTS THAT ONE; ALONE AT THE MARGIN, THE WHOLE LITANY.</span>
 </pre>
 
-<p><b>PRESENCE, NOT CORRECTNESS.</b> LITURGY CHECKS THAT AN ANNOTATION IS
+<p><b>PRESENCE, NOT CORRECTNESS.</b> THE COMPILER CHECKS THAT AN ANNOTATION IS
 WRITTEN. IT CANNOT CHECK THAT IT IS TRUE —
 <span class="lower amber">rite count(n: str) -&gt; int:</span> IS A LIE IN BOTH
-HALVES AND PASSES CLEANLY. THAT IS A TYPE CHECKER'S WORK, AND ONE IS DESIGNED
-AND UNSCHEDULED. KEEP RUNNING MYPY.</p>
+HALVES AND COMPILES CLEANLY. THAT IS A TYPE CHECKER'S WORK, AND
+<span class="lower amber">liturgy augur --archetypes</span> IS THE VERB THAT ASKS
+ONE: IT HANDS THE GENERATED PYTHON TO MYPY AND SAYS THE DIAGNOSTICS BACK IN
+LITURGY. A THIRD CHECK, AND THE ONLY ONE YOU MUST ASK FOR.</p>
+
+<pre>
+<span class="dim">$</span> liturgy augur --archetypes --plain prayer.lit
+prayer.lit:4:12: this rite renders a str where it declared an int  [return-value]
+prayer.lit:6:14: argument 1 to greet is an int where greet declares a str  [arg-type]
+</pre>
+
+<p>IT NEEDS THE EXTRA — <span class="lower amber">pip install -e ".[archetypes]"</span>
+— AND WITHOUT IT THE VERB REFUSES RATHER THAN REPORTING A LITANY IT NEVER
+READ. IMPORTS ARE NOT FOLLOWED: THIS VERSION READS ONE LITANY AT A TIME. THE
+JUDGEMENT IS ADVISORY, AND <span class="lower amber">chant</span> STILL RUNS
+CODE MYPY DISLIKES. PRESENCE IS ENFORCED; TRUTH IS REPORTED.</p>
 
 <p>EXEMPT BY CONSTRUCTION, EACH BECAUSE IT CANNOT BE ANNOTATED AT ALL:
 <span class="lower amber">self</span> AND <span class="lower amber">cls</span> IN THE

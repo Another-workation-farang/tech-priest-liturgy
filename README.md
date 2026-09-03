@@ -27,8 +27,9 @@ time.
 > not maintained as one.
 >
 > It is **incomplete** — Spec III's CLI surface is seven verbs into eight,
-> the last name is still nothing but a reserved word, and Spec IV enforces
-> that archetypes are *written* without checking that any of them is *true*.
+> the last name is still nothing but a reserved word, and Spec V's reading of
+> whether an archetype is *true* does not follow imports, so it judges one
+> litany at a time.
 >
 > It is **breakable**. Some of it is documented: naming a variable `span` or
 > `measure` (or `discern`, or any of the ten quiet words) silently shadows
@@ -375,12 +376,15 @@ rite greet(name: str) -> Void:
 legal** — before this it was a syntax error, because the construct reached
 the compiler through the annotation slot and so occupied it.
 
-**This is presence, not correctness.** Liturgy checks that an annotation is
-written. It cannot check that it is true: `rite count(n: str) -> int:` is a
-lie in both halves and passes cleanly. Verifying an archetype against the
-value that actually arrives is a type checker's job, and Liturgy is not one —
-[a design exists](design/specs/2026-09-03-liturgy-archetype-truth-design.md)
-and is not scheduled. Keep running mypy.
+**This rule is presence, not correctness.** The compiler checks that an
+annotation is written. It cannot check that it is true: `rite count(n: str)
+-> int:` is a lie in both halves and compiles cleanly. Verifying an archetype
+against the value that actually arrives is a type checker's job, and that is
+[`augur --archetypes`](#--archetypes--the-third-check-and-the-one-you-ask-for),
+which delegates to mypy and translates what comes back. The division holds:
+presence is enforced at compile time and `chant` will not run without it;
+truth is read by a verb you ask, one litany at a time, and reported rather
+than enforced.
 
 Nothing else is required: plain assignments, loop targets, comprehension
 variables, `anointed ... styled` targets and the name a `curse` binds are all
@@ -501,7 +505,8 @@ substitution target is an ordinary name rather than a Python keyword, so the
 file compiles and the damage is deferred. Without it, the collision is loud
 somewhere — still worth reporting, but it will announce itself.
 
-`augur` makes exactly two checks. First, every binding whose name is one of
+`augur` makes two checks whenever it runs, and a third when it is asked to.
+The standing two: first, every binding whose name is one of
 the sixty words that become another word, by either route: you wrote the
 reserved word and it was substituted, or an exemption protected the word and
 you are now bound to it unsubstituted. (A `.py` file binding one of the
@@ -517,10 +522,10 @@ the second check, as compile failures — as is an undeclared archetype.
 `litany = 5` and `augur = 6` are reported by neither, because neither is a
 fault: the name is yours until the day you want the construct on that line.
 
-It stops there on purpose. There is no line-length rule, no unused-import
-check, no naming convention — `augur` is not a general linter and is not
-going to grow into one. It reports the class of fault that is specific to
-Liturgy, which is the class no other tool in your setup can see.
+The standing checks stop there on purpose. There is no line-length rule, no
+unused-import check, no naming convention — `augur` is not a general linter
+and is not going to grow into one. It reports the class of fault that is
+specific to Liturgy, which is the class no other tool in your setup can see.
 
 Arguments may be files or directories; a directory is walked for `.lit` and
 `.py` files, pruning the usual noise — dot-directories, `__pycache__`, and
@@ -531,6 +536,109 @@ once. Exit status is 0 when nothing was reported and 1 when anything
 was. A directory reached through a symlink is named rather than skipped in
 silence, because a linter that quietly does not read a file is worse than no
 linter.
+
+#### `--archetypes` — the third check, and the one you ask for
+
+Declaring an archetype is enforced at compile time; whether the declaration is
+*true* is a different question, and this is the flag that asks it. Every
+archetype in this litany is declared, and two of them are lies:
+
+```
+consecrated PORT: int = 8080
+
+rite greet(name: str) -> int:
+    render name
+
+intone(greet(PORT))
+```
+
+The standing checks have nothing to say about it — no reserved word is bound,
+and it compiles:
+
+```
+$ liturgy augur prayer.lit
+```
+
+The third check does:
+
+```
+$ liturgy augur --archetypes prayer.lit
+++ THE OMENS ARE TROUBLED ++
+   prayer.lit, line 4
+           render name
+                  ^
+   this rite renders a str where it declared an int  [return-value]
+++ THE OMENS ARE TROUBLED ++
+   prayer.lit, line 6
+       intone(greet(PORT))
+                    ^
+   argument 1 to greet is an int where greet declares a str  [arg-type]
+```
+
+`--plain` works here too, as it does for the other two:
+
+```
+$ liturgy augur --archetypes --plain prayer.lit
+prayer.lit:4:12: this rite renders a str where it declared an int  [return-value]
+prayer.lit:6:14: argument 1 to greet is an int where greet declares a str  [arg-type]
+```
+
+Those are mypy's findings, said in Liturgy. **Liturgy does not need a type
+checker; it needs a translator.** The transform never adds or removes a line,
+so line N of the generated Python is line N of the litany and a diagnostic
+already lands on the right row with no arithmetic at all; only the column
+moves, back through the same source map that places a traceback's caret. The
+bracketed code at the end of each line is mypy's own, kept because it is what
+you grep for.
+
+It is a flag rather than a default because `augur`'s contract is that it is
+fast enough to run on every keystroke, and spawning mypy is not. The two
+standing checks behave identically whether it is passed or not.
+
+The second finding above is the previous release paying out. Before
+`consecrated` stopped reaching the compiler through the annotation slot,
+`consecrated PORT: int = 8080` generated `PORT: __consecrated__ = 8080` and a
+checker could not know `PORT`'s archetype at all, never mind that it is the
+wrong one to hand `greet`.
+
+A diagnostic whose shape isn't recognised is passed through verbatim and
+attributed, rather than half-translated — a half-translated one would be
+worse. `rite each(n: int) -> Void:` iterating `n` earns this:
+
+```
+$ liturgy augur --archetypes iter.lit
+++ THE OMENS ARE TROUBLED ++
+   iter.lit, line 2
+           foreach x among n:
+                           ^
+   mypy's own words: "int" has no attribute "__iter__"; maybe "__int__"? (not iterable)  [attr-defined]
+```
+
+Three limits, stated rather than implied:
+
+- **Imports are not followed.** This version checks one litany at a time. A
+  rite called from another file with an argument of the wrong archetype is not
+  found. Whole-project checking needs a shadow tree of transformed litanies
+  mirroring the project layout; it is designed and unscheduled.
+- **The judgement is advisory.** `chant` still runs code mypy dislikes. This
+  is a reading rite like the rest of `augur`, and it refuses nothing.
+- **Only litanies are read.** A `.py` file still gets the two standing
+  checks, but it has no substitutions and no source map, so anything reported
+  would be mypy's own output wearing Liturgy's banner. Run mypy on it
+  directly.
+
+mypy is an optional extra, and without it the verb refuses before it walks a
+single path rather than reporting litanies it never read:
+
+```
+++ CANNOT READ ARCHETYPES: mypy is not installed ++
+   reading them needs it:  pip install 'liturgy[archetypes]'
+```
+
+That refusal is the shape of the whole check. An empty report means mypy ran,
+was understood, and found nothing — never that the reading did not happen.
+Every other outcome (crashed, timed out, said something unparseable) is
+reported against the litany as `archetypes unread`, and exits 1.
 
 ### `transcribe` — render a Python file into Liturgy
 
@@ -969,7 +1077,7 @@ files with an honest import hook and honest tracebacks. Spec II adds the three
 constructs above. Spec III is the CLI verb surface, and seven of its eight
 verbs — `augur`, `transcribe`, `forge`, `consecrate`, `sanctify`, `prove`,
 `purge` — are built and documented above. Spec IV requires archetypes to be
-declared.
+declared, and Spec V reads whether they are true.
 
 One name is still nothing but a name the command line refuses to hand to
 anything else:
@@ -982,11 +1090,12 @@ anything else:
   and `prove` and `sanctify` were each declined on their merits before being
   built on better terms.
 
-One capability is designed and deliberately unscheduled. Spec IV requires an
-archetype to be *written*; checking that it is *true* is a type checker, which
-[a fifth spec designs](design/specs/2026-09-03-liturgy-archetype-truth-design.md)
-and nothing schedules. Until something does, an annotation in a litany is a
-statement of intent that the compiler counts and does not read.
+Spec V reads whether a written archetype is *true*, by delegating to mypy and
+translating the diagnostics back — `augur --archetypes`, the third check and
+the only one you have to ask for. What that spec designs and does not build is
+the shadow tree that would let it follow imports: this version reads one
+litany at a time, and that limitation is documented above rather than papered
+over.
 
 Two names are reused deliberately across the two namespaces, and it is worth
 saying so plainly rather than letting it confuse anyone later: `augur` is both
