@@ -13,6 +13,7 @@ import tokenize
 
 from .collisions import find_collisions
 from .compiler import compile_litany
+from .constructs import TechHeresy
 from .heresy import state_path
 from .reverse import to_liturgy
 from .form import UnsanctifiableLitany, sanctify_text
@@ -266,6 +267,15 @@ def _collision_row(label: str, c) -> str:
 
 
 def _output_omens(litany: str, label: str) -> list[str]:
+    """Everything the reader must know about the Liturgy about to be written.
+
+    Two omens, in the order a reader needs them: what `augur` will say
+    about the output's names, and whether the output chants at all.
+    """
+    return _collision_omens(litany, label) + _archetype_omens(litany, label)
+
+
+def _collision_omens(litany: str, label: str) -> list[str]:
     """What `augur` will say about the Liturgy `transcribe` is about to emit.
 
     `transcribe` refuses on collisions in its *input*, but `to_liturgy` can
@@ -289,8 +299,55 @@ def _output_omens(litany: str, label: str) -> list[str]:
     plural = "S" if len(collisions) != 1 else ""
     lines = [f"++ THE OUTPUT CARRIES {len(collisions)} COLLISION{plural} ++"]
     lines += [_collision_row(label, c) for c in collisions]
-    lines.append("augur will flag these; the litany is correct and chants as written")
+    # No longer "and chants as written": since Spec IV a faithful
+    # transcription may still need archetypes before it will chant, and
+    # `_archetype_omens` says so on its own line. Claiming both would have
+    # the two warnings contradict each other in the same breath.
+    lines.append("augur will flag these; the words are faithful and run the same")
     return lines
+
+
+def _archetype_omens(litany: str, label: str) -> list[str]:
+    """Whether the Liturgy `transcribe` is about to emit will chant.
+
+    Since Spec IV a rite must declare an archetype for each parameter and
+    for what it renders, and a consecrated name must declare one too.
+    Python requires none of that, so a transcription is unannotated by
+    definition and will not chant as written.
+
+    The backstop above therefore compiles with the rule suppressed, and
+    this is the other half of that bargain: it is the same rule, run on
+    purpose, to warn instead of refuse. Nothing is prepended to the output
+    -- an `unsanctioned` line ahead of the litany breaks transcribe's own
+    round-trip self-check (`transform("unsanctioned\n" + lit) != src`),
+    which is the guarantee that makes the verb trustworthy at all. The one
+    word the user must type is cheaper than that guarantee.
+
+    Compiling a second time is the cost of telling the truth here. It buys
+    the exact fault and its line, and it stays silent on a source that was
+    annotated in Python -- where a blanket warning would be a lie.
+    """
+    try:
+        compile_litany(litany, label)
+    except TechHeresy as err:
+        first = f"  {label}:{err.lineno}  {err.msg}"
+    except SyntaxError:
+        # Already compiled once without the rule, so anything else here is
+        # not a fault the user can act on. Say nothing rather than turn a
+        # warning path into a second failure path.
+        return []
+    else:
+        return []
+    return [
+        "++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++",
+        first,
+        "Python does not require archetypes and Liturgy does. declare one for "
+        "every",
+        "parameter and return and every consecrated name, or write "
+        "`unsanctioned`",
+        "before a rite to exempt it -- or alone on the first line to exempt "
+        "the file.",
+    ]
 
 
 def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
@@ -362,9 +419,19 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
     # check catches only bindings. Compiling the output is the backstop
     # that catches every such shape at once, before anything claims the
     # transcription succeeded.
+    #
+    # `sanction=False`, and only here. Those shapes are *structural*: text
+    # that is not Liturgy at all, which no edit short of a rewrite will
+    # save. Spec IV's archetype rule is a different kind of thing -- a
+    # policy about litanies an author writes, not a property of well-formed
+    # Liturgy. Python does not require annotations, so transcribed Python
+    # has none by definition, and refusing on that ground refused every
+    # real Python file with a function in it, which is the whole purpose of
+    # the verb. The backstop asks "is this a program?"; whether it meets
+    # the policy is the omens' business, three lines below.
     label = dest if dest is not None else str(path)
     try:
-        compile_litany(litany, label)
+        compile_litany(litany, label, sanction=False)
     except SyntaxError as err:
         print("++ CANNOT TRANSCRIBE: the output would not chant ++", file=out)
         print(f"   line {err.lineno}: {err.msg}", file=out)

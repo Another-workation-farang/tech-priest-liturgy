@@ -72,7 +72,7 @@ def test_a_tuple_of_curses_is_accepted():
 def test_the_count_is_evaluated_exactly_once():
     src = (
         "rolls = []\n"
-        "rite roll():\n"
+        "rite roll() -> int:\n"
         "    rolls.append(1)\n"
         "    render 2\n"
         "litany(roll(), curse=MotiveFailure):\n"
@@ -134,7 +134,7 @@ def test_cease_inside_a_real_loop_in_the_body_is_fine():
 
 def test_render_in_a_litany_body_is_fine():
     src = (
-        "rite f():\n"
+        "rite f() -> int:\n"
         "    litany(thrice, curse=MotiveFailure):\n"
         "        render 7\n"
         "    render 0\n"
@@ -170,13 +170,13 @@ def test_a_construct_keyword_after_an_annotation_colon_is_untouched():
     # NAMED REGRESSION. `match` is a legal identifier (a Python soft keyword,
     # never substituted), so `match: ...` is an annotated assignment, not a
     # block. Statement position alone would wrongly fire here.
-    ns = run("rite f(litany_count):\n    render litany_count\nmatch: int = 5\n")
+    ns = run("rite f(litany_count: int) -> int:\n    render litany_count\nmatch: int = 5\n")
     assert ns["match"] == 5
 
 
 def test_litany_as_a_plain_call_is_untouched():
     # NAMED REGRESSION. Somebody's function, not a construct.
-    ns = run("rite litany(n):\n    render n * 2\nresult = litany(3)\n")
+    ns = run("rite litany(n: int) -> int:\n    render n * 2\nresult = litany(3)\n")
     assert ns["result"] == 6
 
 
@@ -279,7 +279,7 @@ def test_a_recursive_rite_reuses_the_same_litany_callsite_safely():
     # between *different* lines, not the same line re-entered.
     src = (
         "calls = []\n"
-        "rite recurse(n):\n"
+        "rite recurse(n: int) -> Void:\n"
         "    litany(twice, curse=MotiveFailure):\n"
         "        calls.append(n)\n"
         "        should n == 2:\n"
@@ -330,7 +330,7 @@ def test_consecrating_deeper_inside_a_litany_body_is_rejected_too():
 
 def test_consecrating_beside_a_litany_is_still_fine():
     src = (
-        "consecrated PORT = 8080\n"
+        "consecrated PORT: int = 8080\n"
         "seen = []\n"
         "litany(thrice, curse=MachineCurse):\n"
         "    seen.append(PORT)\n"

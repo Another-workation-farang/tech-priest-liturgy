@@ -18,7 +18,7 @@ def _cache(p: pathlib.Path) -> pathlib.Path:
 
 def test_it_writes_bytecode_beside_the_litany(tmp_path):
     p = tmp_path / "prayer.lit"
-    p.write_text('rite greet():\n    render "ave"\n')
+    p.write_text('rite greet() -> str:\n    render "ave"\n')
 
     buf = io.StringIO()
     assert forge([str(tmp_path)], out=buf) == 0
@@ -44,7 +44,7 @@ def test_the_forged_bytecode_is_what_import_actually_uses(tmp_path, monkeypatch)
     from liturgy.loader import LiturgyLoader, install
 
     p = tmp_path / "cached.lit"
-    p.write_text('rite greet():\n    render "ave"\n')
+    p.write_text('rite greet() -> str:\n    render "ave"\n')
     assert forge([str(p)], out=io.StringIO()) == 0
 
     calls = []
@@ -67,7 +67,7 @@ def test_the_forged_bytecode_is_what_import_actually_uses(tmp_path, monkeypatch)
 
 def test_a_second_forge_reports_the_litany_already_current(tmp_path):
     p = tmp_path / "prayer.lit"
-    p.write_text('rite greet():\n    render "ave"\n')
+    p.write_text('rite greet() -> str:\n    render "ave"\n')
     assert forge([str(p)], out=io.StringIO()) == 0
 
     buf = io.StringIO()
@@ -79,7 +79,7 @@ def test_a_second_forge_reports_the_litany_already_current(tmp_path):
 
 def test_anew_recompiles_a_litany_that_is_already_current(tmp_path):
     p = tmp_path / "prayer.lit"
-    p.write_text('rite greet():\n    render "ave"\n')
+    p.write_text('rite greet() -> str:\n    render "ave"\n')
     assert forge([str(p)], out=io.StringIO()) == 0
 
     buf = io.StringIO()
@@ -89,11 +89,11 @@ def test_anew_recompiles_a_litany_that_is_already_current(tmp_path):
 
 def test_an_edited_litany_is_forged_again(tmp_path):
     p = tmp_path / "prayer.lit"
-    p.write_text('rite greet():\n    render "ave"\n')
+    p.write_text('rite greet() -> str:\n    render "ave"\n')
     assert forge([str(p)], out=io.StringIO()) == 0
     # A rewrite changes size, which invalidates the cache regardless of
     # filesystem mtime granularity.
-    p.write_text('rite greet():\n    render "ave, Omnissiah"\n')
+    p.write_text('rite greet() -> str:\n    render "ave, Omnissiah"\n')
 
     buf = io.StringIO()
     assert forge([str(p)], out=buf) == 0
@@ -101,9 +101,9 @@ def test_an_edited_litany_is_forged_again(tmp_path):
 
 
 def test_a_broken_litany_is_reported_and_does_not_stop_the_others(tmp_path):
-    (tmp_path / "aaa.lit").write_text('rite a():\n    render 1\n')
+    (tmp_path / "aaa.lit").write_text('rite a() -> int:\n    render 1\n')
     (tmp_path / "mmm.lit").write_text("render 1\n")  # return outside function
-    (tmp_path / "zzz.lit").write_text('rite z():\n    render 2\n')
+    (tmp_path / "zzz.lit").write_text('rite z() -> int:\n    render 2\n')
 
     buf = io.StringIO()
     assert forge([str(tmp_path)], out=buf) == 1
@@ -120,7 +120,7 @@ def test_it_leaves_python_files_alone(tmp_path):
     py = tmp_path / "plain.py"
     py.write_text("x = 1\n")
     lit = tmp_path / "prayer.lit"
-    lit.write_text('rite greet():\n    render "ave"\n')
+    lit.write_text('rite greet() -> str:\n    render "ave"\n')
 
     buf = io.StringIO()
     assert forge([str(tmp_path)], out=buf) == 0
@@ -133,7 +133,7 @@ def test_it_refuses_when_the_interpreter_will_not_write_bytecode(tmp_path, monke
     # -B / PYTHONDONTWRITEBYTECODE makes every write a silent no-op. Forging
     # would report success and produce nothing.
     p = tmp_path / "prayer.lit"
-    p.write_text('rite greet():\n    render "ave"\n')
+    p.write_text('rite greet() -> str:\n    render "ave"\n')
     monkeypatch.setattr(sys, "dont_write_bytecode", True)
 
     buf = io.StringIO()
@@ -153,7 +153,7 @@ def test_an_unreadable_litany_is_reported_not_raised(tmp_path):
 
 def test_a_litany_whose_cache_cannot_be_written_is_reported(tmp_path, monkeypatch):
     p = tmp_path / "prayer.lit"
-    p.write_text('rite greet():\n    render "ave"\n')
+    p.write_text('rite greet() -> str:\n    render "ave"\n')
 
     from liturgy.loader import LiturgyLoader
 
@@ -176,7 +176,7 @@ def test_nothing_to_forge_is_not_a_failure(tmp_path):
 
 def test_the_default_root_is_the_working_directory(tmp_path, monkeypatch):
     p = tmp_path / "prayer.lit"
-    p.write_text('rite greet():\n    render "ave"\n')
+    p.write_text('rite greet() -> str:\n    render "ave"\n')
     monkeypatch.chdir(tmp_path)
 
     buf = io.StringIO()

@@ -120,7 +120,8 @@
 
 <pre>
 <span class="dim">:status:</span>     <span class="ok">SPEC I (CORE) AND SPEC II (CONSTRUCTS) OPERATIONAL</span>
-             <span class="ok">SPEC III (TOOLING) — THREE VERBS OF EIGHT</span>
+             <span class="ok">SPEC III (TOOLING) — SEVEN VERBS OF EIGHT</span>
+             <span class="ok">SPEC IV (SANCTION) — ARCHETYPES DECLARED, NOT CHECKED</span>
 <span class="dim">:requires:</span>   <span class="amber">PYTHON &gt;= 3.12 (PEP 701 — SANCTIFIED F-STRING TOKENIZATION)</span>
 <span class="dim">:canonical:</span>  docs/LIBER-LITURGIAE.md — THE AUTHORITY
 </pre>
@@ -129,10 +130,12 @@
 <pre><b>++ DO NOT USE THIS IN PRODUCTION ++</b></pre>
 <p>LITURGY IS A TOY, BUILT FOR FUN AND FOR THE EXCUSE IT GAVE TO GO RUMMAGING
 AROUND IN CPYTHON'S IMPORT MACHINERY. IT IS NOT A SERIOUS LANGUAGE AND IT IS
-NOT MAINTAINED AS ONE. IT IS INCOMPLETE — FIVE OF THE THIRD SPEC'S EIGHT VERBS
-ARE NOTHING BUT RESERVED NAMES. IT IS BREAKABLE, IN WAYS PART DOCUMENTED AND
-PART NOT: WRITTEN IN A FEW DAYS BY ONE PERSON AND REVIEWED BY NOBODY WHO HAS
-TO LIVE WITH IT. RUN IT ON PRAYERS YOU WOULD NOT MIND LOSING.</p>
+NOT MAINTAINED AS ONE. IT IS INCOMPLETE — ONE OF THE THIRD SPEC'S EIGHT VERBS
+IS NOTHING BUT A RESERVED NAME, AND THE FOURTH SPEC REQUIRES ARCHETYPES TO BE
+WRITTEN WITHOUT CHECKING THAT ANY OF THEM IS TRUE. IT IS BREAKABLE, IN WAYS
+PART DOCUMENTED AND PART NOT: WRITTEN IN A FEW DAYS BY ONE PERSON AND REVIEWED
+BY NOBODY WHO HAS TO LIVE WITH IT. RUN IT ON PRAYERS YOU WOULD NOT MIND
+LOSING.</p>
 </div>
 
 <section>
@@ -208,7 +211,7 @@ NOT FINISHED TYPING AND ONE YOU HAVE TYPED WRONGLY.</p>
 <pre>
 <span class="dim">$</span> liturgy commune
 ++ COMMUNION ESTABLISHED ++
-&gt;&gt;&gt; rite fib(n):
+&gt;&gt;&gt; rite fib(n: int) -&gt; int:
 ...     should n &lt; 2:
 ...         render n
 ...     render fib(n-1) + fib(n-2)
@@ -227,7 +230,7 @@ NOT FINISHED TYPING AND ONE YOU HAVE TYPED WRONGLY.</p>
 GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME.</p>
 
 <pre>
-<span class="amber">consecrated</span> OMNISSIAH_PORT = 8080
+<span class="amber">consecrated</span> OMNISSIAH_PORT: int = 8080
 <span class="dim">   A BINDING THAT MAY NOT BE REBOUND. PYTHON HAS NO CONSTANTS, ONLY THE
    ALL-CAPS HONOUR SYSTEM; REBINDING IS REJECTED AT COMPILE TIME.</span>
 
@@ -243,7 +246,46 @@ GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME.</p>
 
 <section>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
-<h2><pre>[IV] WHEN A RITE BREAKS</pre></h2>
+<h2><pre>[IV] THE DECLARATION OF ARCHETYPES</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<p>PYTHON INVITES TYPE HINTS AND ENFORCES NOTHING. LITURGY ENFORCES THEM. EVERY
+RITE MUST DECLARE AN ARCHETYPE FOR EACH PARAMETER AND FOR WHAT IT RENDERS, AND
+EVERY <span class="lower amber">consecrated</span> BINDING MUST DECLARE ONE.
+<span class="lower amber">-&gt; Void</span> IS HOW A RITE SAYS IT RENDERS NOTHING.</p>
+
+<pre>
+<span class="amber">rite</span> greet(name: str) -&gt; Void:
+    intone(f"Ave {name}")
+
+<span class="amber">consecrated</span> PORT: int = 8080
+<span class="dim">   NEWLY LEGAL. THE CONSTRUCT USED TO REACH THE COMPILER THROUGH THE
+   ANNOTATION SLOT, SO A CONSECRATED NAME COULD NOT CARRY AN ARCHETYPE.</span>
+
+<span class="amber">unsanctioned</span> <span class="amber">rite</span> legacy(x):
+<span class="dim">   THE ONE NEW WORD, AND IT IS FOR REFUSING THE RULE. BEFORE A RITE OR A
+   consecrated IT EXEMPTS THAT ONE; ALONE AT THE MARGIN, THE WHOLE LITANY.</span>
+</pre>
+
+<p><b>PRESENCE, NOT CORRECTNESS.</b> LITURGY CHECKS THAT AN ANNOTATION IS
+WRITTEN. IT CANNOT CHECK THAT IT IS TRUE —
+<span class="lower amber">rite count(n: str) -&gt; int:</span> IS A LIE IN BOTH
+HALVES AND PASSES CLEANLY. THAT IS A TYPE CHECKER'S WORK, AND ONE IS DESIGNED
+AND UNSCHEDULED. KEEP RUNNING MYPY.</p>
+
+<p>EXEMPT BY CONSTRUCTION, EACH BECAUSE IT CANNOT BE ANNOTATED AT ALL:
+<span class="lower amber">self</span> AND <span class="lower amber">cls</span> IN THE
+FIRST PARAMETER SLOT; <span class="lower amber">servitor</span>, SINCE PYTHON HAS NO
+SYNTAX FOR ANNOTATING A LAMBDA; <span class="lower amber">commune</span>, WHERE EVERY
+ENTRY IS ITS OWN COMPILATION UNIT; AND <span class="lower amber">.py</span> FILES,
+WHICH ARE PYTHON'S BUSINESS. THE RULE LIVES IN THE COMPILE PATH, SO
+<span class="lower amber">chant</span>, <span class="lower amber">prove</span> AND
+<span class="lower amber">augur</span> REPORT IT ALIKE.</p>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[V] WHEN A RITE BREAKS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <pre>
@@ -267,12 +309,12 @@ WIDTH. THE SOURCE SHOWN IS WHAT ACTUALLY RAN, NOT WHATEVER THE FILE CONTAINS NOW
 
 <section>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
-<h2><pre>[V] FURTHER READING</pre></h2>
+<h2><pre>[VI] FURTHER READING</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <pre>
-<a href="liber-liturgiae.html">LIBER LITURGIAE</a>      <span class="dim">THE FULL LANGUAGE REFERENCE — ELEVEN CHAPTERS AND A
-                     CONCORDANCE OF ALL SIXTY-THREE RESERVED WORDS.</span>
+<a href="liber-liturgiae.html">LIBER LITURGIAE</a>      <span class="dim">THE FULL LANGUAGE REFERENCE — TWELVE CHAPTERS AND A
+                     CONCORDANCE OF ALL SIXTY-FOUR RESERVED WORDS.</span>
 
 <a href="liber-liturgiae.html#ch11">THE READING OF OMENS</a> <span class="dim">CHAPTER XI — THE SEVEN TOOLING VERBS. augur READS A
                      LITANY FOR FAULTS, transcribe RENDERS PYTHON INTO

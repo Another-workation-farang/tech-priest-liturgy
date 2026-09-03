@@ -11,7 +11,7 @@ PRAYER = textwrap.dedent(
     GREETING = "Ave Omnissiah"
 
 
-    rite greet(name):
+    rite greet(name: str) -> str:
         render f"{GREETING}, {name}"
     """
 )

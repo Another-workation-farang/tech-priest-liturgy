@@ -256,11 +256,14 @@ GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
 <span class="lower amber">noospheric</span>, WAS CUT RATHER THAN BEND THAT RULE.</p>
 
 <pre>
-<span class="dim">.. construct::</span> consecrated NAME = VALUE
+<span class="dim">.. construct::</span> consecrated NAME: ARCHETYPE = VALUE
    <span class="ok">A BINDING THAT MAY NOT BE REBOUND. PYTHON HAS NO CONSTANTS, ONLY THE
    ALL-CAPS HONOUR SYSTEM. REBINDING IS REJECTED AT COMPILE TIME WITHIN THE
    DECLARING SCOPE, AS IS A SECOND CONSECRATION OF THE SAME NAME AND ONE
    PLACED INSIDE A LOOP.</span>
+   <span class="dim">:archetype:</span> REQUIRED, PER SECTION [VIII]. NEWLY EXPRESSIBLE: THE CONSTRUCT
+               USED TO REACH THE COMPILER THROUGH THE ANNOTATION SLOT, SO A
+               CONSECRATED NAME COULD NOT CARRY ONE AT ALL.
    <span class="dim">:limit:</span> <span class="alert">WHAT THE COMPILER CANNOT SEE IT CANNOT STOP — setattr, globals(),
              ASSIGNMENT THROUGH THE MODULE OBJECT AND exec ALL PASS.
              THIS IS ENFORCEMENT, NOT A GUARANTEE.</span>
@@ -295,9 +298,9 @@ GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
 ++ attempts: 3 ++
 </pre>
 
-<p class="desc">SIXTY-THREE WORDS ARE RESERVED IN TOTAL: THIRTY-EIGHT RITES, FIVE BUILTINS,
-FIFTEEN CURSES, TWO NUMERALS AND THREE CONSTRUCTS. THE MACHINE ALSO KEEPS
-ITS CARRIER NAMES — <span class="lower amber">__consecrated__</span>,
+<p class="desc">SIXTY-FOUR WORDS ARE RESERVED IN TOTAL: THIRTY-EIGHT RITES, FIVE BUILTINS,
+FIFTEEN CURSES, TWO NUMERALS AND FOUR CONSTRUCT WORDS. THE MACHINE ALSO KEEPS
+ITS OWN NAMES — <span class="lower amber">__consecrated__</span>,
 <span class="lower amber">__litany__</span>, <span class="lower amber">__augur__</span>
 AND EVERYTHING BEGINNING <span class="lower amber">__liturgy_</span> — FOR
 ITSELF; SPEAKING ONE ANYWHERE BUT AFTER A DOT IS A LOUD HERESY.</p>
@@ -365,13 +368,13 @@ ITSELF; SPEAKING ONE ANYWHERE BUT AFTER A DOT IS A LOUD HERESY.</p>
 <pre><span class="comment">## The Rite of Recurrent Numeration</span>
 <span class="comment">## Chanted before the cogitator, that it may recall the sacred sequence.</span>
 
-<span class="kw">rite</span> fibonacci(n):
+<span class="kw">rite</span> fibonacci(n: int) -&gt; int:
     <span class="kw">should</span> n &lt; 2:
         <span class="kw">render</span> n
     <span class="kw">render</span> fibonacci(n - 1) + fibonacci(n - 2)
 
 
-<span class="kw">rite</span> litany_of_numeration(count):
+<span class="kw">rite</span> litany_of_numeration(count: int) -&gt; Void:
     recited = []
     <span class="kw">foreach</span> i <span class="kw">among</span> span(count):
         value = fibonacci(i)
@@ -479,9 +482,10 @@ ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
    <span class="field">:returns:</span> 0 IF NOTHING WAS REPORTED, 1 IF ANYTHING WAS.
    <span class="field">:silently:</span> <span class="alert">A FINDING SO MARKED SUBSTITUTES TO A NAME, NOT A KEYWORD —
               THE FILE COMPILES AND THE HARM IS DEFERRED.</span>
-   <span class="field">:not checked:</span> THE THREE CONSTRUCT WORDS. THEY ARE NEVER SUBSTITUTED, SO
-                 NOTHING BOUND TO ONE QUIETLY CHANGES MEANING. consecrated IS
-                 STILL CAUGHT, BY THE COMPILE CHECK.
+   <span class="field">:not checked:</span> THE FOUR CONSTRUCT WORDS. THEY ARE NEVER SUBSTITUTED, SO
+                 NOTHING BOUND TO ONE QUIETLY CHANGES MEANING. consecrated AND
+                 unsanctioned ARE STILL CAUGHT, BY THE COMPILE CHECK — AS IS
+                 AN UNDECLARED ARCHETYPE.
    <span class="field">:unscanned:</span> A DIRECTORY REACHED BY SYMLINK IS NAMED, NOT PASSED OVER.</pre>
 </div>
 
@@ -691,6 +695,83 @@ THE GUARD SPEAKS INSTEAD AND NOTHING IS TOUCHED:</p>
 <pre>
 <span class="alert">   no .lit file found; refusing to delete anything</span>
 </pre>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[VIII] THE DECLARATION OF ARCHETYPES</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<p class="desc">PYTHON INVITES TYPE HINTS AND ENFORCES NOTHING. LITURGY ENFORCES THEM AT
+COMPILE TIME. ONE NEW WORD — <span class="lower amber">unsanctioned</span> — AND IT
+IS THE WORD FOR REFUSING THE RULE. <span class="lower amber">archetype</span> WAS
+ALREADY <span class="lower amber">type</span>, SO THE ANNOTATION ITSELF GAINED NO
+SPELLING OF ITS OWN.</p>
+
+<div class="directive">
+<pre><span class="dim">.. rule::</span> <span class="sig">every parameter, every return, every consecrated binding</span>
+
+   <span class="ok">A LITANY MUST DECLARE THE ARCHETYPE OF EVERY RITE'S PARAMETERS, OF EVERY
+   RITE'S RETURN, AND OF EVERY consecrated BINDING. -&gt; Void IS THE IDIOM FOR
+   A RITE THAT RENDERS NOTHING. EVERY PARAMETER POSITION PYTHON CAN ANNOTATE
+   IS COVERED: POSITIONAL-ONLY, ORDINARY, KEYWORD-ONLY, *args AND **kwargs.</span>
+
+   <span class="alert">:presence, not correctness:</span> <span class="alert">LITURGY SEES THAT AN ANNOTATION IS WRITTEN.
+                               IT CANNOT SEE WHETHER IT IS TRUE.
+                               rite count(n: str) -&gt; int: IS A LIE IN BOTH
+                               HALVES AND PASSES. A TYPE CHECKER IS DESIGNED
+                               AND UNSCHEDULED.</span>
+   <span class="field">:not required:</span> PLAIN ASSIGNMENTS, foreach TARGETS, COMPREHENSION
+                  VARIABLES, anointed ... styled TARGETS, THE NAME A curse
+                  BINDS. IDIOMATIC PYTHON LEAVES THEM BARE AND SO DOES THIS.
+   <span class="field">:exempt by construction:</span> self AND cls IN THE FIRST PARAMETER SLOT ONLY;
+                            servitor ENTIRELY, SINCE PYTHON CANNOT ANNOTATE A
+                            LAMBDA'S PARAMETERS; commune, WHERE EVERY ENTRY IS
+                            ITS OWN COMPILATION UNIT; AND .py FILES, WHICH ARE
+                            PYTHON'S BUSINESS.
+   <span class="field">:where it lives:</span> THE COMPILE PATH, BESIDE THE OTHER CONSTRUCT
+                    REJECTIONS — SO chant, prove AND augur REPORT IT ALIKE AND
+                    CANNOT DISAGREE.</pre>
+</div>
+
+<div class="directive">
+<pre><span class="dim">.. construct::</span> unsanctioned
+
+   <span class="ok">THE EXEMPTION SAID ALOUD. A MODIFIER WITH NO PYTHON SPELLING: IT IS
+   SPLICED AWAY AND WHAT IT MARKED IS RECORDED BESIDE THE GENERATED SOURCE,
+   SO A LITANY USING IT COMPILES TO EXACTLY THE PYTHON IT WOULD HAVE
+   WITHOUT IT.</span>
+
+   <span class="field">:before a rite:</span> EXEMPTS THAT RITE, AND EVERYTHING NESTED INSIDE IT.
+                   REACHES remote rite TOO.
+   <span class="field">:before a consecrated:</span> EXEMPTS THAT ONE BINDING.
+   <span class="field">:alone at the margin:</span> EXEMPTS THE WHOLE LITANY. THERE IS NO PER-LINE FORM.
+   <span class="alert">:anywhere else:</span> A HERESY, NOT A SILENT NO-OP — A MODIFIER THAT LOOKS
+                   APPLIED AND IS NOT IS WORSE THAN NO MODIFIER.
+   <span class="field">:not the opposite of:</span> Sanctioned, WHICH IS True. A DIFFERENT WORD IN A
+                         DIFFERENT CASE MET IN A DIFFERENT POSITION.</pre>
+</div>
+
+<div class="code-block">
+<pre><span class="kw">rite</span> greet(name: str) -&gt; <span class="kw">Void</span>:
+    intone(<span class="string">f"Ave {name}"</span>)
+
+
+<span class="kw">consecrated</span> PORT: int = 8080
+
+
+<span class="kw">unsanctioned</span> <span class="kw">rite</span> legacy(x):
+    <span class="kw">render</span> x</pre>
+</div>
+
+<div class="warning">
+<pre>++ MACHINE CURSE ++
+   the rite was ill-written at prayer.lit, line 1
+       rite greet(name):
+                  ^^^^
+   TechHeresy: name is unsanctioned; every parameter must declare its archetype
+++ the machine spirit is displeased ++</pre>
+</div>
 </section>
 
 <pre class="rule">================================================================================</pre>

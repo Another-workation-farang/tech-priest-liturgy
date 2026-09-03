@@ -61,25 +61,25 @@ def test_line_numbers_are_liturgy_line_numbers():
 CARRIERS = {"__consecrated__", "__litany__", "__augur__"}
 
 CARRIER_SOURCES = {
-    "module": "consecrated PORT = 8080\n",
-    "rite": "rite f():\n    consecrated PORT = 1\n    render PORT\n",
-    "pattern": "pattern C:\n    consecrated PORT = 1\n",
+    "module": "consecrated PORT: int = 8080\n",
+    "rite": "rite f() -> int:\n    consecrated PORT: int = 1\n    render PORT\n",
+    "pattern": "pattern C:\n    consecrated PORT: int = 1\n",
     "curse-block": (
-        "attempt:\n    abide\ncurse MachineCurse:\n    consecrated PORT = 1\n"
+        "attempt:\n    abide\ncurse MachineCurse:\n    consecrated PORT: int = 1\n"
     ),
     "regardless-block": (
-        "attempt:\n    abide\nregardless:\n    consecrated PORT = 1\n"
+        "attempt:\n    abide\nregardless:\n    consecrated PORT: int = 1\n"
     ),
-    "wherein-block": "discern 1:\n    wherein 1:\n        consecrated PORT = 1\n",
-    "should-block": "should Sanctioned:\n    consecrated PORT = 1\n",
+    "wherein-block": "discern 1:\n    wherein 1:\n        consecrated PORT: int = 1\n",
+    "should-block": "should Sanctioned:\n    consecrated PORT: int = 1\n",
     "anointed-block": (
-        "anointed unseal('/dev/null') styled fh:\n    consecrated PORT = 1\n"
+        "anointed unseal('/dev/null') styled fh:\n    consecrated PORT: int = 1\n"
     ),
     "litany": "litany(thrice, curse=MotiveFailure):\n    abide\n",
-    "augur": "rite f(x):\n    augur:\n        x > 0\n    render x\n",
+    "augur": "rite f(x: int) -> int:\n    augur:\n        x > 0\n    render x\n",
     "all-three": (
-        "consecrated LIMIT = 2\n"
-        "rite f(x):\n"
+        "consecrated LIMIT: int = 2\n"
+        "rite f(x: int) -> int:\n"
         "    augur:\n"
         "        x > 0\n"
         "    litany(LIMIT, curse=MotiveFailure):\n"

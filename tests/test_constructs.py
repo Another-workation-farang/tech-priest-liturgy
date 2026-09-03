@@ -111,7 +111,7 @@ def test_a_single_line_consecrated_is_untouched_by_the_guard():
     from liturgy.compiler import compile_litany
 
     ns = {}
-    exec(compile_litany("consecrated PORT = 8080\n", "prayer.lit"), ns)
+    exec(compile_litany("consecrated PORT: int = 8080\n", "prayer.lit"), ns)
     assert ns["PORT"] == 8080
 
 

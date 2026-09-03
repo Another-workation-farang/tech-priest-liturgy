@@ -109,7 +109,7 @@ class TestAuguryConditions:
         # A docstring in the block was silently a truthy "condition".
         with pytest.raises(TechHeresy, match="constant"):
             compile_litany(
-                'rite f(x):\n    augur:\n        "x is positive"\n'
+                'rite f(x: int) -> int:\n    augur:\n        "x is positive"\n'
                 "    render x\n",
                 "p.lit",
             )
@@ -117,13 +117,13 @@ class TestAuguryConditions:
     def test_a_walrus_is_not_a_condition(self):
         with pytest.raises(TechHeresy, match="assignment"):
             compile_litany(
-                "rite f(x):\n    augur:\n        (y := x)\n    render x\n",
+                "rite f(x: int) -> int:\n    augur:\n        (y := x)\n    render x\n",
                 "p.lit",
             )
 
     def test_a_call_is_a_condition_judged_by_its_truth(self):
         code = compile_litany(
-            "rite f(x):\n    augur:\n        isinstance(x, int)\n"
+            "rite f(x: int) -> int:\n    augur:\n        isinstance(x, int)\n"
             "    render x\n"
             "y = f(3)\n",
             "p.lit",
@@ -239,7 +239,7 @@ class TestResting:
     def test_resting_is_evaluated_exactly_once(self):
         code = compile_litany(
             "calls = []\n"
-            "rite pause():\n"
+            "rite pause() -> int:\n"
             "    calls.append(1)\n"
             "    render 0\n"
             "attempt:\n"

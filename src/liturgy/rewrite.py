@@ -7,6 +7,7 @@ into real semantics, and rejects the misuses the compiler can see.
 from __future__ import annotations
 
 import ast
+import re
 
 from .constructs import (
     AUGUR_CARRIER,
@@ -14,13 +15,17 @@ from .constructs import (
     heresy,
 )
 from .sourcemap import char_offset
-from .transform import Consecration, ConstructFacts
+from .transform import Consecration, ConstructFacts, Exemption
 
 # The two litany guards fire either at compile time (a literal) or at run
 # time (a computed value); one spelling per fault, shared by both tiers, so
 # the diagnostics cannot drift apart.
 _AT_LEAST_ONCE = "a litany must be chanted at least once"
 _NO_NEGATIVE_REST = "a litany cannot rest for a negative span"
+
+# The generated Python a rite's header begins with, up to its name.
+# `remote rite` becomes `async def`, so the `async` is optional.
+_DEF_HEADER = re.compile(r"(?:async\s+)?def\s+")
 
 
 class ConstructPass(ast.NodeTransformer):
@@ -31,6 +36,7 @@ class ConstructPass(ast.NodeTransformer):
         smap,
         py_lines: list[str],
         facts: ConstructFacts,
+        sanction: bool = True,
     ) -> None:
         self.filename = filename
         self.lines = lines
@@ -42,6 +48,20 @@ class ConstructPass(ast.NodeTransformer):
         # the wrong shape -- see `_reject_unsealed`.
         self._sealed: set[Consecration] = set()
         self._litany_seq = 0
+        # A bare `unsanctioned` at the margin exempts the whole litany, so
+        # the rule is simply off for this compilation. `visit_Interactive`
+        # turns it off the same way, and so does a caller passing
+        # `sanction=False`: one switch, so the three cannot drift apart.
+        #
+        # `sanction=False` is for a caller compiling Liturgy that nobody
+        # authored -- `transcribe`, checking its own machine-made output.
+        # It suppresses the archetype rule and NOTHING else: every other
+        # rejection here is a property of well-formed Liturgy, while this
+        # one is a policy about litanies an author writes.
+        self._sanctioning = sanction and not facts.unsanctioned_file
+        # True while inside a rite the author marked `unsanctioned`. The
+        # mark is inherited -- see `_scope`.
+        self._exempt = False
 
     def _heresy(self, node: ast.AST, message: str):
         """A located TechHeresy, in the same coordinates `constructs.heresy`
@@ -142,6 +162,144 @@ class ConstructPass(ast.NodeTransformer):
             text,
         )
 
+    # -- the declaration of archetypes -----------------------------------
+    def _located_heresy(self, lineno: int, py_col: int, length: int, message: str):
+        """A TechHeresy pointing at a span of the *generated Python* line.
+
+        `_heresy` covers the common case -- a node whose own `col_offset`
+        names the fault -- and underlines a single column. Two of the three
+        sanction faults need neither: a missing return annotation is
+        reported against the rite's *name*, which no node carries a
+        location for, and every one of them reads better with the whole
+        name underlined.
+
+        `py_col` is a 0-based **character** column in the generated Python,
+        the same coordinate `_heresy` hands over, because
+        `curse._render_syntax_location` maps both `offset` and `end_offset`
+        through `SourceMap.to_lit` before drawing the caret.
+        """
+        text = self.lines[lineno - 1] if lineno - 1 < len(self.lines) else ""
+        exc = heresy(message, self.filename, lineno, py_col + 1, text)
+        exc.end_lineno = lineno
+        exc.end_offset = py_col + 1 + length
+        return exc
+
+    def _py_col(self, node) -> int:
+        """A node's 0-based *character* column in the generated Python line.
+
+        `col_offset` counts UTF-8 bytes; everything downstream counts
+        characters. This is `_lit_col` without the final hop back through
+        the SourceMap -- which is what a heresy wants, since the renderer
+        makes that hop itself.
+        """
+        py_line = self._py_line(node.lineno)
+        return char_offset(py_line, node.col_offset or 0)
+
+    def _py_line(self, lineno: int) -> str:
+        return self.py_lines[lineno - 1] if lineno - 1 < len(self.py_lines) else ""
+
+    def _exempted(self, node, kind: str) -> bool:
+        """Did an `unsanctioned` modifier mark this statement?
+
+        `Exemption` is recorded in Liturgy coordinates against the first
+        token of the marked statement that survives the splice -- `rite`
+        (or `remote`) for a rite, the name for a consecrated binding --
+        which is exactly what `_lit_col` returns for the node the statement
+        parsed into. See `transform.Exemption`.
+        """
+        return (
+            Exemption(node.lineno, self._lit_col(node), kind)
+            in self.facts.unsanctioned
+        )
+
+    def _reject_undeclared_rite(self, node) -> None:
+        """Every parameter, and the return, must declare an archetype.
+
+        Presence, not correctness: Liturgy can see that an annotation is
+        written and cannot see whether it is true.
+
+        `self`/`cls` are exempt in the *first* positional slot only, which
+        is where a method's receiver actually is; a later parameter of that
+        name is an ordinary parameter wearing the name and gets no pass.
+        `*args` and `**kwargs` are annotatable in Python and so are not
+        exempt. A `servitor` never reaches here -- a lambda is not a
+        `FunctionDef`, and Python has no syntax for annotating one's
+        parameters, so a rule requiring it would forbid the construct.
+        """
+        args = node.args
+        positional = [*args.posonlyargs, *args.args]
+        receiver = (
+            positional[0]
+            if positional and positional[0].arg in ("self", "cls")
+            else None
+        )
+        ordered = [*positional]
+        if args.vararg is not None:
+            ordered.append(args.vararg)
+        ordered += args.kwonlyargs
+        if args.kwarg is not None:
+            ordered.append(args.kwarg)
+
+        for arg in ordered:
+            if arg is receiver or arg.annotation is not None:
+                continue
+            raise self._located_heresy(
+                arg.lineno,
+                self._py_col(arg),
+                len(arg.arg),
+                f"{arg.arg} is unsanctioned; "
+                "every parameter must declare its archetype",
+            )
+
+        if node.returns is None:
+            raise self._located_heresy(
+                node.lineno,
+                self._rite_name_col(node),
+                len(node.name),
+                f"{node.name} is unsanctioned; "
+                "a rite must declare what it renders",
+            )
+
+    def _rite_name_col(self, node) -> int:
+        """The generated-Python column of a rite's own name.
+
+        The AST gives a function's name as a bare string with no location
+        of its own, and the only column it carries is that of `def` (or of
+        `async`, for a `remote rite`). Searching the line for the name is
+        not good enough -- `rite f(f):` generates `def f(f):`, whose first
+        `f` is the one in `def` -- so the header keyword is matched
+        explicitly and the name taken to begin where it ends.
+        """
+        start = self._py_col(node)
+        py_line = self._py_line(node.lineno)
+        match = _DEF_HEADER.match(py_line, start)
+        return match.end() if match else start
+
+    def _reject_undeclared_seal(self, stmt) -> None:
+        """A consecrated name must declare its archetype.
+
+        `consecrated PORT: int = 8080` generates `PORT: int = 8080`, so the
+        annotated form is an `AnnAssign` and the bare one an `Assign`. That
+        distinction is the whole check -- and it exists at all only because
+        the carrier moved out of the annotation slot.
+
+        Only a statement `_consecrated_target` already matched reaches
+        here, so the bare form is an `Assign` with exactly one `Name`
+        target.
+        """
+        if not isinstance(stmt, ast.Assign):
+            return
+        target = stmt.targets[0]
+        if self._exempted(target, "consecrated"):
+            return
+        raise self._located_heresy(
+            target.lineno,
+            self._py_col(target),
+            len(target.id),
+            f"{target.id} is unsanctioned; "
+            "a consecrated name must declare its archetype",
+        )
+
     def _liturgy_source(self, node: ast.expr) -> str:
         """The Liturgy text of an expression, for an augury's message.
 
@@ -204,6 +362,13 @@ class ConstructPass(ast.NodeTransformer):
         # rebinding check, and -- worse -- no consecrated carrier ever
         # desugared, so on 3.12/3.13 the eagerly-evaluated annotation made
         # every `consecrated` at the prompt a NameError.
+        #
+        # The archetype rule is the one check the prompt does NOT get. Every
+        # entry is its own compilation unit, so there is nowhere to put an
+        # `unsanctioned` that would still be in force on the next line, and
+        # a prompt that rejects `rite f(x):` is not a REPL anyone will use.
+        # Chapter VIII's note about per-unit enforcement is the precedent.
+        self._sanctioning = False
         node = self._scope(node)
         self._reject_unsealed()
         return node
@@ -218,13 +383,41 @@ class ConstructPass(ast.NodeTransformer):
         return self._scope(node)
 
     def _scope(self, node):
+        """Every rule that is asked once per scope, in one place.
+
+        The archetype rule is the last of them, so a scope that is wrong in
+        an older way is still reported that way: a `consecrated` in a loop
+        is a loop fault whether or not it declares an archetype.
+
+        **An `unsanctioned` rite exempts everything nested inside it.** A
+        rite marked here sets `_exempt` for the whole of its subtree and
+        clears it on the way out, so a closure or a `pattern` defined
+        within an exempt rite is exempt too. The alternative -- exempting
+        the header and then nagging about a two-line helper three lines
+        below it -- would make the modifier useless on exactly the legacy
+        code it exists for, and there is no second word to reach for. A
+        nested rite that wants sanctioning again can be lifted out; a
+        module that wants the reverse has the bare `unsanctioned` line.
+        """
+        outer = self._exempt
+        if isinstance(node, _RITES) and self._exempted(node, "rite"):
+            self._exempt = True
+
         _reject_misplaced_auguries(node, self._heresy)
         consecrated = _collect_consecrated(
             node, self._heresy, self._consecrated_target
         )
         if consecrated:
             _reject_rebindings(node, consecrated, self._heresy)
+
+        if self._sanctioning and not self._exempt:
+            if isinstance(node, _RITES):
+                self._reject_undeclared_rite(node)
+            for stmt in consecrated.values():
+                self._reject_undeclared_seal(stmt)
+
         self.generic_visit(node)
+        self._exempt = outer
         return node
 
     # -- litany / augur --------------------------------------------------
@@ -343,7 +536,8 @@ def _literal_number(node):
 
 
 _LOOPS = (ast.For, ast.AsyncFor, ast.While)
-_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+_RITES = (ast.FunctionDef, ast.AsyncFunctionDef)
+_SCOPES = _RITES + (ast.ClassDef,)
 _MODULES = (ast.Module, ast.Interactive)
 
 # A `servitor` is a scope too, and it is the one that hides. It holds no

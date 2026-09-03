@@ -45,7 +45,7 @@ def parse_named(py: str, filename: str, src: str, smap: SourceMap, mode: str = "
 
 
 def _artifacts(
-    src: str, filename: str, *, mode: str = "exec"
+    src: str, filename: str, *, mode: str = "exec", sanction: bool = True
 ) -> tuple[ast.AST, str, SourceMap]:
     """The rewritten tree, plus the generated Python and map it came from."""
     try:
@@ -66,14 +66,17 @@ def _artifacts(
     py, smap = out.python, out.source_map
     tree = parse_named(py, filename, src, smap, mode)
     tree = ConstructPass(
-        filename, split_lines(src), smap, split_lines(py), out.facts
+        filename, split_lines(src), smap, split_lines(py), out.facts,
+        sanction=sanction,
     ).visit(tree)
     ast.fix_missing_locations(tree)
     return tree, py, smap
 
 
-def _rewritten_tree(src: str, filename: str, *, mode: str = "exec") -> ast.AST:
-    tree, _, _ = _artifacts(src, filename, mode=mode)
+def _rewritten_tree(
+    src: str, filename: str, *, mode: str = "exec", sanction: bool = True
+) -> ast.AST:
+    tree, _, _ = _artifacts(src, filename, mode=mode, sanction=sanction)
     return tree
 
 
@@ -84,15 +87,26 @@ def compile_litany(
     mode: str = "exec",
     dont_inherit: bool = True,
     optimize: int = -1,
+    sanction: bool = True,
 ) -> types.CodeType:
     """Compile Liturgy source, applying the construct rewrites.
+
+    `sanction=False` compiles without Spec IV's archetype rule and with
+    every other rejection intact. It exists for one caller: `transcribe`,
+    whose backstop compiles Liturgy that no author wrote, to ask "is this
+    a program?" -- not "does this meet the annotation policy?". Python does
+    not require annotations, so machine-rendered Python cannot be expected
+    to carry them, and judging it by a policy about authored litanies is a
+    category error. Nothing that *chants* a litany may pass it: a rule
+    `chant` enforces and `augur` does not would be the one disagreement
+    Spec II forbids.
 
     Raises:
         UnfinishedLitany: the source ends mid-bracket or mid-string.
         SyntaxError: a complete tokenisation or parse error.
         TechHeresy: a construct was used in a way the compiler rejects.
     """
-    tree, py, smap = _artifacts(src, filename, mode=mode)
+    tree, py, smap = _artifacts(src, filename, mode=mode, sanction=sanction)
     try:
         return compile(
             tree, filename, mode, dont_inherit=dont_inherit, optimize=optimize

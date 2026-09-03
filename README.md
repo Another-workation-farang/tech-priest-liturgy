@@ -26,15 +26,19 @@ time.
 > around in CPython's import machinery. It is not a serious language and it is
 > not maintained as one.
 >
-> It is **incomplete** — the third of three planned specs is seven verbs
-> into an eight-verb surface, and the last name is still nothing but a
-> reserved word.
+> It is **incomplete** — Spec III's CLI surface is seven verbs into eight,
+> the last name is still nothing but a reserved word, and Spec IV enforces
+> that archetypes are *written* without checking that any of them is *true*.
 >
 > It is **breakable**. Some of it is documented: naming a variable `span` or
 > `measure` (or `discern`, or any of the ten quiet words) silently shadows
 > the name it aliases and fails somewhere else entirely,
 > `consecrated` cannot stop `setattr` or `globals()`, and any word Liturgy
-> reserves is a word your program may not use as an identifier. `augur` will
+> reserves is a word your program may not use as an identifier. Every rite
+> must now declare an archetype for each parameter and for its return, and
+> every `consecrated` binding must declare one too, so a litany written
+> before that rule no longer compiles until it is annotated or marked
+> `unsanctioned`. `augur` will
 > now find that first class of sharp edge for you, which is not the same as
 > the sharp edge not being there. The rest is the ordinary risk of a project
 > written in a few days by one person and reviewed by nobody who has to live
@@ -262,22 +266,22 @@ Spec II adds three things Python has no name for. Save this as
 `constructs.lit`:
 
 ```
-consecrated MAX_ATTEMPTS = 3
+consecrated MAX_ATTEMPTS: int = 3
 
 
-rite divide(a, b):
+rite divide(a: float, b: float) -> float:
     augur:
         b be nay Void
         b != 0
     render a / b
 
 
-rite flaky(attempts):
+rite flaky(attempts: list) -> Void:
     attempts.append(1)
     proclaim MotiveFailure("the spirit is silent")
 
 
-rite main():
+rite main() -> Void:
     intone(f"++ 6 / 2 is {divide(6, 2)} ++")
 
     attempt:
@@ -304,8 +308,8 @@ $ liturgy chant constructs.lit
 ++ attempts: 3 ++
 ```
 
-`consecrated NAME = value` is a binding the compiler will not let you
-rebind: a second assignment, a second `consecrated` of the same name, and a
+`consecrated NAME: archetype = value` is a binding the compiler will not let
+you rebind: a second assignment, a second `consecrated` of the same name, and a
 `consecrated` inside a loop body are all rejected at compile time. The
 limitation is real and worth stating plainly: what the compiler cannot see,
 it cannot stop. `setattr`, `globals()`, assignment through the module
@@ -337,6 +341,90 @@ generated code imports nothing from Liturgy.
 A fourth construct, `noospheric` — a process-wide registry — was designed
 alongside these three but cut rather than built: it is a service locator,
 and with no runtime, it had nowhere clean to live.
+
+## Declaring archetypes
+
+Python invites type hints and enforces nothing. Liturgy enforces them. Every
+rite must declare an archetype for each of its parameters and for what it
+renders, and every `consecrated` binding must declare one:
+
+```
+rite greet(name):
+    intone(f"Ave {name}")
+```
+
+```
+$ liturgy chant prayer.lit
+++ MACHINE CURSE ++
+   the rite was ill-written at prayer.lit, line 1
+       rite greet(name):
+                  ^^^^
+   TechHeresy: name is unsanctioned; every parameter must declare its archetype
+++ the machine spirit is displeased ++
+```
+
+Annotate the parameter and the next complaint is about the return, reported
+against the rite's own name; `-> Void` is how a rite says it renders nothing:
+
+```
+rite greet(name: str) -> Void:
+    intone(f"Ave {name}")
+```
+
+`consecrated PORT: int = 8080` is required in the same way, and is **newly
+legal** — before this it was a syntax error, because the construct reached
+the compiler through the annotation slot and so occupied it.
+
+**This is presence, not correctness.** Liturgy checks that an annotation is
+written. It cannot check that it is true: `rite count(n: str) -> int:` is a
+lie in both halves and passes cleanly. Verifying an archetype against the
+value that actually arrives is a type checker's job, and Liturgy is not one —
+[a design exists](design/specs/2026-09-03-liturgy-archetype-truth-design.md)
+and is not scheduled. Keep running mypy.
+
+Nothing else is required: plain assignments, loop targets, comprehension
+variables, `anointed ... styled` targets and the name a `curse` binds are all
+unannotated in idiomatic Python. Four things are exempt because they cannot
+be annotated at all:
+
+- **`self` and `cls`**, in the first parameter slot only — the same waiver
+  every Python type checker makes.
+- **`servitor`** (lambda), entirely. Python has no syntax for annotating a
+  lambda's parameters, so requiring it would forbid the construct.
+- **`commune`**, the REPL. Every entry is its own compilation unit, so there
+  is nowhere to put an exemption that outlives the line.
+- **`.py` files.** Liturgy compiles `.lit`; a Python file is Python's
+  business.
+
+Anything else you will not annotate, you say so about. `unsanctioned` is the
+one word this rule adds, and it has no Python spelling — it is spliced out
+before the source is compiled. As a modifier it exempts a single rite or
+binding, and everything nested inside an exempted rite:
+
+```
+unsanctioned rite legacy(x):
+    render x
+
+unsanctioned consecrated PORT = 8080
+```
+
+Alone on a line at the left margin, it exempts the whole file:
+
+```
+unsanctioned
+
+rite one(a):
+    render a
+```
+
+Anywhere else it is a compile error rather than a silent no-op, because a
+modifier that looks applied and is not is worse than none. There is no
+per-line form.
+
+The rule lives in the compile path rather than in a checker of its own, so
+`chant`, `prove` and `augur` all report it and cannot disagree about it. Note
+that `Sanctioned` (Liturgy for `True`) is a different word in a different
+position, and not the opposite of `unsanctioned`.
 
 ## Heresy: calling the rite by its mundane name
 
@@ -684,7 +772,7 @@ test_rites.lit .F                                                        [100%]
 =================================== FAILURES ===================================
 __________________________ test_the_omnissiah_is_not ___________________________
 
-    rite test_the_omnissiah_is_not():
+    rite test_the_omnissiah_is_not() -> Void:
 >       attest measure("cog") == 99
                ^^^^^^^^^^^^^^^^
 E       AssertionError
@@ -853,7 +941,8 @@ Spec I gets you alias-only Liturgy: writing, running, and debugging `.lit`
 files with an honest import hook and honest tracebacks. Spec II adds the three
 constructs above. Spec III is the CLI verb surface, and seven of its eight
 verbs — `augur`, `transcribe`, `forge`, `consecrate`, `sanctify`, `prove`,
-`purge` — are built and documented above.
+`purge` — are built and documented above. Spec IV requires archetypes to be
+declared.
 
 One name is still nothing but a name the command line refuses to hand to
 anything else:
@@ -866,6 +955,12 @@ anything else:
   and `prove` and `sanctify` were each declined on their merits before being
   built on better terms.
 
+One capability is designed and deliberately unscheduled. Spec IV requires an
+archetype to be *written*; checking that it is *true* is a type checker, which
+[a fifth spec designs](design/specs/2026-09-03-liturgy-archetype-truth-design.md)
+and nothing schedules. Until something does, an annotation in a litany is a
+statement of intent that the compiler counts and does not read.
+
 Two names are reused deliberately across the two namespaces, and it is worth
 saying so plainly rather than letting it confuse anyone later: `augur` is both
 a Spec II source construct (preconditions) and the Spec III CLI verb (lint),
@@ -873,7 +968,11 @@ and `purge` is both a Spec I keyword alias for `del` and the Spec III CLI verb
 (clearing caches). A source keyword and a CLI verb cannot actually collide
 with each other — they live in entirely different namespaces — but the same
 word meaning two different things in the same project is exactly the kind of
-thing worth spelling out instead of leaving implicit.
+thing worth spelling out instead of leaving implicit. `Sanctioned` and
+`unsanctioned` are the third pair and the closest one, since both are source
+words: `Sanctioned` is Spec I's alias for `True`, and `unsanctioned` is Spec
+IV's modifier waiving the archetype rule. One is not the negation of the
+other, and nothing but case and position tells them apart.
 
 The full design is in
 [`design/specs/2026-08-30-liturgy-core-design.md`](design/specs/2026-08-30-liturgy-core-design.md);
