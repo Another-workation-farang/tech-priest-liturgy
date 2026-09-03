@@ -1,0 +1,31 @@
+docs/index.html
+  s_d162ead593e4de::t_c3fee56d40e6e8 216-225
+docs/LIBER-LITURGIAE.md
+  s_d162ead593e4de::t_8a5f4801cc2cba 101-134,136-181
+  s_d162ead593e4de::t_ca88ae04c3f739 135
+docs/liber-liturgiae.html
+  s_d162ead593e4de::t_9f36adc1fc3d66 331-363,365-410
+  s_d162ead593e4de::t_ca88ae04c3f739 364
+README.md
+  s_d162ead593e4de::t_3c69ba3a4efff5 153-225
+docs/liturgy-data-slate.html
+  s_d162ead593e4de::t_b74a883de3ed66 206-228
+tests/test_codex.py
+  s_d162ead593e4de::t_867202a7d47190 1-149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "a7a66c2780cf5b6637357b69fdfbc87b485e8f4d",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
