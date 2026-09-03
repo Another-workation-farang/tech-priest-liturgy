@@ -12,6 +12,7 @@ from liturgy.reverse import to_liturgy
 
 from liturgy.constructs import carrier_pass
 from liturgy.lexicon import RESERVED
+from liturgy.compiler import _PASSES
 from liturgy.transform import transform
 
 
@@ -155,6 +156,42 @@ SAMPLES: list[tuple[str, list[str]]] = [
         'print(f"{fn(print=1)}")\n',
         ["intone"],
     ),
+    # The one phrase rule. `introit` is a macro, so this is the only entry
+    # whose required word stands for more than one Python token -- and the
+    # only one where the reverse pass must beat the alias pass to the same
+    # `if`, which would otherwise be `should`. A regression that let both
+    # fire splices the two over each other and this stops being `src`.
+    (
+        textwrap.dedent(
+            """\
+            def main():
+                return 0
+
+
+            if __name__ == "__main__":
+                main()
+            """
+        ),
+        ["introit", "rite", "render"],
+    ),
+    # The shapes the phrase rule deliberately does not touch, in one sample
+    # so that a rule which grew too greedy fails here rather than only in
+    # the corpus sweep. Every line below must come back unchanged, and none
+    # of them may become `introit`.
+    (
+        textwrap.dedent(
+            """\
+            if __name__ == '__main__':
+                pass
+            if __name__=="__main__":
+                pass
+            if __name__ == "__main__" and ready:
+                pass
+            if __name__ == "__main__": go()
+            """
+        ),
+        ["should", "abide"],
+    ),
 ]
 
 
@@ -163,7 +200,7 @@ def test_python_to_liturgy_and_back_is_identity(src, required):
     lit = to_liturgy(src)
     for word in required:
         assert _has_word(lit, word), f"expected {word!r} in reverse output: {lit!r}"
-    assert transform(lit).python == src
+    assert transform(lit, _PASSES).python == src
 
 
 # --- I9: the same property over real Python files ---------------------------
@@ -327,18 +364,25 @@ def test_real_python_files_round_trip_through_liturgy(capsys):
         swept += 1
         try:
             # I7: the sweep is the spec's designated backstop for Spec II,
-            # and `transform` here runs DEFAULT_PASSES -- the alias pass
-            # alone. Without this line the carrier pass never sees a single
-            # corpus file and the backstop is inert for the pass it exists
-            # to guard. A file with no construct keyword in statement
-            # position must yield no substitution at all: anything else is
-            # the carrier pass firing on somebody's ordinary identifier,
-            # which is the Spec I failure this whole design exists to avoid.
+            # and the carrier pass would otherwise never see a corpus file
+            # at all -- the backstop inert for the pass it exists to guard.
+            # A file with no construct keyword in statement position must
+            # yield no substitution at all: anything else is the carrier
+            # pass firing on somebody's ordinary identifier, which is the
+            # Spec I failure this whole design exists to avoid.
+            #
+            # This is asserted about the *Python*, and the round trip below
+            # runs `_PASSES` over the Liturgy. The two are not the same
+            # question: `to_liturgy` may write a construct word the Python
+            # never had -- `introit:` for a main guard -- and the round trip
+            # is only the identity if the forward direction expands it
+            # again. `_PASSES` is what `chant` compiles with, so this now
+            # checks the path a reader of the output would actually take.
             carried = carrier_pass(toks)
             if carried.subs or carried.facts:
                 failures.append(f"{path}: carrier_pass produced {carried!r}")
                 continue
-            back = transform(to_liturgy(src)).python
+            back = transform(to_liturgy(src), _PASSES).python
         except Exception as exc:  # noqa: BLE001 - report, do not mask
             failures.append(f"{path}: {type(exc).__name__}: {exc}")
             continue

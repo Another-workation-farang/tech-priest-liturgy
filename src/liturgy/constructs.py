@@ -43,8 +43,18 @@ _BLOCK_OPENERS = frozenset(
         "wherein", "remote",
         # Spec II block constructs
         "litany", "augur",
+        # The macro construct: `introit:` opens a block like any other header.
+        "introit",
     }
 )
+
+
+# What `introit` expands to, without the colon -- the colon the author wrote
+# is left in place, so a trailing comment survives untouched. One authority:
+# the forward carrier splices exactly this text in, and `reverse` reverses
+# exactly this text and nothing else, which is what makes the two compose to
+# the identity over the corpus sweep.
+INTROIT_GUARD = 'if __name__ == "__main__"'
 
 
 # The names the carrier pass writes into the generated Python, and the
@@ -267,6 +277,8 @@ def carrier_pass(toks: list[tokenize.TokenInfo]) -> PassResult:
             subs.extend(_litany_carrier(significant, i))
         elif tok.string == "augur":
             subs.extend(_augur_carrier(significant, i))
+        elif tok.string == "introit":
+            subs.extend(_introit_carrier(significant, i))
 
     return PassResult(
         subs,
@@ -511,5 +523,42 @@ def _augur_carrier(
         return []  # not a construct header: somebody's call, left alone
     raise heresy(
         "augur opens a block and takes no arguments",
+        "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
+    )
+
+
+def _introit_carrier(
+    significant: list[tokenize.TokenInfo], i: int
+) -> list[Substitution]:
+    """`introit:` -> `if __name__ == "__main__":`.
+
+    The one macro in the language: every other Liturgy word stands for one
+    Python word, and this one stands for a comparison against a particular
+    string. It needs no carrier name and no AST pass -- the guard it expands
+    to is already ordinary Python, so the token spliced in on one line is the
+    whole of the construct.
+
+    The shape is exactly `introit:` with nothing after the colon but a
+    comment, mirroring `augur:`. `introit: int` -- a colon with anything else
+    after it -- is an annotation of a variable named introit and is left
+    alone, and so is every position that is not a statement's own head, so
+    `x.introit`, `f(introit=1)` and `pattern introit:` remain the author's.
+    Anything that does open a block and is not the bare header is a heresy:
+    the construct takes no arguments, and there is nothing to parameterise --
+    an author who wants a different comparison writes the Python.
+    """
+    kw = significant[i]
+    nxt = significant[i + 1] if i + 1 < len(significant) else None
+    if nxt is not None and nxt.type == tokmod.OP and nxt.string == ":":
+        after = significant[i + 2] if i + 2 < len(significant) else None
+        if after is not None and after.type != tokmod.NEWLINE:
+            return []  # an annotation: the colon does not end the line
+        return [
+            Substitution(kw.start[0], kw.start[1], kw.end[1], INTROIT_GUARD)
+        ]
+    if not opens_a_block(significant, i):
+        return []  # not a construct header: somebody's name, left alone
+    raise heresy(
+        "introit opens a block and takes no arguments",
         "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
     )

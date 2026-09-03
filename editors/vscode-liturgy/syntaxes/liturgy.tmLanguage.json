@@ -44,7 +44,7 @@
       ]
     },
     "construct-header": {
-      "comment": "A construct word is only a construct in header position: consecrated before a name, litany before its parenthesised count, augur with the colon ending the line, unsanctioned before a rite or a consecrated name (or alone at the margin, exempting the whole litany).",
+      "comment": "A construct word is only a construct in header position: consecrated before a name, litany before its parenthesised count, augur with the colon ending the line, introit with the colon ending the line (it takes nothing at all), unsanctioned before a rite or a consecrated name (or alone at the margin, exempting the whole litany).",
       "patterns": [
         {
           "match": "^\\s*(?:unsanctioned\\s+)?(consecrated)\\b(?=\\s+[A-Za-z_])",
@@ -56,6 +56,10 @@
         },
         {
           "match": "^\\s*(augur)\\b(?=\\s*:\\s*(#.*)?$)",
+          "captures": { "1": { "name": "keyword.control.construct.liturgy" } }
+        },
+        {
+          "match": "^\\s*(introit)\\b(?=\\s*:\\s*(#.*)?$)",
           "captures": { "1": { "name": "keyword.control.construct.liturgy" } }
         },
         {

@@ -68,7 +68,9 @@ Ave Omnissiah
 ```
 
 `chant` runs a `.lit` file with `__main__` semantics, the way `python file.py`
-runs a Python one. Arguments after the filename are passed to the prayer.
+runs a Python one. Arguments after the filename are passed to the prayer, and
+an `introit:` block at the foot of the file (Chapter X) runs exactly when you
+would expect it to.
 
 ### commune: to hold converse
 
@@ -578,8 +580,8 @@ invocations work as expected: `within . invoke sibling`, and deeper.
 *A word given to the Machine God is no longer yours. Choose your own names
 knowing which are already spoken for.*
 
-Sixty-four words are reserved: thirty-eight rites, five builtins, fifteen
-curses, two numerals, and four construct words. Using one as your own
+Sixty-five words are reserved: thirty-eight rites, five builtins, fifteen
+curses, two numerals, and five construct words. Using one as your own
 identifier is an error. Most such errors are loud, and a loud error costs you a minute.
 
 ```
@@ -621,16 +623,17 @@ and `archetype` become `match`, `case` and `type`, which are ordinary
 identifiers anywhere they are not heading their own statement. So
 `discern = 5` compiles, runs, and has quietly bound the name `match`.
 
-Two of the four construct words are quiet too, for a different reason. A
+Three of the five construct words are quiet too, for a different reason. A
 construct word is only a construct in the position its header occupies;
 anywhere else it is an ordinary name, and the carrier pass leaves it alone.
-So `litany = 5`, `litany: int = 5`, `rite augur(x: int) -> int:` and
-`pattern litany:` all compile, and the name is yours until the day you want
-the construct on that line:
+So `litany = 5`, `litany: int = 5`, `rite augur(x: int) -> int:`,
+`introit: int = 5` and `pattern litany:` all compile, and the name is yours
+until the day you want the construct on that line:
 
 ```
 litany = 5
 augur = compute()
+introit = 7
 rite augur(x: int) -> int:
     render x
 pattern litany:
@@ -645,18 +648,23 @@ spelling of `augur` is refused as well: a bare, valueless annotation,
 and treating it as the annotation it technically is would check nothing. An
 augury's conditions belong on the lines beneath `augur:`, and the heresy says
 so; an annotation *with* a value (`augur: int = 5`) is unmistakably yours and
-compiles. Ten of the sixty-four words are quiet, then (the five builtins,
-the three soft keywords, `litany`, `augur`), and the rest are loud.
+compiles. `introit` is quiet on exactly the terms `augur` is: `introit:` alone
+on its line is the construct, `introit: int = 5` is an annotation of your own
+name, and `introit(x):`: a header that opens a block and is not the bare word
+is a heresy, because the construct takes no arguments and there is nothing
+to parameterise. Eleven of the sixty-five words are quiet, then (the five
+builtins, the three soft keywords, `litany`, `augur`, `introit`) and the rest
+are loud.
 
 `span` in particular is a natural name for a range of text, and it is
-precisely the wrong one. Eight of the ten no longer have to be carried in
+precisely the wrong one. Eight of the eleven no longer have to be carried in
 your head: the builtins and the soft keywords each *become* another word,
 and `liturgy augur` reports every binding that does. Chapter XI sets it down.
 
-`litany` and `augur` are not reported, and should not be. A construct word is
-never substituted, so there is nothing it silently becomes; the only hazard
-is the one above, that you may one day want the construct on a line whose name
-you have already spent. That one stays yours to track.
+`litany`, `augur` and `introit` are not reported, and should not be. A
+construct word is never substituted, so there is nothing it silently becomes
+the only hazard is the one above, that you may one day want the construct
+on a line whose name you have already spent. That one stays yours to track.
 
 ### The machine's own names
 
@@ -792,6 +800,27 @@ a binding placed in a process-wide registry rather than module scope. It was
 with no runtime of its own for a registry like that to live in. There is no
 clean place left to put it.
 
+### The one word that is a macro, not a spelling
+
+Every word in the concordance is one word standing for one word. `render` is
+`return`; `measure` is `len`. That is the whole shape of the language, and
+the Appendix's bijection is the check that holds it: no two ritual words
+share a Python word, and no Python word has two ritual spellings.
+
+`introit` is the single exception, and it is recorded here rather than left
+to be discovered. It expands to `if __name__ == "__main__"` (not a word but
+a comparison against a particular string) so it has no Python spelling to
+be a table entry, and it appears in no concordance table. It is a construct
+word for that reason and no other; Chapter X sets it down in full.
+
+It cannot be parameterised, and this is a decision rather than an omission.
+`introit:` takes nothing at all: there is no `introit("__main__")`, no
+`introit(name)`, no spelling of it that compares against anything else. A
+macro that took an argument would be a second, private grammar for building
+comparisons, and Liturgy already has a perfectly good one: an author who
+wants a different comparison writes `should __name__ == other:`, which is
+Python, which is Liturgy. One expansion, or none.
+
 ### The one verb still unwritten
 
 Seven verbs are built; Chapter XI sets them down. One name remains reserved
@@ -840,8 +869,10 @@ discovered later.
 
 ## Chapter X: The Greater Rites
 
-*Three constructs the second spec adds. Python has no word for any of them;
-Liturgy needed new grammar, not new spelling, to say what they say.*
+*Three constructs the second spec adds, and one macro that came after them.
+Python has no word for any of the three: Liturgy needed new grammar, not new
+spelling, to say what they say. The fourth is the other way round: Python has
+the words, and says them at tedious length.*
 
 Each is a compile-time transformation, not a call into some runtime library.
 A carrier pass rewrites the construct's header, in place, into ordinary
@@ -951,6 +982,42 @@ already provides.
 A nested rite's own opening augury is independent of any augury on the rite
 that contains it; each rite's opening belongs to that rite alone.
 
+### introit: where the chanting begins
+
+```
+introit:
+    litany_of_numeration(11)
+```
+
+`introit:` desugars to exactly `if __name__ == "__main__":`. An introit is
+the opening chant of a Mass, the entrance; this names the point where a
+litany begins when it is chanted directly rather than invoked by another.
+
+It is the simplest thing in the language and the odd one out in this chapter.
+The other three are compile-time transformations with an AST pass behind
+them, restructuring the tree into semantics Python has no syntax for.
+`introit` has no AST pass and no carrier: one token is spliced into one line,
+and what comes out the other side is a guard any Python reader knows on
+sight. It is also, as Chapter IX records, the one Liturgy word that is a
+macro rather than a spelling: every other word stands for one Python word,
+and this one stands for a comparison against a particular string.
+
+The construct is exactly `introit:` with nothing after the colon but a
+comment. The colon and everything after it is yours and is left untouched,
+so `introit:  # the entrance` keeps its comment. Anywhere the word is not a
+statement's own head it is an ordinary name: `x.introit`, `f(introit=1)`,
+`pattern introit:`, `introit: int = 5`: and nothing is spliced. A header
+that opens a block and is not the bare word, `introit(x):`, is a heresy: the
+construct takes no arguments, and Chapter IX says why there is nothing to
+parameterise.
+
+`transcribe` reads it in the other direction. A Python file whose guard is
+spelled exactly `if __name__ == "__main__":` comes back as `introit:`; a
+guard spelled any other way (single quotes, different spacing, a longer
+condition, a body on the same line, an `elif`) is left as Python, because
+Liturgy is a superset of Python and leaving it is always correct, whereas
+rewriting an author's quoting is not. Chapter XI sets the verb down.
+
 ---
 
 ## Chapter XI: The Reading of Omens
@@ -1023,13 +1090,13 @@ and the substitution produced the bound name (`span = ...` becoming
 substitution and left you bound to it whole.
 
 This check reaches the sixty words that have a Python spelling, not all
-sixty-four. The four construct words are outside it by construction: they
+sixty-five. The five construct words are outside it by construction: they
 are never substituted, so no binding of one can quietly come to mean
-something else. `consecrated` and `unsanctioned` are still caught, by the
-second check, as a compile failure, and `litany` and `augur` are genuinely
-not faults. The machine's own names (Chapter VII) are within it: they have no
-Python spelling to become, but a `.py` file that binds one is a file no
-litany can import by that name, and the finding says so.
+something else. `consecrated` and `unsanctioned` are still caught (by the
+second check, as a compile failure) and `litany`, `augur` and `introit` are
+genuinely not faults. The machine's own names (Chapter VII) are within it:
+they have no Python spelling to become, but a `.py` file that binds one is a
+file no litany can import by that name, and the finding says so.
 
 **That the litany compiles.** For a `.lit` file, `augur` compiles the source
 after gathering collisions, so a file `augur` calls clean is a file `chant`
@@ -1875,6 +1942,11 @@ Liturgy to Python, then Python to Liturgy. The mapping is a bijection: no two
 ritual words share a Python word, and no Python word has two ritual spellings.
 A test asserts it, because the reverse direction is what Chapter XI's
 `transcribe` reads.
+
+The five construct words are in no table here and cannot be. Four of them
+(`consecrated`, `litany`, `augur`, `unsanctioned`) have no Python spelling at
+all, and `introit` has one too long to be a word: it is a macro, and Chapter
+IX records it as the language's one exception to word-for-word.
 
 ### Rites
 

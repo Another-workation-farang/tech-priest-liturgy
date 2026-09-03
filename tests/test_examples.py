@@ -48,3 +48,14 @@ def test_augur_catches_the_quiet_shadowing_the_docs_warn_about(tmp_path):
     )
     assert out.returncode == 1
     assert "span is reserved" in out.stdout
+
+
+def test_both_examples_open_with_an_introit():
+    # The two example files are mirrored verbatim into the README and the
+    # data-slate, so a silent revert here desynchronises three surfaces at
+    # once. `introit:` is also the only construct the fibonacci example
+    # carries, so without this the example proves nothing about it.
+    for name in ("fibonacci.lit", "constructs.lit"):
+        text = (EXAMPLES / name).read_text()
+        assert "\nintroit:\n" in text, name
+        assert "__main__" not in text, name

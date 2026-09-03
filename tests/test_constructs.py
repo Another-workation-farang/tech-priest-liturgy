@@ -197,3 +197,74 @@ def test_two_headers_on_one_row_are_both_reported():
 
 def test_a_litany_that_consecrates_nothing_reports_no_facts():
     assert not carried("x = 1\nintone(x)\n").facts
+
+
+# --- introit: the one macro -------------------------------------------------
+#
+# `introit:` is not a spelling, it is an expansion: one token becomes
+# `if __name__ == "__main__"`. There is no carrier name and no AST pass --
+# what it generates is already ordinary Python -- so the whole of the
+# construct is the substitution these tests pin.
+
+
+def test_introit_becomes_the_main_guard():
+    assert generated("introit:\n    main()\n") == (
+        'if __name__ == "__main__":\n    main()\n'
+    )
+
+
+def test_introit_costs_no_line():
+    src = "introit:\n    main()\n"
+    assert generated(src).count("\n") == src.count("\n")
+
+
+def test_introit_keeps_its_indentation():
+    src = "rite f():\n    introit:\n        main()\n"
+    assert generated(src) == (
+        'def f():\n    if __name__ == "__main__":\n        main()\n'
+    )
+
+
+def test_introit_leaves_the_colon_and_a_trailing_comment_alone():
+    # The substitution stops at the word. The colon is the author's, and so
+    # is anything after it -- which is how a trailing comment survives.
+    assert generated("introit:  # the entrance\n    main()\n") == (
+        'if __name__ == "__main__":  # the entrance\n    main()\n'
+    )
+
+
+def test_introit_reports_no_facts():
+    # Nothing travels out of band: the generated Python says the whole of it.
+    assert not carried("introit:\n    main()\n").facts
+
+
+@pytest.mark.parametrize(
+    "src",
+    [
+        "introit = 5\n",                       # a name of the author's own
+        "introit: int = 5\n",                  # an annotation with a value
+        "x = introit\n",                       # a load
+        "obj.introit\n",                       # Rule 1: attribute position
+        "f(introit=1)\n",                      # Rule 2: keyword argument
+        "pattern introit:\n    abide\n",       # a class of that name
+        "rite introit(x: int) -> int:\n    render x\n",
+    ],
+)
+def test_introit_out_of_header_position_is_the_authors_own(src):
+    # A construct word is only a construct in the position its header
+    # occupies. Anywhere else it is an ordinary name: the word survives into
+    # the generated Python and no guard is spliced in. Compared against the
+    # source rather than the word alone this would fail on the two samples
+    # that also contain an alias -- `rite` is `def`, `abide` is `pass`.
+    py = generated(src)
+    assert "introit" in py
+    assert "__main__" not in py
+
+
+def test_introit_cannot_be_parameterised():
+    # There is nothing to parameterise: an author wanting a different
+    # comparison writes the Python. A header that opens a block and is not
+    # the bare word is loud rather than silently ignored.
+    with pytest.raises(TechHeresy) as err:
+        carried("introit(x):\n    main()\n")
+    assert "takes no arguments" in str(err.value)

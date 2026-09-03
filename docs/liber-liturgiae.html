@@ -302,7 +302,9 @@ Ave Omnissiah</pre>
 
 <p><code>chant</code> runs a <code>.lit</code> file with
 <code>__main__</code> semantics, the way <code>python file.py</code> runs a
-Python one. Arguments after the filename are passed to the prayer.</p>
+Python one. Arguments after the filename are passed to the prayer, and an
+<code>introit:</code> block at the foot of the file (Chapter X) runs exactly
+when you would expect it to.</p>
 
 <h3>commune: to hold converse</h3>
 
@@ -848,8 +850,8 @@ deeper.</p>
 <p class="epigraph">A word given to the Machine God is no longer yours. Choose your own names
 knowing which are already spoken for.</p>
 
-<p>Sixty-four words are reserved: thirty-eight rites, five builtins, fifteen
-curses, two numerals, and four construct words. Using one as your own
+<p>Sixty-five words are reserved: thirty-eight rites, five builtins, fifteen
+curses, two numerals, and five construct words. Using one as your own
 identifier is an error. Most such errors are loud, and a loud error costs you a
 minute.</p>
 
@@ -890,16 +892,17 @@ ordinary identifiers anywhere they are not heading their own statement. So
 <code>discern = 5</code> compiles, runs, and has quietly bound the name
 <code>match</code>.</p>
 
-<p>Two of the four construct words are quiet too, for a different
+<p>Three of the five construct words are quiet too, for a different
 reason. A construct word is only a construct in the position its header
 occupies; anywhere else it is an ordinary name, and the carrier pass leaves
 it alone. So <code>litany = 5</code>, <code>litany: int = 5</code>,
-<code>rite augur(x: int) -&gt; int:</code> and
+<code>rite augur(x: int) -&gt; int:</code>, <code>introit: int = 5</code> and
 <code>pattern litany:</code> all compile, and the name is yours until the day
 you want the construct on that line:</p>
 
 <div class="code-block"><pre>litany = 5
 augur = compute()
+introit = 7
 <span class="kw">rite</span> augur(x: int) -&gt; int:
     <span class="kw">render</span> x
 <span class="kw">pattern</span> litany:
@@ -914,20 +917,26 @@ be a header or a modifier, so <code>consecrated = 5</code> and
 it stands, and treating it as the annotation it technically is would check
 nothing. An augury's conditions belong on the lines beneath
 <code>augur:</code>, and the heresy says so; an annotation <i>with</i> a
-value (<code>augur: int = 5</code>) is unmistakably yours and compiles. Ten
-of the sixty-four words are quiet, then (the five builtins, the three soft
-keywords, <code>litany</code>, <code>augur</code>), and the rest are
-loud.</p>
+value (<code>augur: int = 5</code>) is unmistakably yours and compiles.
+<code>introit</code> is quiet on exactly the terms <code>augur</code> is:
+<code>introit:</code> alone on its line is the construct,
+<code>introit: int = 5</code> is an annotation of your own name, and
+<code>introit(x):</code> (a header that opens a block and is not the bare
+word) is a heresy, because the construct takes no arguments and there is
+nothing to parameterise. Eleven
+of the sixty-five words are quiet, then (the five builtins, the three soft
+keywords, <code>litany</code>, <code>augur</code>, <code>introit</code>) and
+the rest are loud.</p>
 
 <p><code>span</code> in particular is a natural name for a range of text,
-and it is precisely the wrong one. Eight of the ten no longer have to be
+and it is precisely the wrong one. Eight of the eleven no longer have to be
 carried in your head: the builtins and the soft keywords each <i>become</i>
 another word, and <code>liturgy augur</code> reports every binding that
 does. Chapter XI sets it down.</p>
 
-<p><code>litany</code> and <code>augur</code> are not reported, and should
-not be. A construct word is never substituted, so there is nothing it
-silently becomes; the only hazard is the one above, that you may one day
+<p><code>litany</code>, <code>augur</code> and <code>introit</code> are not
+reported, and should not be. A construct word is never substituted, so there is nothing it
+silently becomes: the only hazard is the one above, that you may one day
 want the construct on a line whose name you have already spent. That one
 stays yours to track.</p>
 
@@ -1066,6 +1075,30 @@ than module scope. It was <b>cut, not deferred</b>: it is a service
 locator, and Liturgy generates code with no runtime of its own for a
 registry like that to live in. There is no clean place left to put it.</p>
 
+<h3>The one word that is a macro, not a spelling</h3>
+
+<p>Every word in the concordance is one word standing for one word.
+<code>render</code> is <code>return</code>; <code>measure</code> is
+<code>len</code>. That is the whole shape of the language, and the Appendix's
+bijection is the check that holds it: no two ritual words share a Python
+word, and no Python word has two ritual spellings.</p>
+
+<p><code>introit</code> is the single exception, and it is recorded here
+rather than left to be discovered. It expands to
+<code>if __name__ == "__main__"</code> (not a word but a comparison against
+a particular string) so it has no Python spelling to be a table entry, and
+it appears in no concordance table. It is a construct word for that reason
+and no other; Chapter X sets it down in full.</p>
+
+<p>It cannot be parameterised, and this is a decision rather than an
+omission. <code>introit:</code> takes nothing at all: there is no
+<code>introit("__main__")</code>, no <code>introit(name)</code>, no spelling
+of it that compares against anything else. A macro that took an argument
+would be a second, private grammar for building comparisons, and Liturgy
+already has a perfectly good one: an author who wants a different
+comparison writes <code>should __name__ == other:</code>, which is Python,
+which is Liturgy. One expansion, or none.</p>
+
 <h3>The one verb still unwritten</h3>
 
 <p>Seven verbs are built; Chapter XI sets them down. One name remains
@@ -1120,8 +1153,10 @@ than discovered later.</p>
 <h2><pre>[X] THE GREATER RITES</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
-<p class="epigraph">Three constructs the second spec adds. Python has no word for any of
-them; Liturgy needed new grammar, not new spelling, to say what they say.</p>
+<p class="epigraph">Three constructs the second spec adds, and one macro that came after them.
+Python has no word for any of the three: Liturgy needed new grammar, not new
+spelling, to say what they say. The fourth is the other way round: Python has
+the words, and says them at tedious length.</p>
 
 <p>Each is a compile-time transformation, not a call into some runtime
 library. A carrier pass rewrites the construct's header, in place, into
@@ -1230,6 +1265,44 @@ to import from; its exceptions have to be ones Python already provides.</p>
 
 <p>A nested rite's own opening augury is independent of any augury on the
 rite that contains it; each rite's opening belongs to that rite alone.</p>
+
+<h3>introit: where the chanting begins</h3>
+
+<div class="code-block"><pre><span class="kw">introit</span>:
+    litany_of_numeration(11)</pre></div>
+
+<p><code>introit:</code> desugars to exactly
+<code>if __name__ == "__main__":</code>. An introit is the opening chant of a
+Mass, the entrance; this names the point where a litany begins when it is
+chanted directly rather than invoked by another.</p>
+
+<p>It is the simplest thing in the language and the odd one out in this
+chapter. The other three are compile-time transformations with an AST pass
+behind them, restructuring the tree into semantics Python has no syntax for.
+<code>introit</code> has no AST pass and no carrier: one token is spliced
+into one line, and what comes out the other side is a guard any Python
+reader knows on sight. It is also, as Chapter IX records, the one Liturgy
+word that is a macro rather than a spelling: every other word stands for
+one Python word, and this one stands for a comparison against a particular
+string.</p>
+
+<p>The construct is exactly <code>introit:</code> with nothing after the
+colon but a comment. The colon and everything after it is yours and is left
+untouched, so <code>introit:  # the entrance</code> keeps its comment.
+Anywhere the word is not a statement's own head it is an ordinary name
+(<code>x.introit</code>, <code>f(introit=1)</code>,
+<code>pattern introit:</code>, <code>introit: int = 5</code>) and nothing is
+spliced. A header that opens a block and is not the bare word,
+<code>introit(x):</code>, is a heresy: the construct takes no arguments, and
+Chapter IX says why there is nothing to parameterise.</p>
+
+<p><code>transcribe</code> reads it in the other direction. A Python file
+whose guard is spelled exactly <code>if __name__ == "__main__":</code> comes
+back as <code>introit:</code>; a guard spelled any other way (single quotes,
+different spacing, a longer condition, a body on the same line, an
+<code>elif</code>) is left as Python, because Liturgy is a superset of
+Python and leaving it is always correct, whereas rewriting an author's
+quoting is not. Chapter XI sets the verb down.</p>
 </section>
 
 <section id="ch11">
@@ -1306,11 +1379,12 @@ becoming <code>range = ...</code>), or one of Chapter VI's exemptions
 protected the word from substitution and left you bound to it whole.</p>
 
 <p>This check reaches the sixty words that have a Python spelling, not all
-sixty-four. The four construct words are outside it by construction: they
+sixty-five. The five construct words are outside it by construction: they
 are never substituted, so no binding of one can quietly come to mean
 something else. <code>consecrated</code> and <code>unsanctioned</code> are
-still caught, by the second check, as a compile failure, and
-<code>litany</code> and <code>augur</code> are genuinely not faults. The
+still caught (by the second check, as a compile failure) and
+<code>litany</code>, <code>augur</code> and <code>introit</code> are
+genuinely not faults. The
 machine's own names (Chapter VII) are within it: they have no Python spelling to become, but a <code>.py</code>
 file that binds one is a file no litany can import by that name, and the
 finding says so.</p>
@@ -2114,6 +2188,12 @@ already.</p>
 no two ritual words share a Python word, and no Python word has two ritual
 spellings. A test asserts it, because the reverse direction is what Chapter
 XI's <code>transcribe</code> reads.</p>
+
+<p>The five construct words are in no table here and cannot be. Four of them
+<code>consecrated</code>, <code>litany</code>, <code>augur</code>,
+<code>unsanctioned</code>: have no Python spelling at all, and
+<code>introit</code> has one too long to be a word: it is a macro, and
+Chapter IX records it as the language's one exception to word-for-word.</p>
 
 <h3>Rites</h3>
 

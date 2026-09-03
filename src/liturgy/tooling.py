@@ -13,7 +13,7 @@ import tokenize
 
 from .archetypes import ArchetypesUnread, check, mypy_available
 from .collisions import find_collisions
-from .compiler import compile_litany
+from .compiler import _PASSES, compile_litany
 from .constructs import TechHeresy
 from .heresy import state_path
 from .reverse import to_liturgy
@@ -541,11 +541,24 @@ def transcribe(source: str, dest: str | None = None, *, out=None) -> int:
     # Verify before writing. This is the round-trip property test applied to
     # one real file: if the output does not transform back to the input, the
     # output is wrong and must not reach disk claiming otherwise.
+    heretical = False
     try:
-        back = transform(litany, filename=str(path)).python
+        # `_PASSES`, not the default: the reverse pass emits `introit:` for
+        # a main guard, and `introit` is a construct word the alias pass
+        # alone does not expand. Checked against DEFAULT_PASSES this would
+        # declare every transcription of a file with a main guard broken.
+        back = transform(litany, _PASSES, filename=str(path)).python
+    except TechHeresy:
+        # Running the carrier pass here means this now sees the construct
+        # heresies too -- `consecrated = 5` is valid Python that no litany
+        # may spell. That is not a round-trip fault and must not be reported
+        # as one: the backstop below says which construct and which line,
+        # and "a fault in Liturgy, not in your source" would be a lie about
+        # a fault that is squarely in the source.
+        back, heretical = None, True
     except SyntaxError:
         back = None
-    if back != src:
+    if back != src and not heretical:
         print("++ CANNOT TRANSCRIBE: the output does not round-trip ++", file=out)
         print("   this is a fault in Liturgy, not in your source", file=out)
         return 1

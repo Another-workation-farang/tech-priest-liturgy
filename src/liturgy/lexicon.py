@@ -97,12 +97,20 @@ NUMERALS: dict[str, str] = {
 # `ConstructFacts` instead. It belongs here all the same -- this is the set
 # the carrier pass dispatches on, and the set `RESERVED` is built from.
 #
+# `introit` is here for a different reason from the other four. They have no
+# Python spelling because no Python word says what they say; `introit` has
+# none because what it says is not a *word* at all -- it expands to
+# `if __name__ == "__main__"`, a whole comparison against a specific string.
+# Every entry in LEXICON is one word standing for one word, and
+# `test_lexicon_is_bijective` is the check that keeps it that way, so a macro
+# could not live there even if someone wanted it to.
+#
 # Note `Sanctioned` (capital S) is already `True`, in KEYWORDS above. The two
 # are a different word in a different case met in unrelated positions, and
 # neither table nor `INVERSE` can confuse them; this is written down so the
 # pairing is a recorded decision rather than a later discovery.
 CONSTRUCT_KEYWORDS: frozenset[str] = frozenset(
-    {"consecrated", "litany", "augur", "unsanctioned"}
+    {"consecrated", "litany", "augur", "unsanctioned", "introit"}
 )
 
 LEXICON: dict[str, str] = {**KEYWORDS, **SOFTWORDS, **CURSES, **NUMERALS}

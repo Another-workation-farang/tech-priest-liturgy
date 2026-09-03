@@ -56,7 +56,9 @@ def _paint(word: str) -> _TokenType:
 def _word_table() -> dict[str, _TokenType]:
     """The context-free fallback: word -> token, position-blind."""
     table = {word: _paint(word) for word in (*KEYWORDS, *SOFTWORDS, *CURSES, *NUMERALS)}
-    table.update({word: Keyword for word in ("consecrated", "litany", "augur")})
+    table.update(
+        {word: Keyword for word in ("consecrated", "litany", "augur", "introit")}
+    )
     return table
 
 
@@ -99,7 +101,7 @@ def _remap(text: str) -> dict[int, _TokenType] | None:
         for s in carrier_pass(toks).subs:
             word = lines[s.row - 1][s.col_start : s.col_end]
             if word.split(None, 1)[:1] and word.split(None, 1)[0] in (
-                "consecrated", "litany", "augur", "unsanctioned"
+                "consecrated", "litany", "augur", "unsanctioned", "introit"
             ):
                 table.setdefault(at(s.row, s.col_start), Keyword)
     except SyntaxError:

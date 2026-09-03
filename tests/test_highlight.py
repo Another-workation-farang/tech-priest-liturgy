@@ -134,10 +134,19 @@ def test_augur_header_is_a_keyword():
     assert token_for(src, "augur") in Keyword
 
 
+def test_introit_header_is_a_keyword():
+    # The substitution the carrier makes is a whole guard, but the span it
+    # covers is the word alone -- which is what the painter reads back off
+    # the Liturgy line, and why `introit` paints like any other header.
+    src = "introit:\n    main()\n"
+    assert token_for(src, "introit") in Keyword
+
+
 def test_a_construct_word_elsewhere_is_a_plain_name():
-    src = "litany = 5\nx = augur\n"
+    src = "litany = 5\nx = augur\nintroit = 1\n"
     assert token_for(src, "litany") not in Keyword
     assert token_for(src, "augur") not in Keyword
+    assert token_for(src, "introit") not in Keyword
 
 
 # -- the machine's own names ------------------------------------------------

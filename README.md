@@ -32,7 +32,7 @@ time.
 > litany at a time.
 >
 > It is **breakable**. Some of it is documented: naming a variable `span` or
-> `measure` (or `discern`, or any of the ten quiet words) silently shadows
+> `measure` (or `discern`, or any of the eleven quiet words) silently shadows
 > the name it aliases and fails somewhere else entirely,
 > `consecrated` cannot stop `setattr` or `globals()`, and any word Liturgy
 > reserves is a word your program may not use as an identifier. Every rite
@@ -85,8 +85,9 @@ These two run litanies; the [seven tooling verbs](#augur-transcribe-forge-consec
 further down read, translate and tidy them. `chant <file.lit> [args...]`
 executes a Liturgy file the way
 `python file.py` executes a Python one: the file becomes `__main__`,
-`sys.argv` is set up the same way, and a plain `should __name__ == "__main__":`
-block at the bottom works exactly as expected (see `examples/fibonacci.lit`).
+`sys.argv` is set up the same way, and a plain `introit:` block at the bottom
+Liturgy's own spelling of `if __name__ == "__main__":`: works exactly as
+expected (see `examples/fibonacci.lit`).
 
 `commune` opens an interactive session, Liturgy's REPL:
 
@@ -353,10 +354,11 @@ exception's type:
 | `MotiveFailure` | `RuntimeError` |
 | `RiteUnwritten` | `NotImplementedError` |
 
-## The three constructs
+## The constructs
 
-Spec II adds three things Python has no name for. Save this as
-`constructs.lit`:
+Spec II adds three things Python has no name for, and `introit:` (described
+at the end of this section) later added a fourth of a different kind. Save
+this as `constructs.lit`:
 
 ```
 consecrated MAX_ATTEMPTS: int = 3
@@ -390,7 +392,7 @@ rite main() -> Void:
         intone(f"++ attempts: {measure(seen)} ++")
 
 
-should __name__ == "__main__":
+introit:
     main()
 ```
 
@@ -434,6 +436,16 @@ generated code imports nothing from Liturgy.
 A fourth construct, `noospheric`, a process-wide registry, was designed
 alongside these three but cut rather than built: it is a service locator,
 and with no runtime, it had nowhere clean to live.
+
+`introit:` is the file's entrance: an introit is the opening chant of a Mass
+and it desugars to exactly `if __name__ == "__main__":`. It is the one
+Liturgy word that is a **macro rather than a spelling**: every other word
+stands for one Python word, and this one stands for a comparison against a
+particular string. That is also why it cannot be parameterised. It takes
+nothing at all, and an author who wants a different comparison writes the
+Python, which is always still Liturgy. `transcribe` writes it in the other
+direction, turning a main guard back into `introit:` when the Python spells
+that guard exactly.
 
 ## Declaring archetypes
 
@@ -607,12 +619,13 @@ could never import it by that name.) Second, for a `.lit` file, that it
 actually compiles, so `augur` and `chant` cannot disagree about whether a file
 is well-formed.
 
-The four construct words are outside the first check and belong outside it:
+The five construct words are outside the first check and belong outside it:
 they are never substituted, so a binding of one cannot quietly come to mean
 something else. `consecrated = 5` and `unsanctioned = 5` are caught anyway, by
-the second check, as compile failures, as is an undeclared archetype.
-`litany = 5` and `augur = 6` are reported by neither, because neither is a
-fault: the name is yours until the day you want the construct on that line.
+the second check, as compile failures: as is an undeclared archetype.
+`litany = 5`, `augur = 6` and `introit = 7` are reported by neither, because
+none is a fault: the name is yours until the day you want the construct on
+that line.
 
 The standing checks stop there on purpose. There is no line-length rule, no
 unused-import check, no naming convention; `augur` is not a general linter

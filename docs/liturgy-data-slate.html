@@ -275,8 +275,9 @@ STATEMENT'S OWN KEYWORDS ARE TOUCHED. THUS
 <h2><pre>[III] THE GREATER RITES: CONSTRUCTS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
-<p class="desc">THREE CONSTRUCTS PYTHON CANNOT EXPRESS. EACH DESUGARS INTO SELF-CONTAINED
-GENERATED PYTHON; NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
+<p class="desc">THREE CONSTRUCTS PYTHON CANNOT EXPRESS, AND ONE MACRO FOR A THING IT SAYS AT
+LENGTH. EACH DESUGARS INTO SELF-CONTAINED
+GENERATED PYTHON: NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
 <span class="lower amber">noospheric</span>, WAS CUT RATHER THAN BEND THAT RULE.</p>
 
 <pre>
@@ -313,6 +314,22 @@ GENERATED PYTHON; NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
    TIME; A CALL IS A CONDITION, JUDGED BY ITS TRUTH.</span>
    <span class="dim">:raises ImpureOffering:</span> WITH THE <b>LITURGY</b> SOURCE OF THE FAILED
                            CONDITION QUOTED, NOT THE GENERATED PYTHON.
+
+<span class="dim">.. construct::</span> introit:
+   <span class="ok">THE ENTRANCE: WHERE A LITANY BEGINS WHEN IT IS CHANTED DIRECTLY RATHER
+   THAN INVOKED BY ANOTHER. DESUGARS TO EXACTLY
+   if __name__ == "__main__":. NO CARRIER AND NO AST PASS: ONE TOKEN IS
+   SPLICED INTO ONE LINE.</span>
+   <span class="dim">:macro:</span> THE ONE LITURGY WORD THAT IS NOT A SPELLING. EVERY OTHER WORD
+           STANDS FOR ONE PYTHON WORD; THIS ONE STANDS FOR A COMPARISON
+           AGAINST A PARTICULAR STRING, SO IT IS IN NO CONCORDANCE TABLE.
+   <span class="dim">:takes:</span> NOTHING. IT CANNOT BE PARAMETERISED: AN AUTHOR WANTING A
+           DIFFERENT COMPARISON WRITES should __name__ == other:, WHICH IS
+           PYTHON, WHICH IS LITURGY.
+   <span class="dim">:reversed by transcribe:</span> A GUARD SPELLED EXACTLY THAT WAY COMES BACK AS
+                            introit:. SINGLE QUOTES, OTHER SPACING, A LONGER
+                            CONDITION, A ONE-LINE BODY OR AN elif ARE LEFT
+                            AS PYTHON.
 </pre>
 
 <pre>
@@ -322,9 +339,9 @@ GENERATED PYTHON; NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
 ++ attempts: 3 ++
 </pre>
 
-<p class="desc">SIXTY-FOUR WORDS ARE RESERVED IN TOTAL: THIRTY-EIGHT RITES, FIVE BUILTINS,
-FIFTEEN CURSES, TWO NUMERALS AND FOUR CONSTRUCT WORDS. THE MACHINE ALSO KEEPS
-ITS OWN NAMES (<span class="lower amber">__consecrated__</span>,
+<p class="desc">SIXTY-FIVE WORDS ARE RESERVED IN TOTAL: THIRTY-EIGHT RITES, FIVE BUILTINS,
+FIFTEEN CURSES, TWO NUMERALS AND FIVE CONSTRUCT WORDS. THE MACHINE ALSO KEEPS
+ITS OWN NAMES: <span class="lower amber">__consecrated__</span>,
 <span class="lower amber">__litany__</span>, <span class="lower amber">__augur__</span>
 AND EVERYTHING BEGINNING <span class="lower amber">__liturgy_</span>) FOR
 ITSELF; SPEAKING ONE ANYWHERE BUT AFTER A DOT IS A LOUD HERESY.</p>
@@ -407,7 +424,7 @@ ITSELF; SPEAKING ONE ANYWHERE BUT AFTER A DOT IS A LOUD HERESY.</p>
     intone(<span class="string">f"++ {measure(recited)} numbers recited ++"</span>)
 
 
-<span class="kw">should</span> __name__ == <span class="string">"__main__"</span>:
+<span class="kw">introit</span>:
     litany_of_numeration(11)</pre>
 </div>
 </section>
@@ -524,7 +541,7 @@ ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
    <span class="field">:returns:</span> 0 IF NOTHING WAS REPORTED, 1 IF ANYTHING WAS.
    <span class="field">:silently:</span> <span class="alert">A FINDING SO MARKED SUBSTITUTES TO A NAME, NOT A KEYWORD;
               THE FILE COMPILES AND THE HARM IS DEFERRED.</span>
-   <span class="field">:not checked:</span> THE FOUR CONSTRUCT WORDS. THEY ARE NEVER SUBSTITUTED, SO
+   <span class="field">:not checked:</span> THE FIVE CONSTRUCT WORDS. THEY ARE NEVER SUBSTITUTED, SO
                  NOTHING BOUND TO ONE QUIETLY CHANGES MEANING. consecrated AND
                  unsanctioned ARE STILL CAUGHT, BY THE COMPILE CHECK, AS IS
                  AN UNDECLARED ARCHETYPE.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liturgy: a superset of Python in the Machine Tongue</title>
-<meta name="description" content="Liturgy is a superset of Python whose surface syntax is Warhammer 40,000 tech-priest ritual language. Honest tracebacks, a real import hook, and three constructs Python cannot express.">
+<meta name="description" content="Liturgy is a superset of Python whose surface syntax is Warhammer 40,000 tech-priest ritual language. Honest tracebacks, a real import hook, three constructs Python cannot express, and a macro for its entrance.">
 <style>
   :root {
     --bg-color: #050A07;
@@ -241,8 +241,9 @@ DOWN WHY THERE CANNOT BE.</p>
 <h2><pre>[III] THE GREATER RITES</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
-<p>THREE CONSTRUCTS PYTHON CANNOT EXPRESS. EACH DESUGARS INTO SELF-CONTAINED
-GENERATED PYTHON; NOTHING IS IMPORTED FROM LITURGY AT RUNTIME.</p>
+<p>THREE CONSTRUCTS PYTHON CANNOT EXPRESS, AND ONE MACRO FOR A THING IT SAYS
+AT LENGTH. EACH DESUGARS INTO SELF-CONTAINED
+GENERATED PYTHON: NOTHING IS IMPORTED FROM LITURGY AT RUNTIME.</p>
 
 <pre>
 <span class="amber">consecrated</span> OMNISSIAH_PORT: int = 8080
@@ -256,6 +257,10 @@ GENERATED PYTHON; NOTHING IS IMPORTED FROM LITURGY AT RUNTIME.</p>
 <span class="amber">augur</span>:
 <span class="dim">   PRECONDITIONS AT A RITE'S OPENING. A CONTRACT, NOT AN ASSERTION:
    IT SURVIVES python -O, AND QUOTES THE LITURGY SOURCE WHEN IT FAILS.</span>
+
+<span class="amber">introit</span>:
+<span class="dim">   THE ENTRANCE: EXACTLY if __name__ == "__main__":. THE ONE LITURGY WORD
+   THAT IS A MACRO AND NOT A SPELLING, AND SO TAKES NOTHING AT ALL.</span>
 </pre>
 </section>
 

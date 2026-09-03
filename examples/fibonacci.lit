@@ -16,5 +16,5 @@ rite litany_of_numeration(count: int) -> Void:
     intone(f"++ {measure(recited)} numbers recited ++")
 
 
-should __name__ == "__main__":
+introit:
     litany_of_numeration(11)

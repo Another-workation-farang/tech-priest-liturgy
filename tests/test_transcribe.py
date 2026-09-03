@@ -334,3 +334,20 @@ def test_augur_is_content_once_the_archetypes_are_declared(tmp_path):
     assert run(tmp_path, _ANNOTATED, dest=str(dest))[0] == 0
     buf = io.StringIO()
     assert augur([str(dest)], out=buf) == 0
+
+
+def test_a_main_guard_is_transcribed_as_an_introit(tmp_path):
+    # End to end: the phrase rule in `reverse` and the carrier in
+    # `constructs` are two halves of one claim, and the self-check between
+    # them is what proves they compose. A reverse rule with no forward twin
+    # fails here before it reaches disk, with "does not round-trip".
+    dest = tmp_path / "out.lit"
+    code, out = run(
+        tmp_path,
+        'def main():\n    return 0\n\n\nif __name__ == "__main__":\n    main()\n',
+        dest=str(dest),
+    )
+    assert code == 0, out
+    assert dest.read_text() == (
+        "rite main():\n    render 0\n\n\nintroit:\n    main()\n"
+    )

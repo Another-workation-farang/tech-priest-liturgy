@@ -93,9 +93,9 @@ def test_reserved_is_the_union_of_every_taken_word():
     assert lexicon.RESERVED == set(lexicon.LEXICON) | lexicon.CONSTRUCT_KEYWORDS
 
 
-def test_reserved_count_is_sixty_four():
-    # 38 keywords + 5 builtins + 15 curses + 2 numerals + 4 constructs.
-    assert len(lexicon.RESERVED) == 64
+def test_reserved_count_is_sixty_five():
+    # 38 keywords + 5 builtins + 15 curses + 2 numerals + 5 constructs.
+    assert len(lexicon.RESERVED) == 65
 
 
 def test_numerals_do_not_break_bijectivity():
@@ -107,6 +107,21 @@ def test_numerals_do_not_break_bijectivity():
     assert lexicon.INVERSE["3"] == "thrice"
     assert lexicon.INVERSE["2"] == "twice"
     assert set(lexicon.NUMERALS.values()) <= set(lexicon.INVERSE)
+
+
+def test_introit_is_a_macro_not_a_spelling():
+    # Every other reserved word is one word standing for one word. `introit`
+    # stands for `if __name__ == "__main__"` -- a comparison against a
+    # particular string -- so it has no Python *spelling* to be a table
+    # entry, and `test_lexicon_is_bijective` is what would reject it if it
+    # tried. It is a construct word for that reason and no other.
+    from liturgy.constructs import INTROIT_GUARD
+
+    assert "introit" in lexicon.CONSTRUCT_KEYWORDS
+    assert "introit" not in lexicon.LEXICON
+    assert "introit" not in lexicon.INVERSE.values()
+    assert INTROIT_GUARD not in lexicon.LEXICON.values()
+    assert len(INTROIT_GUARD.split()) > 1
 
 
 def test_unsanctioned_is_a_construct_word_not_an_alias():
