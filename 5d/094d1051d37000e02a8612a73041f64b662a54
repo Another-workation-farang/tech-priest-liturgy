@@ -1,0 +1,61 @@
+tests/test_curse.py
+  s_d162ead593e4de::t_651f8cf0c44c14 18,115,144,152,173,264,297,318,331,466,661,665,778,810-811,826-827
+tests/test_consecrated.py
+  s_d162ead593e4de::t_8a43dd027e3bb9 14,18,24,45,55,62,68,75,117,128,143-144,146,159-161,174,185,199-201,203,218,231,236,244-245,274,284-285,290,310,321,327,333,403,407
+  s_d162ead593e4de::t_6aa3b588dc164f 374
+tests/test_review_fixes.py
+  s_d162ead593e4de::t_4c333ac1588e85 112,120,126,242
+docs/LIBER-LITURGIAE.md
+  s_d162ead593e4de::t_d845431736ffaf 78,279,282,530,536-538,586,592
+  s_d162ead593e4de::t_70761a3d424e29 720-728,743-749,753,771-775,814,1260
+  s_d162ead593e4de::t_4d88520bc4c316 1356-1382
+tests/test_loader.py
+  s_d162ead593e4de::t_d4658f9152647b 14
+tests/test_compiler.py
+  s_d162ead593e4de::t_86e498e8d391c2 64-66,68,71,73-74,76,79,81-82
+tests/test_litany.py
+  s_d162ead593e4de::t_5e7b9749a72cae 75,137,173,179,282,333
+tests/test_positions.py
+  s_d162ead593e4de::t_01d3b64ce5f323 165-175,186-189,193-195,197
+  s_d162ead593e4de::t_c3b0f7fcddfdcf 16,19,24,27
+tests/test_augur.py
+  s_d162ead593e4de::t_e7f91200cc2dd1 13,54,72,79,87,90,103,126,139,155,172,188
+tests/test_prove.py
+  s_d162ead593e4de::t_5a9b1252f3e1e9 13-14,57,73,75,83
+tests/test_augur_verb.py
+  s_d162ead593e4de::t_3800688a6cb6a8 59,72
+tests/test_sanction.py
+  s_d162ead593e4de::t_f3f5ff4d765a48 1-463,466-477,482,489-500,502-510,512-539
+  s_d162ead593e4de::t_92d45ef3755270 464-465,478-481,483-488,501,511
+tests/test_constructs.py
+  s_d162ead593e4de::t_20144f1ebbdafc 114
+tests/test_forge.py
+  s_d162ead593e4de::t_5387ce9226379e 21,47,70,82,92,96,104,106,123,136,156,179
+src/liturgy/rewrite.py
+  s_d162ead593e4de::t_866d90153b57ea 358-364
+  s_d162ead593e4de::t_894422d60b40ca 26
+  s_d162ead593e4de::t_3dd94c97675df4 27-28
+  s_d162ead593e4de::t_0f44127a33c82a 532-533
+  s_d162ead593e4de::t_3b1fcd0d7f2233 379-398,405-411,413
+  s_d162ead593e4de::t_52848b8a9d4713 50-57
+  s_d162ead593e4de::t_5889e03c157169 271,278-281,283,285
+  s_d162ead593e4de::t_8ad0de98ae2a49 158-270,272-277,282,284,286-294
+  s_d162ead593e4de::t_5e07d0000069aa 10,18
+  s_d162ead593e4de::t_e13e22d700509c 29,295
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "5d094d1051d37000e02a8612a73041f64b662a54",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
