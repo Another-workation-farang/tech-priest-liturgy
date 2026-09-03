@@ -1,10 +1,13 @@
 # Liturgy Archetype Truth — Design
 
 **Date:** 2026-09-03
-**Status:** Designed, not scheduled. Spec IV (Sanction) enforces that an
-annotation *exists*; this is the plan for checking that it is *true*.
-**Depends on:** Spec IV, Task 1 (carrier out of band). Not optional — see
-"The carriers are visible to the checker".
+**Status:** Scheduled. Plan at `design/plans/2026-09-03-liturgy-archetype-truth.md`.
+**Depends on:** Spec IV, Task 1 (carrier out of band) — **satisfied** at
+v0.4.0. Re-measured against the post-Spec-IV tree before planning:
+`consecrated PORT: int = 8080` now generates `PORT: int = 8080` and mypy
+type-checks *uses* of PORT, which the carrier previously made impossible.
+`__consecrated__` no longer appears in any diagnostic; `__litany__` and
+`__augur__` still do.
 
 ## Purpose
 
