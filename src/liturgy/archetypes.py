@@ -16,6 +16,14 @@ that reports a clean bill of health having checked nothing is worse than one
 that crashes, so every way the oracle can fail to reach a verdict raises
 `ArchetypesUnread` and none of them returns an empty list. `check` returning
 `[]` means mypy ran, was understood, and found nothing.
+
+mypy also speaks Python, and a litany's author has never written `def` or
+`return`. `translate` renders the diagnostics this module recognises into the
+language the author actually writes, and **passes every other one through
+verbatim, marked `Finding.translated = False`**. A half-translated diagnostic
+-- Liturgy words in a Python sentence, or a type name mangled by an
+over-eager substitution -- is worse than an honest untranslated one, which is
+the same discipline `sanctify` keeps when it refuses rather than guesses.
 """
 
 from __future__ import annotations
@@ -32,6 +40,7 @@ from typing import Callable
 
 from .compiler import _PASSES, parse_named
 from .constructs import is_machine_name
+from .lexicon import INVERSE
 from .sourcemap import char_offset
 from .transform import split_lines, transform
 
@@ -46,6 +55,7 @@ __all__ = [
     "mypy_available",
     "mypy_oracle",
     "parse_diagnostics",
+    "translate",
 ]
 
 # What mypy is told, every run. `--follow-imports=skip` with
@@ -121,9 +131,17 @@ class Finding:
     column; a column is never invented, since a caret under column 0 is a
     claim about where the fault is and a missing one is not.
 
-    `message` is mypy's own text, untranslated (Task 3's work). `code` is
-    mypy's error code, or None for a `note`. `severity` is mypy's word for
-    it -- `error` or `note`.
+    `message` is the diagnostic in the language the litany is written in
+    where `translate` recognised its shape, and mypy's own untouched text
+    where it did not.
+
+    `translated` says which of those two it is, and exists so that a renderer
+    can attribute an untranslated message to the checker rather than pass
+    Python prose off as Liturgy. It defaults to False because that is the
+    honest default: a `Finding` built by hand, or by a caller that predates
+    this field, is claiming nothing about whose words it carries. `code` is
+    mypy's error code, or None for a `note`. `severity` is mypy's word for it
+    -- `error` or `note`.
     """
 
     line: int
@@ -131,6 +149,7 @@ class Finding:
     message: str
     code: str | None
     severity: str
+    translated: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -294,8 +313,255 @@ def _drop_carrier_noise(diags: list[Diagnostic]) -> list[Diagnostic]:
     return kept
 
 
+# --- translation -----------------------------------------------------------
+#
+# The Liturgy words below are read out of `lexicon.INVERSE`, never written
+# down here, for the same reason `_is_carrier_noise` asks
+# `constructs.is_machine_name` rather than a list of strings: renaming a word
+# in the lexicon must rename it in these messages too.
+
+
+def _word(python: str) -> str:
+    """The Liturgy spelling of a Python word.
+
+    Looked up as the message is built, not as this module is imported, so
+    that the lexicon is demonstrably the only place these words live: change
+    `render` there and these diagnostics change with it.
+    """
+    return INVERSE[python]
+
+
+# Operators mypy spells with symbols. It also spells one with a word --
+# `Unsupported operand types for in ("str" and "Generator[int, None, None]")`
+# -- and `in` is `among` in Liturgy, but a Liturgy operator inside a Python
+# sentence is the half-translation this module refuses, and translating the
+# sentence would then need every word operator's Liturgy spelling to be
+# certain. Those messages pass through whole instead.
+_SYMBOLIC_OPERATOR = re.compile(r"^[^\w\s]{1,3}$")
+
+
+def _a(archetype: str) -> str:
+    """`a` or `an`, for a type name that is printed verbatim after it.
+
+    Crude on purpose: it looks at the letter, not the sound, because the
+    alternative is a pronunciation table for every type name a user can
+    write. It is only ever an article.
+    """
+    return "an" if archetype[:1].lower() in "aeiou" else "a"
+
+
+def _incompatible_return(m: re.Match[str]) -> str:
+    return (
+        f"this {_word('def')} {_word('return')}s {_a(m['got'])} {m['got']} "
+        f"where it declared {_a(m['want'])} {m['want']}"
+    )
+
+
+def _no_return_expected(m: re.Match[str]) -> str:
+    del m
+    return (
+        f"this {_word('def')} {_word('return')}s a value "
+        f"where it declared {_word('None')}"
+    )
+
+
+def _missing_return(m: re.Match[str]) -> str:
+    del m
+    return (
+        f"this {_word('def')} declares an {_word('type')} "
+        f"it never {_word('return')}s"
+    )
+
+
+def _bad_argument(m: re.Match[str]) -> str:
+    which = m["which"].strip('"')
+    owner = f" of {m['owner']}" if m["owner"] else ""
+    return (
+        f"argument {which} to {m['callee']}{owner} is {_a(m['got'])} {m['got']} "
+        f"where {m['callee']} declares {_a(m['want'])} {m['want']}"
+    )
+
+
+def _bad_assignment(m: re.Match[str]) -> str:
+    return (
+        f"this binds {_a(m['got'])} {m['got']} to a name "
+        f"declared {_a(m['want'])} {m['want']}"
+    )
+
+
+def _bad_inherited_assignment(m: re.Match[str]) -> str:
+    return (
+        f"this binds {_a(m['got'])} {m['got']} where the {_word('class')} "
+        f"{m['base']} declared {_a(m['want'])} {m['want']}"
+    )
+
+
+def _bad_operands(m: re.Match[str]) -> str | None:
+    if not _SYMBOLIC_OPERATOR.match(m["op"]):
+        return None
+    return (
+        f"{_a(m['left'])} {m['left']} and {_a(m['right'])} {m['right']} "
+        f"cannot be joined by {m['op']}"
+    )
+
+
+def _undefined_name(m: re.Match[str]) -> str:
+    return f"nothing named {m['name']} is known here"
+
+
+def _missing_attribute(m: re.Match[str]) -> str:
+    return f"{_a(m['owner'])} {m['owner']} bears no attribute {m['attr']}"
+
+
+def _too_many_arguments(m: re.Match[str]) -> str:
+    return f"{m['callee']} is given more arguments than it declares"
+
+
+def _missing_arguments(m: re.Match[str]) -> str:
+    names = _QUOTED.findall(m["names"])
+    noun = "argument" if len(names) == 1 else "arguments"
+    return f"{m['callee']} is called without its {noun} {', '.join(names)}"
+
+
+def _unexpected_keyword(m: re.Match[str]) -> str:
+    return f"{m['callee']} declares no parameter {m['name']}"
+
+
+# code -> the message shapes translated under it, in order. A shape that
+# does not match, or a builder that returns None, means this module does not
+# recognise the diagnostic and it passes through as mypy wrote it. The
+# patterns are anchored end to end deliberately: mypy appends hints to some
+# of these ("; maybe \"__int__\"? (not iterable)"), and a suffix nobody
+# accounted for must fail to match rather than be silently dropped.
+_Shape = tuple[re.Pattern[str], Callable[[re.Match[str]], str | None]]
+
+_TRANSLATORS: dict[str, tuple[_Shape, ...]] = {
+    "return-value": (
+        (
+            re.compile(
+                r'^Incompatible return value type '
+                r'\(got "(?P<got>.+)", expected "(?P<want>.+)"\)$'
+            ),
+            _incompatible_return,
+        ),
+        (re.compile(r"^No return value expected$"), _no_return_expected),
+    ),
+    "return": ((re.compile(r"^Missing return statement$"), _missing_return),),
+    "arg-type": (
+        (
+            re.compile(
+                r'^Argument (?P<which>\d+|"[^"]+") to "(?P<callee>[^"]+)"'
+                r'(?: of "(?P<owner>[^"]+)")? has incompatible type '
+                r'"(?P<got>.+)"; expected "(?P<want>.+)"$'
+            ),
+            _bad_argument,
+        ),
+    ),
+    "assignment": (
+        (
+            re.compile(
+                r'^Incompatible types in assignment \(expression has type '
+                r'"(?P<got>.+)", variable has type "(?P<want>.+)"\)$'
+            ),
+            _bad_assignment,
+        ),
+        (
+            re.compile(
+                r'^Incompatible types in assignment \(expression has type '
+                r'"(?P<got>.+)", base class "(?P<base>[^"]+)" defined the '
+                r'type as "(?P<want>.+)"\)$'
+            ),
+            _bad_inherited_assignment,
+        ),
+    ),
+    "operator": (
+        (
+            re.compile(
+                r'^Unsupported operand types for (?P<op>\S+) '
+                r'\("(?P<left>.+)" and "(?P<right>.+)"\)$'
+            ),
+            _bad_operands,
+        ),
+    ),
+    "name-defined": (
+        (re.compile(r'^Name "(?P<name>[^"]+)" is not defined$'), _undefined_name),
+    ),
+    "attr-defined": (
+        (
+            re.compile(r'^"(?P<owner>.+)" has no attribute "(?P<attr>[^"]+)"$'),
+            _missing_attribute,
+        ),
+    ),
+    "call-arg": (
+        (
+            re.compile(r'^Too many arguments for "(?P<callee>[^"]+)"$'),
+            _too_many_arguments,
+        ),
+        (
+            re.compile(
+                r'^Missing positional arguments? (?P<names>"[^"]+"(?:, "[^"]+")*) '
+                r'in call to "(?P<callee>[^"]+)"$'
+            ),
+            _missing_arguments,
+        ),
+        (
+            re.compile(
+                r'^Unexpected keyword argument "(?P<name>[^"]+)" '
+                r'for "(?P<callee>[^"]+)"$'
+            ),
+            _unexpected_keyword,
+        ),
+    ),
+}
+
+
+def translate(
+    message: str, code: str | None, severity: str = "error"
+) -> tuple[str, bool]:
+    """`message` in Liturgy, and whether it could be said in Liturgy at all.
+
+    Returns `(text, translated)`. When `translated` is False the text is
+    mypy's own, character for character, and a renderer must attribute it to
+    the checker: a half-translated diagnostic is worse than an honest
+    untranslated one, and that judgement is what this return value carries.
+
+    Translated: `return-value`, `return`, `arg-type`, `assignment`,
+    `operator`, `name-defined`, `attr-defined` and `call-arg` -- and only the
+    message shapes recorded in `_TRANSLATORS`, since mypy's prose moves
+    between versions and a shape that has shifted must miss rather than half
+    match. **Every other code passes through**, as does every `note`: a note
+    continues the error above it, reads as a fragment on its own, and is the
+    checker's commentary on its own reasoning rather than a statement about
+    the litany.
+
+    Names and type names are copied out of the match and printed verbatim,
+    never substituted. `archetype` is Liturgy's word for `type`, but `int` is
+    still `int`, and a type name is arbitrary Python type syntax rather than
+    a word: rewriting `ValueError` inside `dict[str, ValueError]` needs a
+    parser for that syntax, and `ImpureOffering` is not certainly what the
+    author wrote there in any case, since a litany may spell either. The
+    keyword positions -- what a `rite` does, what a `pattern` declares -- are
+    this module's to translate; the names in them are the author's, and mypy
+    quoted them for the same reason.
+    """
+    if severity != "error" or code is None:
+        return message, False
+    for pattern, build in _TRANSLATORS.get(code, ()):
+        m = pattern.match(message)
+        if m is None:
+            continue
+        text = build(m)
+        if text is not None:
+            return text, True
+    return message, False
+
+
 def to_finding(diag: Diagnostic, py_lines: list[str], smap) -> Finding:
     """`diag` in Liturgy coordinates.
+
+    The message goes through `translate` on the way, so a `Finding` carries
+    Liturgy where Liturgy could be spoken confidently and mypy's own words,
+    marked as such, where it could not.
 
     The line passes through untouched -- that is the whole feasibility
     argument. The column takes the two steps every offset in this project
@@ -303,11 +569,14 @@ def to_finding(diag: Diagnostic, py_lines: list[str], smap) -> Finding:
     becomes a 0-based character offset via `char_offset`, and `to_lit` then
     carries it back across the substitutions to the litany.
     """
+    message, translated = translate(diag.message, diag.code, diag.severity)
     if diag.col is None:
-        return Finding(diag.line, None, diag.message, diag.code, diag.severity)
+        return Finding(
+            diag.line, None, message, diag.code, diag.severity, translated
+        )
     py_line = py_lines[diag.line - 1] if 0 <= diag.line - 1 < len(py_lines) else ""
     col = smap.to_lit(diag.line, char_offset(py_line, diag.col - 1))
-    return Finding(diag.line, col, diag.message, diag.code, diag.severity)
+    return Finding(diag.line, col, message, diag.code, diag.severity, translated)
 
 
 def interpret(

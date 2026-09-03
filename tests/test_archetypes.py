@@ -29,9 +29,11 @@ from liturgy.archetypes import (
     mypy_oracle,
     parse_diagnostics,
     to_finding,
+    translate,
 )
 from liturgy.compiler import _PASSES
 from liturgy.constructs import MACHINE_PREFIX
+from liturgy.lexicon import INVERSE
 from liturgy.transform import UnfinishedLitany, split_lines, transform
 
 
@@ -212,7 +214,7 @@ def test_an_ordinary_undefined_name_is_not_filtered():
         lines,
         smap,
     )
-    assert [f.message for f in out] == ['Name "nowhere" is not defined']
+    assert [f.message for f in out] == ["nothing named nowhere is known here"]
 
 
 def test_a_carrier_named_in_another_kind_of_error_is_kept():
@@ -235,6 +237,281 @@ def test_a_run_that_is_all_carrier_noise_is_an_honest_empty_list():
     src = 'litany("Ave"):\n    intone("one")\n\naugur:\n    intone("two")\n'
     lines, smap = mapping_of(src)
     assert interpret(OracleRun(stdout, "", 1), lines, smap) == []
+
+
+# --- translation -----------------------------------------------------------
+#
+# Pure string work, so all of it runs with no mypy installed. Every message
+# below was printed by a real mypy first; the shapes are transcribed, not
+# imagined.
+
+
+TRANSLATED = [
+    (
+        "return-value",
+        'Incompatible return value type (got "str", expected "int")',
+        "this rite renders a str where it declared an int",
+    ),
+    (
+        "return-value",
+        "No return value expected",
+        "this rite renders a value where it declared Void",
+    ),
+    (
+        "return",
+        "Missing return statement",
+        "this rite declares an archetype it never renders",
+    ),
+    (
+        "arg-type",
+        'Argument 1 to "add" has incompatible type "str"; expected "int"',
+        "argument 1 to add is a str where add declares an int",
+    ),
+    (
+        "arg-type",
+        'Argument "b" to "add" has incompatible type "str"; expected "int"',
+        "argument b to add is a str where add declares an int",
+    ),
+    (
+        "arg-type",
+        'Argument 1 to "add" of "Forge" has incompatible type "str"; '
+        'expected "int"',
+        "argument 1 to add of Forge is a str where add declares an int",
+    ),
+    (
+        "assignment",
+        'Incompatible types in assignment (expression has type "str", '
+        'variable has type "int")',
+        "this binds a str to a name declared an int",
+    ),
+    (
+        "assignment",
+        'Incompatible types in assignment (expression has type "str", '
+        'base class "A" defined the type as "int")',
+        "this binds a str where the pattern A declared an int",
+    ),
+    (
+        "operator",
+        'Unsupported operand types for + ("int" and "str")',
+        "an int and a str cannot be joined by +",
+    ),
+    (
+        "operator",
+        'Unsupported operand types for > ("str" and "int")',
+        "a str and an int cannot be joined by >",
+    ),
+    (
+        "name-defined",
+        'Name "nowhere" is not defined',
+        "nothing named nowhere is known here",
+    ),
+    (
+        "attr-defined",
+        '"str" has no attribute "shout"',
+        "a str bears no attribute shout",
+    ),
+    (
+        "call-arg",
+        'Too many arguments for "add"',
+        "add is given more arguments than it declares",
+    ),
+    (
+        "call-arg",
+        'Missing positional argument "b" in call to "add"',
+        "add is called without its argument b",
+    ),
+    (
+        "call-arg",
+        'Missing positional arguments "b", "c" in call to "add"',
+        "add is called without its arguments b, c",
+    ),
+    (
+        "call-arg",
+        'Unexpected keyword argument "c" for "add"',
+        "add declares no parameter c",
+    ),
+]
+
+
+@pytest.mark.parametrize("code,mypy_says,liturgy_says", TRANSLATED)
+def test_a_shape_this_module_knows_is_said_in_liturgy(code, mypy_says, liturgy_says):
+    assert translate(mypy_says, code) == (liturgy_says, True)
+
+
+def test_no_translated_message_still_speaks_python():
+    # The half-translated diagnostic is the failure this module exists to
+    # avoid: a Python keyword surviving inside a Liturgy sentence.
+    python_words = ("def ", "return", "class ", "argument type", "None")
+    for _code, _before, after in TRANSLATED:
+        assert not any(word in after for word in python_words), after
+
+
+PASSED_THROUGH = [
+    # A known code whose shape this module does not recognise. mypy appends
+    # a hint here, and the anchored pattern must miss rather than drop it.
+    ("attr-defined", '"int" has no attribute "__iter__"; maybe "__int__"? (not iterable)'),
+    # The unary form of an operator error, worded differently from the
+    # binary one.
+    ("operator", 'Unsupported operand type for unary - ("str")'),
+    # A word operator. `in` is `among` in Liturgy, but the sentence around
+    # it would still be half Python, so the whole message passes through.
+    # mypy really does say this: `"x" in (n for n in range(3))`.
+    ("operator", 'Unsupported operand types for in ("str" and "Generator[int, None, None]")'),
+    ("operator", 'Unsupported right operand type for in ("int")'),
+    # The variant mypy prints when it has been told not to name types.
+    ("operator", "Unsupported operand types for + (likely involving Union)"),
+    # A module attribute, where the owner is not a quoted type at all.
+    ("attr-defined", 'Module has no attribute "nope"'),
+    # Codes outside the translated set entirely.
+    ("var-annotated", 'Need type annotation for "xs" (hint: "xs: list[<type>] = ...")'),
+    ("union-attr", 'Item "None" of "str | None" has no attribute "upper"'),
+    ("no-redef", 'Name "go" already defined on line 1'),
+    ("index", 'Value of type "int" is not indexable'),
+    ("list-item", 'List item 1 has incompatible type "str"; expected "int"'),
+    ("type-arg", '"list" expects 1 type argument, but 2 given'),
+    ("call-overload", 'No overload variant of "fspath" matches argument type "int"'),
+    ("truthy-function", 'Function "len" could always be true in boolean context'),
+]
+
+
+@pytest.mark.parametrize("code,mypy_says", PASSED_THROUGH)
+def test_a_shape_this_module_does_not_know_passes_through_unharmed(code, mypy_says):
+    assert translate(mypy_says, code) == (mypy_says, False)
+
+
+def test_a_note_is_never_translated():
+    # A note continues the error above it and reads as a fragment alone. It
+    # is the checker's commentary on its own reasoning, so it stays the
+    # checker's words.
+    assert translate("This violates the Liskov substitution principle", None, "note") == (
+        "This violates the Liskov substitution principle",
+        False,
+    )
+
+
+def test_a_note_carrying_python_source_is_not_rewritten():
+    note = "    def fspath(path: str) -> str"
+    assert translate(note, None, "note") == (note, False)
+
+
+def test_a_type_name_is_never_substituted():
+    # `archetype` is Liturgy's word for `type`, but `int` is still `int`,
+    # and `ValueError` inside a type name is not certainly `ImpureOffering`
+    # -- a litany may spell either. Type names are copied, never rewritten.
+    text, ok = translate(
+        'Incompatible return value type (got "ValueError", expected "int")',
+        "return-value",
+    )
+    assert ok
+    assert "ValueError" in text
+    assert "ImpureOffering" not in text
+
+
+def test_a_composite_type_name_survives_whole():
+    text, ok = translate(
+        'Incompatible return value type (got "dict[str, ValueError]", '
+        'expected "list[int]")',
+        "return-value",
+    )
+    assert ok
+    assert "dict[str, ValueError]" in text
+    assert "list[int]" in text
+
+
+def test_an_identifier_the_lexicon_knows_is_left_alone():
+    # `print` is `intone`'s Python spelling. Here it is a name the author
+    # chose, in a name position, and rewriting it would report a fault in
+    # code nobody wrote.
+    assert translate('Name "print" is not defined', "name-defined") == (
+        "nothing named print is known here",
+        True,
+    )
+
+
+def test_a_callee_named_for_a_reserved_word_is_left_alone():
+    text, ok = translate(
+        'Argument 1 to "type" has incompatible type "str"; expected "int"',
+        "arg-type",
+    )
+    assert ok
+    assert text == "argument 1 to type is a str where type declares an int"
+
+
+@pytest.mark.parametrize(
+    "python,code,mypy_says",
+    [
+        ("def", "return-value", 'Incompatible return value type (got "str", expected "int")'),
+        ("return", "return-value", 'Incompatible return value type (got "str", expected "int")'),
+        ("None", "return-value", "No return value expected"),
+        ("type", "return", "Missing return statement"),
+        (
+            "class",
+            "assignment",
+            'Incompatible types in assignment (expression has type "str", '
+            'base class "A" defined the type as "int")',
+        ),
+    ],
+)
+def test_the_liturgy_words_come_from_the_lexicon(monkeypatch, python, code, mypy_says):
+    # Rename the word in the lexicon and the diagnostic renames with it.
+    # A word spelled out in `archetypes` instead would ignore this and the
+    # test would go red -- which is the point of renaming rather than
+    # asserting the current spelling.
+    monkeypatch.setitem(INVERSE, python, "ANOTHERWORD")
+    text, ok = translate(mypy_says, code)
+    assert ok
+    assert "ANOTHERWORD" in text
+
+
+def test_a_note_that_somehow_carries_a_code_is_still_not_translated():
+    # mypy does not put codes on notes today. If it starts, a note must
+    # still not be read as a statement about the litany.
+    assert translate("Missing return statement", "return", "note") == (
+        "Missing return statement",
+        False,
+    )
+
+
+@pytest.mark.parametrize(
+    "archetype,article",
+    [("int", "an"), ("str", "a"), ("object", "an"), ("float", "a"), ("Any", "an")],
+)
+def test_the_article_agrees_with_the_type_name(archetype, article):
+    text, ok = translate(
+        f'Incompatible return value type (got "{archetype}", expected "bytes")',
+        "return-value",
+    )
+    assert ok
+    assert f"{article} {archetype}" in text
+
+
+def test_a_diagnostic_with_no_code_at_all_passes_through():
+    assert translate("something mypy said", None) == ("something mypy said", False)
+
+
+def test_a_finding_says_whose_words_it_carries():
+    lines, smap = mapping_of("rite greet(name: str) -> int:\n    render name\n")
+    out = interpret(
+        OracleRun(
+            'p.py:2:12: error: Incompatible return value type '
+            '(got "str", expected "int")  [return-value]\n'
+            'p.py:2:12: error: Value of type "int" is not indexable  [index]\n',
+            "",
+            1,
+        ),
+        lines,
+        smap,
+    )
+    assert [(f.translated, f.message) for f in out] == [
+        (True, "this rite renders a str where it declared an int"),
+        (False, 'Value of type "int" is not indexable'),
+    ]
+
+
+def test_an_untranslated_finding_is_the_honest_default():
+    # A `Finding` built without the flag claims nothing about whose words it
+    # carries, which is the safe half of the claim.
+    assert Finding(1, 0, "m", "misc", "error").translated is False
 
 
 # --- mapping back to the litany --------------------------------------------
@@ -447,11 +724,40 @@ def test_the_real_carriers_are_filtered_from_a_real_run():
 
 
 @needs_mypy
-def test_the_message_is_mypy_s_own_words_for_now():
-    # Task 3 translates these. Until then they arrive verbatim.
+def test_a_real_diagnostic_arrives_in_liturgy():
     src = "rite greet(name: str) -> int:\n    render name\n"
     (finding,) = check(src, "prayer.lit", oracle=mypy_oracle(MYPY))
-    assert finding.message == (
-        'Incompatible return value type (got "str", expected "int")'
-    )
+    assert finding.message == "this rite renders a str where it declared an int"
+    assert finding.translated is True
     assert finding.severity == "error"
+
+
+@needs_mypy
+def test_a_real_diagnostic_this_module_does_not_know_arrives_whole():
+    # `var-annotated` is not in the translated set, and its message carries a
+    # parenthesised hint written in Python. It reaches the reader as mypy
+    # wrote it, marked the checker's own.
+    src = "rite go() -> Void:\n    xs = []\n"
+    (finding,) = check(src, "prayer.lit", oracle=mypy_oracle(MYPY))
+    assert finding.message == (
+        'Need type annotation for "xs" (hint: "xs: list[<type>] = ...")'
+    )
+    assert finding.translated is False
+
+
+@needs_mypy
+def test_a_real_note_is_never_translated():
+    src = (
+        "pattern A:\n"
+        "    rite f(self, a: int) -> Void:\n"
+        "        abide\n"
+        "\n"
+        "pattern B(A):\n"
+        "    rite f(self, a: str) -> Void:\n"
+        "        abide\n"
+    )
+    findings = check(src, "prayer.lit", oracle=mypy_oracle(MYPY))
+    notes = [f for f in findings if f.severity == "note"]
+    assert notes
+    assert all(f.translated is False for f in notes)
+    assert notes[0].message == "This violates the Liskov substitution principle"
