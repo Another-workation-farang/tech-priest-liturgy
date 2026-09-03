@@ -1,4 +1,4 @@
-# Liturgy Sanction — Design
+# Liturgy Sanction: Design
 
 **Date:** 2026-09-03
 **Status:** Approved
@@ -15,7 +15,7 @@ construction; what an author deliberately will not declare is exempt by saying
 so. Everything else is a heresy at compile time.
 
 This is **presence, not correctness.** Liturgy can guarantee an annotation
-exists. It cannot guarantee the annotation is true — that is a type checker,
+exists. It cannot guarantee the annotation is true; that is a type checker,
 and writing one is not in scope for a language with no runtime and no
 dependencies. The documentation must say so in the same breath it announces
 the feature, or the feature promises something it does not deliver. Chapter VII
@@ -34,16 +34,16 @@ enforcing them would make the language unusable rather than strict.
 
 ### Exempt by construction
 
-- **`self` and `cls`** — the first parameter of a method, matching what every
+- **`self` and `cls`**: the first parameter of a method, matching what every
   Python type checker does with `--disallow-untyped-defs`.
-- **`servitor` (lambda)** — Python has no syntax for annotating a lambda's
+- **`servitor` (lambda)**: Python has no syntax for annotating a lambda's
   parameters. `lambda x: int = 1` is a syntax error, so a rule requiring it
   would forbid the construct outright. Verified before this spec was written.
-- **`commune` (the REPL)** — every entry is its own compilation unit and a
+- **`commune` (the REPL)**: every entry is its own compilation unit and a
   prompt that rejects `rite f(x):` is not a REPL anyone will use. Enforcement
   is off at the prompt, and Chapter VIII's existing note about per-unit
   enforcement is the precedent.
-- **`.py` files** — Liturgy compiles `.lit`. A Python file is Python's business.
+- **`.py` files**: Liturgy compiles `.lit`. A Python file is Python's business.
 
 ### Exempt by declaration: `unsanctioned`
 
@@ -81,7 +81,7 @@ recorded rather than discovered later.
 
 ## Why no new word for the annotation itself
 
-An earlier design gave the annotation operator its own word — `anoint`, then
+An earlier design gave the annotation operator its own word: `anoint`, then
 `wrought` or `designated`. It was cut, twice, and the reasoning belongs in the
 record:
 
@@ -117,7 +117,7 @@ annotations on consecrated bindings is impossible until this changes.
 ### The fix: carry consecration out of band
 
 The carrier exists so an AST pass can find consecrated declarations. But
-`transform` already knows which rows carried `consecrated` — it produced the
+`transform` already knows which rows carried `consecrated`: it produced the
 substitution. That knowledge can travel beside the generated source instead of
 inside it.
 
@@ -147,7 +147,7 @@ error for an internal reason is a defect regardless of this spec.
 `rewrite.ConstructPass`, beside the existing compile-time rejections. It shares
 their machinery: one traversal, `TechHeresy`, and positions mapped back to
 Liturgy through the `SourceMap`. Because it lives in the compile path, it fires
-identically for `chant`, `augur` and `prove` — the spec's standing invariant
+identically for `chant`, `augur` and `prove`; the spec's standing invariant
 that augur cannot disagree with chant is preserved by construction.
 
 `augur` therefore reports unannotated rites without a line of its own.

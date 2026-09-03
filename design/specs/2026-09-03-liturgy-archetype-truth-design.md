@@ -1,8 +1,8 @@
-# Liturgy Archetype Truth — Design
+# Liturgy Archetype Truth: Design
 
 **Date:** 2026-09-03
 **Status:** Scheduled. Plan at `design/plans/2026-09-03-liturgy-archetype-truth.md`.
-**Depends on:** Spec IV, Task 1 (carrier out of band) — **satisfied** at
+**Depends on:** Spec IV, Task 1 (carrier out of band): **satisfied** at
 v0.4.0. Re-measured against the post-Spec-IV tree before planning:
 `consecrated PORT: int = 8080` now generates `PORT: int = 8080` and mypy
 type-checks *uses* of PORT, which the carrier previously made impossible.
@@ -16,7 +16,7 @@ This is how correctness would be delivered when it is worth doing.
 
 **The finding that makes this tractable: Liturgy does not need a type
 checker. It needs a translator.** Because the transform never adds or removes
-a line, line N of the generated Python is line N of the litany — so an
+a line, line N of the generated Python is line N of the litany, so an
 existing checker's diagnostics already land on the right line, with no mapping
 at all.
 
@@ -43,7 +43,7 @@ prayer.py:7: error: Argument 1 to "add" has incompatible type "str"; expected "i
 
 Lines 2 and 7 of `prayer.lit` are exactly `render name` and
 `intone(add("one", 2))`. **The line numbers need no translation whatsoever.**
-Only columns do, and `SourceMap.to_lit` already exists for precisely that —
+Only columns do, and `SourceMap.to_lit` already exists for precisely that:
 it is what maps traceback carets today.
 
 This is the whole feasibility argument. Everything below is detail.
@@ -78,7 +78,7 @@ l.py:1: error: Name "__litany__" is not defined  [name-defined]
 ```
 
 `consecrated PORT = 8080` generates `PORT: __consecrated__ = 8080`, so mypy
-does not merely emit a spurious error — it also learns `PORT` has an unknown
+does not merely emit a spurious error; it also learns `PORT` has an unknown
 type and cannot check any *use* of it.
 
 Spec IV Task 1 removes the `consecrated` carrier and generates
@@ -93,7 +93,7 @@ on it. `__litany__` and `__augur__` remain.
    means. Cleanest, and worth doing on its own merits. Largest change.
 2. **Filter the diagnostics.** Drop any `name-defined` error naming a known
    carrier. Cheap and zero risk to the language, but it only silences the
-   noise — a `litany` block's own body still type-checks, so the loss is
+   noise: a `litany` block's own body still type-checks, so the loss is
    smaller than it looks.
 3. **Stub the carriers for the checker.** Rejected: declaring them requires
    either adding a line, which the line invariant forbids, or a config
@@ -110,7 +110,7 @@ mypy:     Incompatible return value type (got "str", expected "int")
 Liturgy:  this rite renders a str where it declared an int
 ```
 
-The vocabulary mapping already exists — `lexicon.INVERSE` — and `reverse.py`
+The vocabulary mapping already exists (`lexicon.INVERSE`) and `reverse.py`
 already renders Python into Liturgy. Translation is a lookup over the
 message's quoted type names and its Python keywords, not new machinery.
 
@@ -124,7 +124,7 @@ diagnostic is worse than an honest untranslated one.**
 
 `augur` is already the verb that reads a litany for faults without chanting
 it, and a false archetype is a fault. This adds no verb, spends no reserved
-name, and leaves `anoint` unspent — Chapter IX's argument stands.
+name, and leaves `anoint` unspent; Chapter IX's argument stands.
 
 It is a **flag, not a default**: mypy on a large tree is slow, and `augur`'s
 current contract is that it is fast enough to run constantly. Chapter XI's

@@ -106,7 +106,7 @@ def test_chant_restores_main_module_and_argv_after_exception(tmp_path):
     assert sys.argv == before_argv
 
 
-# Regression: I2 — chant and the import hook must decode a file the same way.
+# Regression (I2): chant and the import hook must decode a file the same way.
 # A UTF-8 BOM and a PEP 263 `coding:` cookie both imported fine and both
 # refused to chant, because chant read the bytes as plain UTF-8.
 ENCODED: list[tuple[str, bytes, str]] = [
@@ -145,7 +145,7 @@ def test_import_decodes_bom_and_coding_cookie(tmp_path, name, data, expected):
     assert out.stdout.strip() == expected
 
 
-# Regression: I3 — `python file.py` prepends the script's directory to
+# Regression (I3): `python file.py` prepends the script's directory to
 # sys.path and chant must too, or a multi-file Liturgy program cannot be run
 # through the console script from anywhere but its own directory.
 def test_chant_puts_the_script_directory_on_sys_path(tmp_path):
@@ -173,7 +173,7 @@ def test_chant_restores_sys_path(tmp_path):
     assert sys.path == before
 
 
-# Regression: I6 — an unclosed bracket must reach both callers as a located
+# Regression (I6): an unclosed bracket must reach both callers as a located
 # SyntaxError, not as a raw tokenize.TokenError with no filename.
 def test_chant_reports_an_unclosed_bracket_as_a_located_syntax_error(tmp_path):
     script = tmp_path / "synerr.lit"

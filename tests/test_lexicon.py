@@ -45,7 +45,7 @@ def test_no_liturgy_word_is_also_a_python_keyword():
     assert not (set(lexicon.LEXICON) & set(keyword.kwlist))
 
 
-# I8 — nothing validated that a target actually exists. A typo'd
+# I8: nothing validated that a target actually exists. A typo'd
 # `"unseal": "openn"` or `"MotiveFailure": "RuntimError"` passed the suite.
 @pytest.mark.parametrize(
     "lit,target", sorted(lexicon.KEYWORDS.items()), ids=sorted(lexicon.KEYWORDS)

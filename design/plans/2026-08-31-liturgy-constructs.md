@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add three constructs Python cannot express — `consecrated`, `litany`, `augur` — so Liturgy is a superset in substance and not only in spelling.
+**Goal:** Add three constructs Python cannot express (`consecrated`, `litany`, `augur`) so Liturgy is a superset in substance and not only in spelling.
 
 **Architecture:** A token-level carrier pass rewrites construct headers **in place, on one line**, into valid Python that parses (annotated assignments and `with` blocks). A new `compile_litany()` then parses that text, runs an `ast.NodeTransformer` that restructures the carriers into real semantics, and compiles. The line invariant is preserved textually by the carrier pass; the AST pass is free to add nodes because it never touches text.
 
@@ -26,8 +26,8 @@
 |---|---|
 | `src/liturgy/lexicon.py` (modify) | Gains `NUMERALS`, `CONSTRUCT_KEYWORDS`, `RESERVED` |
 | `src/liturgy/constructs.py` (create) | `TechHeresy`, statement-position detection, `carrier_pass` |
-| `src/liturgy/rewrite.py` (create) | `ConstructPass` — the `NodeTransformer` and the three rewriters |
-| `src/liturgy/compiler.py` (create) | `compile_litany()` — transform, parse, rewrite, compile |
+| `src/liturgy/rewrite.py` (create) | `ConstructPass`: the `NodeTransformer` and the three rewriters |
+| `src/liturgy/compiler.py` (create) | `compile_litany()`: transform, parse, rewrite, compile |
 | `src/liturgy/loader.py` (modify) | `source_to_code` and `chant` call `compile_litany` |
 | `src/liturgy/commune.py` (modify) | `runsource` calls `compile_litany` |
 
@@ -120,7 +120,7 @@ RESERVED: frozenset[str] = frozenset(LEXICON) | CONSTRUCT_KEYWORDS
 - [ ] **Step 4: Run the full suite**
 
 Run: `.venv/bin/pytest -q`
-Expected: all pass. `INVERSE` gaining `"2"` and `"3"` keys is harmless — the reverse pass only looks up NAME tokens, and `2` is a NUMBER.
+Expected: all pass. `INVERSE` gaining `"2"` and `"3"` keys is harmless: the reverse pass only looks up NAME tokens, and `2` is a NUMBER.
 
 - [ ] **Step 5: Commit**
 
@@ -256,7 +256,7 @@ In `chant`, replace the `exec(compile(py, path, ...))` line with:
         exec(compile_litany(src, path), module.__dict__)
 ```
 
-Delete the now-unused local that held the transform result in `chant`, add `from .compiler import compile_litany` to the imports, and drop the `from .transform import transform` import if nothing else in the file uses it. **Keep the `curse.record_source(path, src)` call exactly where it is** — the Task 7 fix in Spec I depends on it.
+Delete the now-unused local that held the transform result in `chant`, add `from .compiler import compile_litany` to the imports, and drop the `from .transform import transform` import if nothing else in the file uses it. **Keep the `curse.record_source(path, src)` call exactly where it is**: the Task 7 fix in Spec I depends on it.
 
 - [ ] **Step 5: Wire `src/liturgy/commune.py`**
 
@@ -281,7 +281,7 @@ Add `from .compiler import compile_litany` to the imports. The double compile is
 - [ ] **Step 6: Run the full suite**
 
 Run: `.venv/bin/pytest -q`
-Expected: all pass — 359 existing plus 6 new. Any failure here is an integration bug, not a semantics bug, which is why this task is separate.
+Expected: all pass, 359 existing plus 6 new. Any failure here is an integration bug, not a semantics bug, which is why this task is separate.
 
 - [ ] **Step 7: Commit**
 
@@ -537,7 +537,7 @@ git commit -m "feat(constructs): TechHeresy and statement-position detection"
 
 **Interfaces:**
 - Consumes: `statement_starts`, `heresy`, `TechHeresy`, `Substitution`, `compile_litany`.
-- Produces: `liturgy.constructs.carrier_pass(toks) -> list[Substitution]`; `liturgy.rewrite.ConstructPass(filename: str, lines: list[str])` — an `ast.NodeTransformer` with `.visit(tree)`.
+- Produces: `liturgy.constructs.carrier_pass(toks) -> list[Substitution]`; `liturgy.rewrite.ConstructPass(filename: str, lines: list[str])`, an `ast.NodeTransformer` with `.visit(tree)`.
 
 Carrier and rewrite land together: `PORT: __consecrated__ = 8080` is valid Python but evaluates `__consecrated__` as an annotation on 3.12 and 3.13, so a carrier with no rewrite behind it is a `NameError` waiting to happen.
 
@@ -636,7 +636,7 @@ def test_the_error_is_a_syntax_error_so_curses_render_it():
 - [ ] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest tests/test_consecrated.py -v`
-Expected: FAIL — `consecrated PORT = 8080` is not yet valid syntax, so every test errors at compile.
+Expected: FAIL. `consecrated PORT = 8080` is not yet valid syntax, so every test errors at compile.
 
 - [ ] **Step 3: Add `carrier_pass` to `src/liturgy/constructs.py`**
 
@@ -688,7 +688,7 @@ Also add `_INSIGNIFICANT` to the `from .transform import ...` line.
 
 - [ ] **Step 4: Append the pass in `src/liturgy/transform.py`**
 
-`carrier_pass` lives in `constructs`, which imports `transform` — so import it lazily inside a function to avoid a cycle, or (preferred) leave `DEFAULT_PASSES` alone and have `compile_litany` pass both passes explicitly:
+`carrier_pass` lives in `constructs`, which imports `transform`, so import it lazily inside a function to avoid a cycle, or (preferred) leave `DEFAULT_PASSES` alone and have `compile_litany` pass both passes explicitly:
 
 ```python
 # in src/liturgy/compiler.py
@@ -698,7 +698,7 @@ from .transform import DEFAULT_PASSES, transform
 _PASSES = (*DEFAULT_PASSES, carrier_pass)
 ```
 
-and call `transform(src, _PASSES, filename=filename)`. This keeps `transform`'s default text-to-text behaviour unchanged, so `_reverse` and the round-trip property are untouched — which is the whole reason `transform` took a `passes` argument.
+and call `transform(src, _PASSES, filename=filename)`. This keeps `transform`'s default text-to-text behaviour unchanged, so `_reverse` and the round-trip property are untouched, which is the whole reason `transform` took a `passes` argument.
 
 - [ ] **Step 5: Create `src/liturgy/rewrite.py`**
 
@@ -1128,11 +1128,11 @@ def test_litany_as_a_plain_call_is_untouched():
 - [ ] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest tests/test_litany.py -v`
-Expected: FAIL — `litany(...)` at statement position is not yet rewritten.
+Expected: FAIL. `litany(...)` at statement position is not yet rewritten.
 
 - [ ] **Step 3: Add `_litany_carrier` to `src/liturgy/constructs.py`**
 
-One token swap. `litany` becomes `with __litany__`, and every argument survives untouched — including `curse=`, which Spec I's Rule 2 already protects as a keyword-argument name.
+One token swap. `litany` becomes `with __litany__`, and every argument survives untouched, including `curse=`, which Spec I's Rule 2 already protects as a keyword-argument name.
 
 ```python
 def opens_a_block(significant: list[tokenize.TokenInfo], i: int) -> bool:
@@ -1356,7 +1356,7 @@ Returning a list from a `visit_` method splices the statements in place, which i
 - [ ] **Step 6: Reject a positional `curse`**
 
 `litany(twice, MotiveFailure)` has two positional args, so the existing
-`len(call.args) != 1` check fires — but its message says "one attempt count",
+`len(call.args) != 1` check fires, but its message says "one attempt count",
 which is unhelpful. Special-case it in `_litany`, before that check:
 
 ```python
@@ -1518,7 +1518,7 @@ def test_the_traceback_points_at_the_augur_line():
 - [ ] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest tests/test_augur.py -v`
-Expected: FAIL — `augur:` is not yet rewritten.
+Expected: FAIL. `augur:` is not yet rewritten.
 
 - [ ] **Step 3: Add `_augur_carrier` to `src/liturgy/constructs.py`**
 
@@ -1798,7 +1798,7 @@ Keep `compile_litany`'s docstring on `compile_litany`.
 
 Run: `.venv/bin/pytest tests/test_positions.py -v`
 Expected: PASS. If a node has no position, `ast.fix_missing_locations` is
-papering over a missing `copy_location` — find it rather than relying on the
+papering over a missing `copy_location`; find it rather than relying on the
 fixup, because `fix_missing_locations` copies from the *parent*, which can put a
 node on a plausible but wrong line.
 
@@ -1871,7 +1871,7 @@ def test_constructs_example_runs():
 - [ ] **Step 2: Run to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_examples.py -v`
-Expected: FAIL — `examples/constructs.lit` does not exist.
+Expected: FAIL. `examples/constructs.lit` does not exist.
 
 - [ ] **Step 3: Write `examples/constructs.lit`**
 
@@ -1917,8 +1917,8 @@ should __name__ == "__main__":
 - [ ] **Step 4: Run it and confirm the output**
 
 Run: `.venv/bin/liturgy chant examples/constructs.lit`
-Expected: three lines — the division, the themed omen message, and
-`++ attempts: 3 ++`. Paste the real output into the commit message.
+Expected: three lines (the division, the themed omen message, and
+`++ attempts: 3 ++`). Paste the real output into the commit message.
 
 - [ ] **Step 5: Update `README.md`**
 
@@ -1931,12 +1931,12 @@ builtin-alias table.
 - [ ] **Step 6: Update `docs/LIBER-LITURGIAE.md`**
 
 - Chapter III gains a **Numeral words** table: `twice` -> `2`, `thrice` -> `3`.
-- A new **Chapter X — The Greater Rites** covers the three constructs, each with
+- A new **Chapter X: The Greater Rites** covers the three constructs, each with
   its syntax, its semantics, and what it rejects. Keep the house style: voice in
   the chapter opening and section headers, plain technical body.
 - Chapter VII's count goes 58 -> 63, and gains a paragraph on the
   `consecrated` enforcement limitation, in the spec's own words: what the
-  compiler cannot see, it cannot stop — `setattr`, `globals()`, assignment
+  compiler cannot see, it cannot stop: `setattr`, `globals()`, assignment
   through the module object, and `exec` all get through. This is enforcement,
   not a guarantee.
 - Chapter IX loses `consecrated`, `litany` and `augur`, and records that
@@ -1947,7 +1947,7 @@ builtin-alias table.
 
 Same content, same structure. Add Chapter X to the rail's `<ol>`.
 
-**Read the file first — a peer session restyled it after this plan was written.**
+**Read the file first: a peer session restyled it after this plan was written.**
 It is now a "cogitator terminal" treatment with its own conventions documented in
 `docs/STYLE-COGITATOR.md`, and alias rows use `<td class="lit">` / `<td class="py">`
 rather than `<code>` tags. Follow whatever patterns the file actually uses now and
@@ -1955,7 +1955,7 @@ add no new CSS. Do not restore the older styling.
 
 - [ ] **Step 8: Validate the tables programmatically**
 
-Run this and fix anything it reports — the same check that caught a wrong
+Run this and fix anything it reports, the same check that caught a wrong
 reserved count when the tome was first written:
 
 ```bash

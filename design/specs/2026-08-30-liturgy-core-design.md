@@ -1,4 +1,4 @@
-# Liturgy — Core Design
+# Liturgy: Core Design
 
 **Date:** 2026-08-30
 **Status:** Approved
@@ -13,7 +13,7 @@ Two goals, in order:
 
 1. **Near-term:** something genuinely usable. Real scripts, honest tracebacks,
    correct line numbers, an escape hatch to plain Python.
-2. **Long-term:** a deep exercise in CPython machinery — import hooks, token
+2. **Long-term:** a deep exercise in CPython machinery: import hooks, token
    stream rewriting, AST transformation, traceback remapping. The theme is the
    excuse; the internals are the destination.
 
@@ -55,13 +55,13 @@ CPython's import machinery**.
 
 | Module | Purpose | Depends on |
 |---|---|---|
-| `lexicon.py` | Alias tables; pure data plus lookup | — |
-| `sourcemap.py` | `SourceMap`: `(line, col)` ↔ `(line, col)` | — |
+| `lexicon.py` | Alias tables; pure data plus lookup | none |
+| `sourcemap.py` | `SourceMap`: `(line, col)` ↔ `(line, col)` | none |
 | `transform.py` | `transform(src) -> (str, SourceMap)` | lexicon, sourcemap |
 | `loader.py` | Path hook, `LiturgyLoader`, `chant` execution | transform, curse |
 | `curse.py` | Traceback remapping and rendering | sourcemap, lexicon |
 | `cli.py` | Verb dispatch and argument parsing | loader, heresy |
-| `heresy.py` | Escalating rebuke, state file | — |
+| `heresy.py` | Escalating rebuke, state file | none |
 
 `transform` is a pure function from string to string. The bulk of the test
 suite therefore runs with no import hook, no subprocess, and no mutation of
@@ -175,7 +175,7 @@ NAME token never occurs inside a string literal or comment.
 ### Minimum Python 3.12
 
 On 3.12+, f-string internals tokenize into real NAME tokens, so `f"{rite}"`
-substitutes correctly — that genuinely is code — while surrounding literal text
+substitutes correctly (that genuinely is code) while surrounding literal text
 is `FSTRING_MIDDLE` and untouched. On 3.11 and earlier the entire f-string is
 one opaque STRING token and silently does not substitute. Supporting both would
 mean two different semantics for the same source. **Requires Python >= 3.12.**
@@ -212,7 +212,7 @@ Python is line N of the Liturgy, always. `SourceFileLoader.get_source` already
 returns the original `.lit` text, so `linecache` and standard tracebacks show
 Liturgy source with no remapping.
 
-The SourceMap therefore exists for exactly one purpose: **column accuracy** —
+The SourceMap therefore exists for exactly one purpose: **column accuracy**,
 the `^^^^` carets in 3.11+ fine-grained tracebacks.
 
 Structure: `dict[int, list[Span]]` keyed by line, populated only for lines that
@@ -249,7 +249,7 @@ hook, then clears `sys.path_importer_cache` and calls
 
 `LiturgyLoader` subclasses `SourceFileLoader` and overrides exactly one method,
 `source_to_code`, which runs `transform()` and compiles the result.
-`get_source` is deliberately **not** overridden — the inherited implementation
+`get_source` is deliberately **not** overridden; the inherited implementation
 already returns original `.lit` text.
 
 ### Bytecode caching
@@ -289,7 +289,7 @@ the SourceMap.
 
 - The hook wraps everything in `try/except` and falls back to
   `sys.__excepthook__`. **An excepthook that raises destroys the original
-  error** — the worst available failure mode.
+  error**: the worst available failure mode.
 - If the `.lit` file has moved or changed since import, the map is
   unavailable: degrade to an unmapped traceback rather than render wrong
   carets.
@@ -319,7 +319,7 @@ mechanically, but the overlap will confuse readers if left unremarked.
 
 Subclasses `code.InteractiveConsole`, transforming in `runsource` before
 compiling. The wrinkle is incomplete input: `tokenize` raises on an unterminated
-block, and the REPL must read that as "keep reading," not as an error — a
+block, and the REPL must read that as "keep reading," not as an error: a
 tokenize failure at end-of-input becomes the `None` return that signals
 continuation. Getting this wrong makes multi-line rites impossible to type, so
 it carries dedicated tests.
@@ -347,7 +347,7 @@ $ liturgy run prayer.lit
 
 TDD throughout. Three tiers mirroring the module boundaries.
 
-### 1. Transform units — the bulk, no import machinery
+### 1. Transform units: the bulk, no import machinery
 
 - Table-driven across every lexicon entry.
 - **Property: identity.** Python source containing no Liturgy words transforms
@@ -381,9 +381,9 @@ the failures that would make Liturgy unusable against real libraries.
 
 ## Out of scope for Core
 
-- The four constructs (`consecrated`, `litany`, `augur`, `noospheric`) — Spec II.
-- Remaining CLI verbs — Spec III.
-- `transcribe` (Python → Liturgy) — Spec III; bijectivity is maintained now so
+- The four constructs (`consecrated`, `litany`, `augur`, `noospheric`): Spec II.
+- Remaining CLI verbs: Spec III.
+- `transcribe` (Python → Liturgy): Spec III; bijectivity is maintained now so
   it stays possible.
 - A PEP 263 codec. Rejected outright: a codec is text-to-text and runs before
   the parser, so it can never perform Spec II's AST work. Offering one for the

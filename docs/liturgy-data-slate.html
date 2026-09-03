@@ -22,7 +22,7 @@
     text-align: left;
   }
 
-  /* Simulated scanline effect — per AM-COG-UI-844.M41 */
+  /* Simulated scanline effect, per AM-COG-UI-844.M41 */
   body::before {
     content: " ";
     display: block;
@@ -167,9 +167,9 @@
 <pre>
 <span class="dim">.. module::</span> liturgy
    <span class="dim">:synopsis:</span> A SUPERSET OF PYTHON WHOSE SURFACE SYNTAX IS THE RITUAL TONGUE.
-   <span class="dim">:requires:</span> <span class="amber">PYTHON &gt;= 3.12 (PEP 701 — SANCTIFIED F-STRING TOKENIZATION)</span>
+   <span class="dim">:requires:</span> <span class="amber">PYTHON &gt;= 3.12 (PEP 701, SANCTIFIED F-STRING TOKENIZATION)</span>
    <span class="dim">:clearance:</span> <span class="alert">OMNIS-RED-04</span>
-   <span class="dim">:source:</span> docs/LIBER-LITURGIAE.md — THE CANONICAL AUTHORITY
+   <span class="dim">:source:</span> docs/LIBER-LITURGIAE.md (THE CANONICAL AUTHORITY)
 </pre>
 
 <section>
@@ -187,12 +187,12 @@
 
 <p class="desc">LITURGY IS A SUPERSET OF PYTHON. A <span class="lower amber">.lit</span> FILE TOKENIZES, HAS ITS
 RITUAL KEYWORDS SUBSTITUTED BACK TO THEIR PYTHON SPELLINGS, AND COMPILES
-EXACTLY AS A <span class="lower amber">.py</span> FILE WOULD. UNDERNEATH IT IS PYTHON — THE SAME
+EXACTLY AS A <span class="lower amber">.py</span> FILE WOULD. UNDERNEATH IT IS PYTHON: THE SAME
 OBJECTS, THE SAME SCOPING, THE SAME STANDARD LIBRARY.</p>
 
 <p class="desc"><b>THE SUPERSET PROMISE:</b> ALL VALID PYTHON IS VALID LITURGY, EXCEPT
 PROGRAMS THAT USE A LITURGY WORD AS AN IDENTIFIER. SUBSTITUTION RUNS ONE
-DIRECTION ONLY — <span class="lower amber">print</span> AND <span class="lower amber">def</span> STILL WORK
+DIRECTION ONLY: <span class="lower amber">print</span> AND <span class="lower amber">def</span> STILL WORK
 INSIDE A <span class="lower amber">.lit</span> FILE.</p>
 
 <pre>
@@ -207,7 +207,7 @@ Ave Omnissiah
 
 <p class="desc"><b>THE CODEX.</b> A DIRECTORY OF LITANIES HOLDING AN
 <span class="lower amber">__init__.lit</span> IS AN ORDINARY PYTHON PACKAGE; THE BOUND
-COLLECTION IS CALLED A CODEX. ALL THREE IMPORT FORMS HOLD — THE CODEX ITSELF,
+COLLECTION IS CALLED A CODEX. ALL THREE IMPORT FORMS HOLD: THE CODEX ITSELF,
 A DOTTED SUBMODULE, AND A RELATIVE IMPORT WRITTEN INSIDE IT. THE TWO FILE
 KINDS MIX IN BOTH DIRECTIONS: A <span class="lower amber">.py</span> SUBMODULE INSIDE A
 <span class="lower amber">.lit</span> CODEX, AND A <span class="lower amber">.lit</span> SUBMODULE
@@ -216,7 +216,7 @@ LOADER DETAILS ALONGSIDE ITS OWN, SO ONE DIRECTORY MAY HOLD BOTH. EVERY
 TOOLING VERB TAKES A CODEX AS IT TAKES ANY DIRECTORY;
 <span class="lower amber">forge</span> WRITES ORDINARY <span class="lower amber">.pyc</span> UNDER
 <span class="lower amber">__pycache__</span>. THERE IS NO <span class="lower amber">codex</span>
-KEYWORD — PYTHON HAS NO PACKAGE KEYWORD TO ALIAS, AND
+KEYWORD: PYTHON HAS NO PACKAGE KEYWORD TO ALIAS, AND
 <span class="lower amber">__init__.lit</span> IS FIXED BY THE IMPORT MACHINERY.</p>
 
 <pre>
@@ -231,7 +231,7 @@ spoken in the sanctum
 
 <section>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
-<h2><pre>[II] THE LESSER RITES — KEYWORD LEXICON</pre></h2>
+<h2><pre>[II] THE LESSER RITES: KEYWORD LEXICON</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <p class="desc">EVERY ONE OF PYTHON'S 35 KEYWORDS PLUS 3 SOFT KEYWORDS BEARS A RITUAL
@@ -272,11 +272,11 @@ STATEMENT'S OWN KEYWORDS ARE TOUCHED. THUS
 
 <section>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
-<h2><pre>[III] THE GREATER RITES — CONSTRUCTS</pre></h2>
+<h2><pre>[III] THE GREATER RITES: CONSTRUCTS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <p class="desc">THREE CONSTRUCTS PYTHON CANNOT EXPRESS. EACH DESUGARS INTO SELF-CONTAINED
-GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
+GENERATED PYTHON; NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
 <span class="lower amber">noospheric</span>, WAS CUT RATHER THAN BEND THAT RULE.</p>
 
 <pre>
@@ -288,27 +288,27 @@ GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
    <span class="dim">:archetype:</span> REQUIRED, PER SECTION [VIII]. NEWLY EXPRESSIBLE: THE CONSTRUCT
                USED TO REACH THE COMPILER THROUGH THE ANNOTATION SLOT, SO A
                CONSECRATED NAME COULD NOT CARRY ONE AT ALL.
-   <span class="dim">:limit:</span> <span class="alert">WHAT THE COMPILER CANNOT SEE IT CANNOT STOP — setattr, globals(),
+   <span class="dim">:limit:</span> <span class="alert">WHAT THE COMPILER CANNOT SEE IT CANNOT STOP: setattr, globals(),
              ASSIGNMENT THROUGH THE MODULE OBJECT AND exec ALL PASS.
              THIS IS ENFORCEMENT, NOT A GUARANTEE.</span>
 
 <span class="dim">.. construct::</span> litany(ATTEMPTS, resting=SECONDS, curse=EXCEPTION):
    <span class="ok">A BLOCK RE-CHANTED ON NAMED FAILURES. THE FIRST ARGUMENT IS TOTAL
    ATTEMPTS, NOT RETRIES, AND IS EVALUATED EXACTLY ONCE.</span>
-   <span class="dim">:curse:</span> REQUIRED AND KEYWORD-ONLY, SPELLED OUT — NOT PASSED THROUGH **.
-           NOTHING IS CAUGHT IMPLICITLY — A RETRY
+   <span class="dim">:curse:</span> REQUIRED AND KEYWORD-ONLY, SPELLED OUT, NOT PASSED THROUGH **.
+           NOTHING IS CAUGHT IMPLICITLY: A RETRY
            THAT CATCHES EVERYTHING WOULD RE-ATTEMPT A PatternMismatch.
    <span class="dim">:resting:</span> OPTIONAL. OMITTED, NO TIMING CODE IS EMITTED AT ALL. EVALUATED
              ONCE, LIKE THE COUNT, AND A NEGATIVE VALUE IS REJECTED BEFORE
              THE FIRST ATTEMPT.
-   <span class="alert">:forbidden:</span> cease AND persist AT THE LITANY'S OWN LEVEL — THEY WOULD BIND
+   <span class="alert">:forbidden:</span> cease AND persist AT THE LITANY'S OWN LEVEL: THEY WOULD BIND
                TO THE INVISIBLE RETRY LOOP. INSIDE A REAL LOOP IN THE BODY
                THEY ARE THE AUTHOR'S OWN AND PASS UNTOUCHED.
 
 <span class="dim">.. construct::</span> augur:
    <span class="ok">CONDITIONS READ BEFORE A RITE'S BODY RUNS, ONE PER LINE BENEATH A BARE
    augur:, VALID ONLY AT THE OPENING OF A RITE. A CONTRACT, NOT AN
-   ASSERTION — IT DESUGARS TO A REAL if/raise AND SURVIVES python -O. A
+   ASSERTION: IT DESUGARS TO A REAL if/raise AND SURVIVES python -O. A
    STATEMENT, A CONSTANT OR A WALRUS IN THE BLOCK IS REJECTED AT COMPILE
    TIME; A CALL IS A CONDITION, JUDGED BY ITS TRUTH.</span>
    <span class="dim">:raises ImpureOffering:</span> WITH THE <b>LITURGY</b> SOURCE OF THE FAILED
@@ -324,9 +324,9 @@ GENERATED PYTHON — NOTHING IS IMPORTED FROM LITURGY AT RUNTIME. A FOURTH,
 
 <p class="desc">SIXTY-FOUR WORDS ARE RESERVED IN TOTAL: THIRTY-EIGHT RITES, FIVE BUILTINS,
 FIFTEEN CURSES, TWO NUMERALS AND FOUR CONSTRUCT WORDS. THE MACHINE ALSO KEEPS
-ITS OWN NAMES — <span class="lower amber">__consecrated__</span>,
+ITS OWN NAMES (<span class="lower amber">__consecrated__</span>,
 <span class="lower amber">__litany__</span>, <span class="lower amber">__augur__</span>
-AND EVERYTHING BEGINNING <span class="lower amber">__liturgy_</span> — FOR
+AND EVERYTHING BEGINNING <span class="lower amber">__liturgy_</span>) FOR
 ITSELF; SPEAKING ONE ANYWHERE BUT AFTER A DOT IS A LOUD HERESY.</p>
 </section>
 
@@ -354,13 +354,13 @@ ITSELF; SPEAKING ONE ANYWHERE BUT AFTER A DOT IS A LOUD HERESY.</p>
    LOADER DETAILS ALONGSIDE. THEREAFTER LITURGY MAY
    IMPORT PYTHON, AND PYTHON MAY IMPORT LITURGY. IDEMPOTENT.</span>
 
-   <span class="field">:called by:</span> chant, commune AND prove — AND NOTHING ELSE. AN INTERPRETER
+   <span class="field">:called by:</span> chant, commune AND prove, AND NOTHING ELSE. AN INTERPRETER
                STARTED ANY OTHER WAY CANNOT SEE A .LIT AT ALL.
    <span class="field">:environment-wide:</span> A .pth IN site-packages RUNS IT AT INTERPRETER
                       START, SO ANY PYTHON PROCESS CAN IMPORT A LITANY:
                       <span class="lower amber">import liturgy.loader; liturgy.loader.install()</span>
                       COSTS ~10-20ms PER START, WRITES INTO site-packages
-                      (USE A VENV), AND BUYS IMPORTING BUT NOT COLLECTION —
+                      (USE A VENV), AND BUYS IMPORTING BUT NOT COLLECTION:
                       PLAIN PYTEST STILL FINDS NO TRIALS IN A test_*.lit.
                       DELETE THE FILE TO UNDO IT.</pre>
 </div>
@@ -370,7 +370,7 @@ ITSELF; SPEAKING ONE ANYWHERE BUT AFTER A DOT IS A LOUD HERESY.</p>
 
    <span class="ok">PRINTS A MACHINE CURSE IN PLACE OF A PYTHON TRACEBACK. FRAMES FROM THE
    LAUNCHER MACHINERY ARE DROPPED; ONLY .LIT FRAMES RECEIVE THE TREATMENT.
-   LINE AND CARET POSITION ARE EXACT — A COLUMN-LEVEL SOURCE MAP FROM THE
+   LINE AND CARET POSITION ARE EXACT: A COLUMN-LEVEL SOURCE MAP FROM THE
    TOKEN PASS GUARANTEES IT, THOUGH render AND return DIFFER IN LENGTH.</span>
 
    <span class="field">:override:</span> <span class="amber">--profane</span> OR <span class="amber">LITURGY_PROFANE=1</span> RESTORES THE MUNDANE TRACEBACK.</pre>
@@ -382,11 +382,11 @@ ITSELF; SPEAKING ONE ANYWHERE BUT AFTER A DOT IS A LOUD HERESY.</p>
    <span class="ok">LOGS AND REBUKES AN INVOCATION BY MUNDANE ALIAS (run, repl). THE REBUKE
    ESCALATES ACROSS INVOCATIONS AND SATURATES AT THE THIRD.</span>
 
-   <span class="field">:state:</span> $XDG_STATE_HOME/liturgy/heresies.json — THE PERMANENT RECORD.
+   <span class="field">:state:</span> $XDG_STATE_HOME/liturgy/heresies.json, THE PERMANENT RECORD.
    <span class="field">:absolution:</span> <span class="amber">--absolved</span> FOR ONE INVOCATION; <span class="amber">LITURGY_PIOUS=0</span> EVERYWHERE.</pre>
 </div>
 
-<pre><b>CODE REFERENCE — examples/fibonacci.lit:</b></pre>
+<pre><b>CODE REFERENCE, examples/fibonacci.lit:</b></pre>
 
 <div class="code-block">
 <pre><span class="comment">## The Rite of Recurrent Numeration</span>
@@ -451,7 +451,7 @@ FRAME:</p>
 
 <section>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
-<h2><pre>[VI] TECH-HERESY LOG — MUNDANE ALIAS INVOCATIONS</pre></h2>
+<h2><pre>[VI] TECH-HERESY LOG: MUNDANE ALIAS INVOCATIONS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <pre>
@@ -470,13 +470,13 @@ Ave Omnissiah
 </pre>
 
 <p class="desc">THE REBUKE SATURATES AT THE INQUISITION. CALLING A RITE BY ITS PROPER
-NAME — <span class="lower amber">chant</span> OR <span class="lower amber">commune</span> — NEVER TRIGGERS A
+NAME ( class="lower amber">chant</span> OR <span class="lower amber">commune</span>) NEVER TRIGGERS A
 REBUKE.</p>
 </section>
 
 <section>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
-<h2><pre>[VII] THE READING OF OMENS — TOOLING VERBS</pre></h2>
+<h2><pre>[VII] THE READING OF OMENS: TOOLING VERBS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <p class="desc">SEVEN TOOLING VERBS ARE BUILT.
@@ -485,8 +485,8 @@ ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
 <span class="lower amber">consecrate</span> CHECKS THE SEALS ACROSS ALL OF THEM,
 <span class="lower amber">sanctify</span> SETS ONE'S FORM IN ORDER,
 <span class="lower amber">prove</span> RUNS THE TRIALS, AND
-<span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND. ONE NAME —
-<span class="lower amber">anoint</span> — REMAINS RESERVED AND UNBUILT.</p>
+<span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND. ONE NAME,
+<span class="lower amber">anoint</span>, REMAINS RESERVED AND UNBUILT.</p>
 
 <div class="directive">
 <pre><span class="dim">.. function::</span> <span class="sig">liturgy augur PATH... [--plain] [--archetypes]</span>
@@ -497,20 +497,20 @@ ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
    READ, AND OVERLAPPING ARGUMENTS REPORT EACH FINDING ONCE. TWO STANDING
    CHECKS, AND A THIRD ONLY WHEN IT IS ASKED FOR: BINDINGS WHOSE NAME IS ONE
    OF THE SIXTY WORDS THAT
-   BECOME ANOTHER WORD (THE MACHINE'S OWN NAMES INCLUDED), AND —
-   FOR A .LIT FILE — THAT IT
+   BECOME ANOTHER WORD (THE MACHINE'S OWN NAMES INCLUDED), AND,
+   FOR A .LIT FILE, THAT IT
    COMPILES, SO augur AND chant CANNOT DISAGREE. IT IS NOT A GENERAL LINTER
    AND WILL NOT BECOME ONE.</span>
 
    <span class="field">:param <b>PATH</b>:</span> FILES OR DIRECTORIES TO BE READ.
    <span class="field">:option <b>--plain</b>:</span> ONE file:line:col: LINE PER FINDING, FOR EDITORS AND CI.
-   <span class="field">:option <b>--archetypes</b>:</span> THE THIRD CHECK — WHETHER A DECLARED ARCHETYPE IS
+   <span class="field">:option <b>--archetypes</b>:</span> THE THIRD CHECK: WHETHER A DECLARED ARCHETYPE IS
                          TRUE, BY HANDING THE GENERATED PYTHON TO MYPY AND
                          SAYING THE DIAGNOSTICS BACK IN LITURGY. A FLAG
                          BECAUSE THE STANDING TWO ARE FAST ENOUGH TO RUN
                          CONSTANTLY AND SPAWNING MYPY IS NOT; THEY BEHAVE
                          IDENTICALLY WHETHER IT IS PASSED OR NOT. .LIT ONLY.
-   <span class="field">:requires:</span> FOR --archetypes ONLY, MYPY, AN OPTIONAL EXTRA —
+   <span class="field">:requires:</span> FOR --archetypes ONLY, MYPY, AN OPTIONAL EXTRA:
               pip install 'liturgy[archetypes]'. WITHOUT IT THE VERB REFUSES
               BEFORE IT WALKS A SINGLE PATH.
    <span class="alert">:advisory:</span> <span class="alert">THE THIRD CHECK REFUSES NOTHING. chant STILL RUNS A LITANY
@@ -522,11 +522,11 @@ ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
                           SHADOW TREE THAT WOULD FIX IT IS DESIGNED AND
                           UNSCHEDULED.</span>
    <span class="field">:returns:</span> 0 IF NOTHING WAS REPORTED, 1 IF ANYTHING WAS.
-   <span class="field">:silently:</span> <span class="alert">A FINDING SO MARKED SUBSTITUTES TO A NAME, NOT A KEYWORD —
+   <span class="field">:silently:</span> <span class="alert">A FINDING SO MARKED SUBSTITUTES TO A NAME, NOT A KEYWORD;
               THE FILE COMPILES AND THE HARM IS DEFERRED.</span>
    <span class="field">:not checked:</span> THE FOUR CONSTRUCT WORDS. THEY ARE NEVER SUBSTITUTED, SO
                  NOTHING BOUND TO ONE QUIETLY CHANGES MEANING. consecrated AND
-                 unsanctioned ARE STILL CAUGHT, BY THE COMPILE CHECK — AS IS
+                 unsanctioned ARE STILL CAUGHT, BY THE COMPILE CHECK, AS IS
                  AN UNDECLARED ARCHETYPE.
    <span class="field">:unscanned:</span> A DIRECTORY REACHED BY SYMLINK IS NAMED, NOT PASSED OVER.</pre>
 </div>
@@ -559,12 +559,12 @@ SAY NOTHING ABOUT WHAT IS SAFE TO BE BOUND TO.</p>
                A SECOND, BYTE-LEVEL CHECK IN ITS OWN DECLARED ENCODING.
    <span class="alert">:refuses:</span> A SOURCE THAT WILL NOT PARSE, ONE THAT CANNOT BE DECODED, ONE
              BINDING A RESERVED NAME, AND ITS OWN OUTPUT IF IT DOES NOT
-             ROUND-TRIP OR WOULD NOT CHANT — THE OUTPUT IS COMPILED BEFORE
+             ROUND-TRIP OR WOULD NOT CHANT; THE OUTPUT IS COMPILED BEFORE
              ANYTHING IS WRITTEN. THE COLLISION RULE IS augur'S, FROM THE
              SAME CODE.
    <span class="field">:that compile:</span> ASKS WHETHER THE OUTPUT IS A PROGRAM, NOT WHETHER IT MEETS
                   SECTION [VIII]. THE ARCHETYPE RULE IS SUPPRESSED FOR IT.
-   <span class="field">:warns:</span> UNANNOTATED PYTHON TRANSCRIBES TO A LITANY THAT WILL NOT CHANT —
+   <span class="field">:warns:</span> UNANNOTATED PYTHON TRANSCRIBES TO A LITANY THAT WILL NOT CHANT;
            PYTHON DOES NOT REQUIRE ARCHETYPES AND LITURGY DOES. THE OMEN SAYS
            SO; NOTHING IS PREPENDED, SINCE AN unsanctioned LINE WOULD BREAK
            THE ROUND-TRIP SELF-CHECK. ANNOTATED PYTHON IS NOT WARNED ABOUT.
@@ -596,7 +596,7 @@ rename these, then chant again
    <span class="field">:option <b>--anew</b>:</span> FORGE EVEN LITANIES WHOSE BYTECODE IS ALREADY CURRENT.
    <span class="alert">:does not chant:</span> IT COMPILES WITHOUT EXECUTING. THAT IS THE WHOLE
                      DIFFERENCE BETWEEN FORGING A LITANY AND IMPORTING ONE.
-   <span class="field">:cache:</span> ORDINARY .pyc UNDER __pycache__, NOT A .litc OF OUR OWN —
+   <span class="field">:cache:</span> ORDINARY .pyc UNDER __pycache__, NOT A .litc OF OUR OWN;
            get_code REACHES FOR cache_from_source AS A MODULE-LEVEL FUNCTION,
            SO A SUBCLASS CANNOT REDIRECT IT, AND THE EXTENSION IS NOT WORTH
            FORKING THE IMPORT MACHINERY FOR.
@@ -613,7 +613,7 @@ rename these, then chant again
 </pre>
 
 <p class="desc">A SECOND RUN REPORTS RATHER THAN REPEATS. THE DISTINCTION IS MEASURED,
-NOT GUESSED — THE CACHE FILE'S TIMESTAMP IS READ EITHER SIDE OF THE COMPILE, AND
+NOT GUESSED: THE CACHE FILE'S TIMESTAMP IS READ EITHER SIDE OF THE COMPILE, AND
 ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
 
 <pre>
@@ -629,7 +629,7 @@ ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
 <pre><span class="dim">.. function::</span> <span class="sig">liturgy consecrate [PATH...] [--plain]</span>
 
    <span class="ok">CHECKS EVERY MODULE-LEVEL consecrated NAME AGAINST THE WHOLE TREE. WALKS
-   TWICE — ONCE TO LEARN WHAT IS SEALED, ONCE TO FIND WHAT REACHES A SEAL.
+   TWICE: ONCE TO LEARN WHAT IS SEALED, ONCE TO FIND WHAT REACHES A SEAL.
    READS THREE SHAPES: ASSIGNMENT THROUGH THE MODULE OBJECT, setattr WITH A
    LITERAL NAME, AND DELETION. A .PY FILE COUNTS AS MUCH AS A LITANY.</span>
 
@@ -637,7 +637,7 @@ ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
    <span class="alert">:not enforcement:</span> A REPORT. NOTHING HERE STOPS A REBINDING AT RUN TIME.
    <span class="field">:cannot see:</span> globals()["PORT"] = 9, AND setattr WITH A COMPUTED NAME.
                  THE LITERAL FORM IS READ; THE COMPUTED FORM IS NOT GUESSED AT.
-   <span class="field">:scope:</span> MODULE-LEVEL SEALS ONLY — A consecrated INSIDE A RITE IS NOT
+   <span class="field">:scope:</span> MODULE-LEVEL SEALS ONLY: A consecrated INSIDE A RITE IS NOT
            REACHABLE AS module.NAME. MODULES MATCH BY BASENAME, AND A SHARED
            BASENAME IS CALLED OUT RATHER THAN REPORTED ON CONFIDENTLY.
    <span class="field">:returns:</span> 0 IF EVERY SEAL HELD, 1 IF ANY WAS REACHED OR ANY LITANY
@@ -665,7 +665,7 @@ ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
 
    <span class="ok">RESHAPES THE WHITESPACE BETWEEN A LITANY'S TOKENS AND NOTHING ELSE.
    INDENTATION TO FOUR SPACES PER LEVEL, TRAILING WHITESPACE GONE, BLANK
-   RUNS CAPPED AT TWO, ONE FINAL NEWLINE. .LIT ONLY — RUFF AND BLACK CANNOT
+   RUNS CAPPED AT TWO, ONE FINAL NEWLINE. .LIT ONLY: RUFF AND BLACK CANNOT
    READ A LITANY, WHICH IS WHY THIS EXISTS.</span>
 
    <span class="field">:option <b>--check</b>:</span> REPORT WHAT IS UNCLEAN AND WRITE NOTHING; EXIT 1
@@ -679,7 +679,7 @@ ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
                 FORMATTER WALKS OUT OF ITS BLOCK.
    <span class="field">:guarantee:</span> THE SIGNIFICANT TOKEN STREAM AND THE COMPILED AST MUST
                MATCH BEFORE AND AFTER, OR THE FILE IS LEFT AS IT WAS.
-   <span class="field">:returns:</span> 0 DONE, 1 REFUSED — OR, UNDER --check, 1 IF UNCLEAN.</pre>
+   <span class="field">:returns:</span> 0 DONE, 1 REFUSED, OR, UNDER --check, 1 IF UNCLEAN.</pre>
 </div>
 
 <pre>
@@ -696,10 +696,10 @@ ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
 <pre><span class="dim">.. function::</span> <span class="sig">liturgy prove [ARG...]</span>
 
    <span class="ok">RUNS PYTEST WITH THE .LIT IMPORT HOOK INSTALLED AND test_*.lit COLLECTED.
-   EVERY ARGUMENT IS PASSED STRAIGHT THROUGH — PATHS, -k, -x, -v. FAILURES
+   EVERY ARGUMENT IS PASSED STRAIGHT THROUGH: PATHS, -k, -x, -v. FAILURES
    QUOTE LITURGY AT THE LITANY'S OWN LINE NUMBER.</span>
 
-   <span class="field">:requires:</span> PYTEST, AN OPTIONAL EXTRA — pip install 'liturgy[trials]'.
+   <span class="field">:requires:</span> PYTEST, AN OPTIONAL EXTRA: pip install 'liturgy[trials]'.
               WITHOUT IT THE VERB REFUSES RATHER THAN TRACEBACKING.
    <span class="alert">:convenience only:</span> A conftest.py CALLING install() AND ADDING A
                        pytest_collect_file FOR test_*.lit DOES THE SAME.
@@ -708,7 +708,7 @@ ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
    <span class="field">:limitation:</span> PYTEST'S ASSERTION REWRITING DOES NOT APPLY TO A LITANY.
                 A FAILED attest REPORTS AssertionError AND THE SOURCE LINE,
                 NOT THE OPERANDS.
-   <span class="field">:returns:</span> PYTEST'S OWN EXIT CODE, UNFLATTENED — 0 PASSED, 1 FAILURES,
+   <span class="field">:returns:</span> PYTEST'S OWN EXIT CODE, UNFLATTENED: 0 PASSED, 1 FAILURES,
              5 NOTHING COLLECTED.</pre>
 </div>
 
@@ -732,7 +732,7 @@ ONLY A CHANGE TO IT COUNTS AS A FORGING:</p>
 
    <span class="field">:option <b>--heresies</b>:</span> ALSO CLEAR THE HERESY RECORD OF SECTION [VI].
    <span class="alert">:guard:</span> THE ONLY DESTRUCTIVE VERB. IT REFUSES OUTRIGHT UNLESS THE TREE
-           HOLDS AT LEAST ONE .LIT FILE — A RECURSIVE DELETE LAUNCHED FROM
+           HOLDS AT LEAST ONE .LIT FILE: A RECURSIVE DELETE LAUNCHED FROM
            THE WRONG DIRECTORY IS A BAD AFTERNOON.
    <span class="field">:on failure:</span> A RELIC THAT WILL NOT GO IS REPORTED AND STEPPED OVER, NOT
                 RAISED. ONE UNREADABLE CACHE MUST NOT STRAND THE REST.
@@ -759,7 +759,7 @@ THE GUARD SPEAKS INSTEAD AND NOTHING IS TOUCHED:</p>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <p class="desc">PYTHON INVITES TYPE HINTS AND ENFORCES NOTHING. LITURGY ENFORCES THEM AT
-COMPILE TIME. ONE NEW WORD — <span class="lower amber">unsanctioned</span> — AND IT
+COMPILE TIME. ONE NEW WORD, <span class="lower amber">unsanctioned</span>, AND IT
 IS THE WORD FOR REFUSING THE RULE. <span class="lower amber">archetype</span> WAS
 ALREADY <span class="lower amber">type</span>, SO THE ANNOTATION ITSELF GAINED NO
 SPELLING OF ITS OWN.</p>
@@ -788,7 +788,7 @@ SPELLING OF ITS OWN.</p>
                             ITS OWN COMPILATION UNIT; AND .py FILES, WHICH ARE
                             PYTHON'S BUSINESS.
    <span class="field">:where it lives:</span> THE COMPILE PATH, BESIDE THE OTHER CONSTRUCT
-                    REJECTIONS — SO chant, prove AND augur REPORT IT ALIKE AND
+                    REJECTIONS, SO chant, prove AND augur REPORT IT ALIKE AND
                     CANNOT DISAGREE.</pre>
 </div>
 
@@ -804,7 +804,7 @@ SPELLING OF ITS OWN.</p>
                    REACHES remote rite TOO.
    <span class="field">:before a consecrated:</span> EXEMPTS THAT ONE BINDING.
    <span class="field">:alone at the margin:</span> EXEMPTS THE WHOLE LITANY. THERE IS NO PER-LINE FORM.
-   <span class="alert">:anywhere else:</span> A HERESY, NOT A SILENT NO-OP — A MODIFIER THAT LOOKS
+   <span class="alert">:anywhere else:</span> A HERESY, NOT A SILENT NO-OP: A MODIFIER THAT LOOKS
                    APPLIED AND IS NOT IS WORSE THAN NO MODIFIER.
    <span class="field">:not the opposite of:</span> Sanctioned, WHICH IS True. A DIFFERENT WORD IN A
                          DIFFERENT CASE MET IN A DIFFERENT POSITION.</pre>

@@ -22,7 +22,7 @@
     text-align: left;
   }
 
-  /* Simulated scanline effect — per AM-COG-UI-844.M41 */
+  /* Simulated scanline effect, per AM-COG-UI-844.M41 */
   body::before {
     content: " ";
     display: block;
@@ -255,7 +255,7 @@ spoken with the proper reverence.</p>
 <code>return</code> is <code>render</code>. A <code>.lit</code> file is
 tokenized, its ritual words are substituted back to their Python spellings,
 and the result is compiled exactly as a <code>.py</code> file would be.
-Underneath, it is Python — the same objects, the same scoping, the same
+Underneath, it is Python: the same objects, the same scoping, the same
 control flow, the same standard library.</p>
 
 <h3>The promise, and its fine print</h3>
@@ -265,8 +265,8 @@ Liturgy word as an identifier.</b> Liturgy reserves more words than Python
 does.</p></div>
 
 <p><code>print</code> still works in a <code>.lit</code> file. So does
-<code>def</code>. Substitution runs one way — ritual spelling to Python
-spelling — so the Python spellings are never touched. What breaks is a
+<code>def</code>. Substitution runs one way, ritual spelling to Python
+spelling, so the Python spellings are never touched. What breaks is a
 program that names a variable <code>rite</code>, or <code>render</code>, or
 <code>curse</code>.</p>
 
@@ -295,7 +295,7 @@ supporting one.</p>
 
 <pre class="shell"><span class="prompt">$</span> pipx install .</pre>
 
-<h3>chant — to execute a litany</h3>
+<h3>chant: to execute a litany</h3>
 
 <pre class="shell"><span class="prompt">$</span> liturgy chant hello.lit
 Ave Omnissiah</pre>
@@ -304,7 +304,7 @@ Ave Omnissiah</pre>
 <code>__main__</code> semantics, the way <code>python file.py</code> runs a
 Python one. Arguments after the filename are passed to the prayer.</p>
 
-<h3>commune — to hold converse</h3>
+<h3>commune: to hold converse</h3>
 
 <pre class="shell"><span class="prompt">$</span> liturgy commune
 ++ COMMUNION ESTABLISHED ++
@@ -329,7 +329,7 @@ may import Liturgy.</p>
 <div class="code-block"><pre><span class="kw">within</span> reliquary <span class="kw">invoke</span> bless
 <span class="kw">invoke</span> json</pre></div>
 
-<h3>The codex — litanies bound into one</h3>
+<h3>The codex: litanies bound into one</h3>
 
 <p>One file is a litany. A directory of them with an
 <code>__init__.lit</code> inside is a Python package, and the bound
@@ -354,11 +354,11 @@ the codex is first invoked, and the names it binds are the codex's names:</p>
 import spelled in the proper tongue:</p>
 
 <ul>
-  <li><code>within reliquary invoke bless</code> — a name bound by the
+  <li><code>within reliquary invoke bless</code>: a name bound by the
   codex's own litany.</li>
-  <li><code>within reliquary.relics invoke waken</code> — a name from a
+  <li><code>within reliquary.relics invoke waken</code>: a name from a
   submodule, reached through the dot.</li>
-  <li><code>within .relics invoke waken</code> — a relative import,
+  <li><code>within .relics invoke waken</code>: a relative import,
   resolved against the codex rather than against <code>sys.path</code>, and
   legible only from inside it. The first line of <code>__init__.lit</code>
   above is exactly that, which is why <code>waken</code> is reachable as
@@ -370,7 +370,7 @@ import spelled in the proper tongue:</p>
 
 <p>The two kinds of file interleave freely, and in both directions. A
 <code>.py</code> submodule may sit inside a <code>.lit</code> codex, and a
-<code>.lit</code> submodule inside a <code>.py</code> package —
+<code>.lit</code> submodule inside a <code>.py</code> package, and
 <code>tally.py</code> and <code>orison.lit</code> in the tree above are each
 of these:</p>
 
@@ -378,8 +378,8 @@ of these:</p>
 <span class="kw">within</span> sanctum.orison <span class="kw">invoke</span> orison</pre></div>
 
 <p>That is not a happy accident. The path hook Liturgy registers carries the
-standard loader details — <code>ExtensionFileLoader</code>,
-<code>SourceFileLoader</code> and <code>SourcelessFileLoader</code> —
+standard loader details (<code>ExtensionFileLoader</code>,
+<code>SourceFileLoader</code> and <code>SourcelessFileLoader</code>)
 alongside its own, because a hook carrying only the <code>.lit</code>
 details would still match every directory, shadow the stdlib's own
 <code>FileFinder</code>, and break every <code>.py</code> import in the
@@ -402,7 +402,7 @@ spoken in the sanctum</pre>
 of any of them. <code>forge</code> compiles a codex's litanies and writes
 ordinary <code>.pyc</code> files under
 <code>reliquary/__pycache__/</code>, which is where the import machinery
-looks for them — a forged codex is simply a codex that imports without
+looks for them: a forged codex is simply a codex that imports without
 compiling:</p>
 
 <pre class="shell"><span class="prompt">$</span> liturgy forge reliquary/
@@ -435,8 +435,8 @@ and prose is all it is.</p>
 
 <p>"Which both verbs do for you" is the whole of it: <code>chant</code>,
 <code>commune</code> and <code>prove</code> install the hook on their way in,
-and nothing else does. An interpreter started any other way —
-<code>python -m</code>, a server, a notebook — cannot see a litany at all.</p>
+and nothing else does. An interpreter started any other way
+(<code>python -m</code>, a server, a notebook) cannot see a litany at all.</p>
 
 <div class="warning"><pre><span class="prompt">$</span> <span class="cmd">python -c "import mymod"</span>
 ModuleNotFoundError: No module named 'mymod'</pre></div>
@@ -455,7 +455,7 @@ ave, Omnissiah</pre>
 <p>Deleting the file undoes it completely; there is no other state.</p>
 
 <p>Three things are worth knowing before an adept does this. It costs every
-interpreter start in that environment, litany or no litany — some ten to
+interpreter start in that environment, litany or no litany: some ten to
 twenty milliseconds, most of it reading installed-package metadata. It writes
 into site-packages, so it belongs in a virtual environment and not in a
 machine's own Python. And it buys importing, not collection: plain pytest
@@ -734,8 +734,8 @@ layer:</p>
   never adds or removes a line, so line N of the generated Python is line N
   of your source. Nothing is remapped because nothing moved.</li>
   <li><b>The carets point at the Liturgy columns.</b> Words do change
-  width — <code>should</code> is six characters and <code>if</code> is
-  two — so a column map is kept and consulted when a curse is rendered.</li>
+  width (<code>should</code> is six characters and <code>if</code> is
+  two), so a column map is kept and consulted when a curse is rendered.</li>
   <li><b>The source shown is what actually ran.</b> The exact text compiled
   is recorded at compile time, so editing the file after import does not
   cause the curse to quote a line that never executed.</li>
@@ -743,8 +743,8 @@ layer:</p>
   not a rite, and the curse does not claim it is.</li>
 </ul>
 
-<p>Frames belonging to Liturgy itself — the loader, the transform, the
-import machinery — are suppressed, exactly as CPython hides its own import
+<p>Frames belonging to Liturgy itself (the loader, the transform, the
+import machinery) are suppressed, exactly as CPython hides its own import
 internals. Frames from libraries your litany called into are kept, because
 those are your answer rather than noise.</p>
 
@@ -764,14 +764,14 @@ names the file, the line, the source text and the column:</p>
 
 <h3><code>--profane</code></h3>
 
-<p class="epigraph">There are occasions — the reporting of a fault to a distant forge,
-chiefly — when the plain tongue serves better than the proper one. It is
+<p class="epigraph">There are occasions (the reporting of a fault to a distant forge,
+chiefly) when the plain tongue serves better than the proper one. It is
 permitted. It is not encouraged.</p>
 
 <pre class="shell"><span class="prompt">$</span> liturgy --profane chant prayer.lit</pre>
 
 <p>Renders an ordinary Python traceback. <code>LITURGY_PROFANE=1</code>
-does the same. The flag is accepted before or after the verb — with one
+does the same. The flag is accepted before or after the verb, with one
 caveat inherited from <code>python file.py</code> itself: anything after
 <code>chant</code>'s file belongs to the litany, so for <code>chant</code>
 the flag goes before the filename.</p>
@@ -792,8 +792,8 @@ it.</p>
 <h3>The first: after a dot</h3>
 
 <p>A name following <code>.</code> is never substituted. Without this,
-<code>template.render()</code> would become <code>template.return()</code> —
-a syntax error — and every library with a <code>.render()</code>,
+<code>template.render()</code> would become <code>template.return()</code>,
+a syntax error, and every library with a <code>.render()</code>,
 <code>.pattern</code> or <code>.span()</code> would break on contact.</p>
 
 <div class="code-block"><pre><span class="kw">invoke</span> re
@@ -818,7 +818,7 @@ substituted, so <code>func(intone=True)</code> does not silently become
 <code>f"{measure=}"</code> the <code>=</code> is not a keyword argument, so
 substitution proceeds and the value is printed as <code>f"{len=}"</code>
 intends. Note that this means the label in the output is the generated
-Python's — <code>f"{measure(x)=}"</code> prints <code>len(x)=2</code> —
+Python's (<code>f"{measure(x)=}"</code> prints <code>len(x)=2</code>),
 because an f-string fixes its debug text at compile time, after
 substitution.</p>
 
@@ -836,7 +836,7 @@ intone(parse_json(<span class="string">'{"a": 1}'</span>))</pre></div>
 
 <p><code>loads</code> is untouched; <code>within</code>,
 <code>invoke</code> and <code>styled</code> are translated. Relative
-invocations work as expected — <code>within . invoke sibling</code>, and
+invocations work as expected: <code>within . invoke sibling</code>, and
 deeper.</p>
 </section>
 
@@ -858,15 +858,15 @@ minute.</p>
 <pre class="shell"><span class="alert">SyntaxError: invalid syntax (render is Liturgy for return)</span></pre>
 
 <p>The parenthesis is the curse renderer's doing: when a syntax error points
-into — or hard against — a word a substitution produced, the word is named,
+into, or hard against, a word a substitution produced, the word is named,
 so the message describes the litany rather than the Python it became.</p>
 
 <h3>The quiet ones</h3>
 
 <p>Eight of the substituted words fail quietly instead, and these are the
-ones to know. The five builtin aliases — <code>intone</code>,
+ones to know. The five builtin aliases (<code>intone</code>,
 <code>measure</code>, <code>span</code>, <code>unseal</code>,
-<code>hearken</code> — translate to <code>print</code>, <code>len</code>,
+<code>hearken</code>) translate to <code>print</code>, <code>len</code>,
 <code>range</code>, <code>open</code> and <code>input</code>, which are
 names, not keywords, so assigning to them is legal Python:</p>
 
@@ -909,14 +909,14 @@ augur = compute()
 <code>unsanctioned</code> are the two that are not quiet: each can only ever
 be a header or a modifier, so <code>consecrated = 5</code> and
 <code>unsanctioned = 5</code> are both loud heresies. One spelling of
-<code>augur</code> is refused as well: a bare, valueless annotation —
-<code>augur: b != 0</code> — reads exactly like a one-line augury wherever
+<code>augur</code> is refused as well: a bare, valueless annotation,
+<code>augur: b != 0</code>, reads exactly like a one-line augury wherever
 it stands, and treating it as the annotation it technically is would check
 nothing. An augury's conditions belong on the lines beneath
 <code>augur:</code>, and the heresy says so; an annotation <i>with</i> a
 value (<code>augur: int = 5</code>) is unmistakably yours and compiles. Ten
-of the sixty-four words are quiet, then — the five builtins, the three soft
-keywords, <code>litany</code>, <code>augur</code> — and the rest are
+of the sixty-four words are quiet, then (the five builtins, the three soft
+keywords, <code>litany</code>, <code>augur</code>), and the rest are
 loud.</p>
 
 <p><code>span</code> in particular is a natural name for a range of text,
@@ -927,7 +927,7 @@ does. Chapter XI sets it down.</p>
 
 <p><code>litany</code> and <code>augur</code> are not reported, and should
 not be. A construct word is never substituted, so there is nothing it
-silently becomes — the only hazard is the one above, that you may one day
+silently becomes; the only hazard is the one above, that you may one day
 want the construct on a line whose name you have already spent. That one
 stays yours to track.</p>
 
@@ -935,8 +935,8 @@ stays yours to track.</p>
 
 <p>Three names appear in no table and are reserved all the same:
 <code>__consecrated__</code>, <code>__litany__</code> and
-<code>__augur__</code> — the private names the construct compiler claims for
-itself — along with every name beginning
+<code>__augur__</code> (the private names the construct compiler claims for
+itself), along with every name beginning
 <code>__liturgy_</code>, which the retry loop mints its bookkeeping under. A
 litany that spoke one would be indistinguishable from the machinery itself,
 so speaking one anywhere but after a dot is a loud heresy:</p>
@@ -967,7 +967,7 @@ declaration is not in attribute position:</p>
 <p>Calling <code>t.render()</code> is fine. Naming a rite
 <code>render</code> is not. If you must implement an interface whose method
 name is a reserved word, that method must be written in a <code>.py</code>
-file — which a litany may freely import.</p>
+file, which a litany may freely import.</p>
 
 <h3>The limits of consecrated</h3>
 
@@ -977,7 +977,7 @@ the word "enforced" invites more confidence than the mechanism can support.
 The rejection happens at compile time, against the AST the compiler can
 see: rebindings, a second <code>consecrated</code> of the same name, a
 <code>consecrated</code> inside a loop body. What the compiler cannot see,
-it cannot stop — <code>setattr</code>, <code>globals()</code>, assignment
+it cannot stop: <code>setattr</code>, <code>globals()</code>, assignment
 through the module object, and <code>exec</code> all get through untouched.
 This is enforcement, not a guarantee.</p>
 
@@ -992,7 +992,7 @@ rebinding goes through.</p>
 &gt;&gt;&gt; intone(PORT)
 9</pre>
 
-<p>Within a single entry — one line, or one block typed across several — the
+<p>Within a single entry (one line, or one block typed across several) the
 rejection is exactly as it is in a file:</p>
 
 <div class="warning"><pre>&gt;&gt;&gt; <span class="kw">consecrated</span> PORT = 8080; PORT = 9
@@ -1004,8 +1004,8 @@ rejection is exactly as it is in a file:</p>
 ++ the machine spirit is displeased ++</pre></div>
 
 <p>(<code>&lt;commune:1&gt;</code> numbers the prompt entry. Every entry
-keeps its own recorded source, which is what lets a curse — this one, or a
-runtime failure in a rite defined many entries ago — quote the Liturgy that
+keeps its own recorded source, which is what lets a curse (this one, or a
+runtime failure in a rite defined many entries ago) quote the Liturgy that
 was actually typed.)</p>
 
 <p>A litany is a file. The prompt is a conversation, and a conversation
@@ -1031,9 +1031,9 @@ on a point of doctrine is a tool you will stop using.</p>
 ++ this rite is named CHANT. the omission is noted. ++</span>
 Ave Omnissiah</pre>
 
-<p>The rebuke escalates across invocations — <i>the omission is noted</i>,
+<p>The rebuke escalates across invocations: <i>the omission is noted</i>,
 then <i>the transgression is recorded in your permanent record</i>, then
-<i>the Inquisition has been notified</i> — and saturates there.</p>
+<i>the Inquisition has been notified</i>, and saturates there.</p>
 
 <p>Three properties are deliberate:</p>
 
@@ -1062,7 +1062,7 @@ below was struck rather than left blank, and that is recorded too.</p>
 <p>Three constructs of the second spec are built; Chapter X sets them down
 in full. A fourth was designed alongside them and did not survive:
 <code>noospheric</code>, a binding placed in a process-wide registry rather
-than module scope. It was <b>cut, not deferred</b> — it is a service
+than module scope. It was <b>cut, not deferred</b>: it is a service
 locator, and Liturgy generates code with no runtime of its own for a
 registry like that to live in. There is no clean place left to put it.</p>
 
@@ -1083,7 +1083,7 @@ was declined because a formatter done improperly eats your source, and was
 built only once it could check that it had not.</p>
 
 <p><code>anoint</code> is unbuilt because there is still no feature behind
-it. It is the last of the reserved names, held rather than planned — and
+it. It is the last of the reserved names, held rather than planned, and
 holding it is the point. A name still unspent is worth more than a name spent
 on something trivial. No page is being left blank for it.</p>
 
@@ -1092,15 +1092,15 @@ in this project. <code>augur</code> is both Chapter X's source construct
 (preconditions) and Chapter XI's CLI verb (lint); <code>purge</code> is
 both Chapter III's keyword alias for <code>del</code> and Chapter XI's CLI
 verb (clearing caches). A source word and a CLI verb cannot actually
-collide — they live in entirely different namespaces — but the same word
+collide, since they live in entirely different namespaces, but the same word
 meaning two different things in the same project is exactly the kind of
 thing worth spelling out rather than leaving implicit.</p>
 
 <p><code>litany</code> is the one word that looks doubled and is not. A
 litany is one prayer, and Chapter X's construct chants one again until it
 takes, so the construct holds the word exactly. The suffix a source file
-carries is <code>.lit</code> for <i>Liturgy</i>, the language — not for
-<code>litany</code> — and a file is a whole ceremony rather than a single
+carries is <code>.lit</code> for <i>Liturgy</i>, the language, not for
+<code>litany</code>, and a file is a whole ceremony rather than a single
 prayer. Nothing is being told apart here; the resemblance is the whole of
 it.</p>
 
@@ -1109,8 +1109,8 @@ list, and they are the closer pair of the three: both are source words.
 <code>Sanctioned</code> is Chapter III's alias for <code>True</code>;
 <code>unsanctioned</code> is Chapter XII's modifier waiving the archetype
 rule, and one is not the negation of the other. They are told apart by case
-and by position — one is a value, the other stands at the head of a
-statement — and no table can confuse them, since <code>unsanctioned</code>
+and by position (one is a value, the other stands at the head of a
+statement), and no table can confuse them, since <code>unsanctioned</code>
 has no Python spelling to be substituted for. It is written down here rather
 than discovered later.</p>
 </section>
@@ -1121,13 +1121,13 @@ than discovered later.</p>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <p class="epigraph">Three constructs the second spec adds. Python has no word for any of
-them — Liturgy needed new grammar, not new spelling, to say what they say.</p>
+them; Liturgy needed new grammar, not new spelling, to say what they say.</p>
 
 <p>Each is a compile-time transformation, not a call into some runtime
 library. A carrier pass rewrites the construct's header, in place, into
 ordinary Python that parses; a second pass over the resulting tree then
 restructures it into real semantics, or rejects the misuse outright. Nothing
-beyond the standard library is imported to make any of the three work —
+beyond the standard library is imported to make any of the three work;
 there is no Liturgy runtime for them to depend on.</p>
 
 <p><code>consecrated</code> is the one that no longer needs a carrier at
@@ -1137,17 +1137,17 @@ the author the annotation slot; what the header declared now travels beside
 the generated Python instead, and <code>consecrated PORT: int = 8080</code>
 generates exactly <code>PORT: int = 8080</code>.</p>
 
-<h3>consecrated — a binding that will not move</h3>
+<h3>consecrated: a binding that will not move</h3>
 
 <div class="code-block"><pre><span class="kw">consecrated</span> PORT: int = 8080</pre></div>
 
 <p><code>consecrated NAME = value</code> declares a binding once. Every
 later assignment to that name that the compiler can see, in the scope where
-it was declared — a plain assignment, an augmented assignment, an annotated
+it was declared (a plain assignment, an augmented assignment, an annotated
 assignment, a walrus, a <code>foreach</code> target, a
 <code>with ... styled</code> target, <code>purge</code>, a binding
 <code>invoke</code>/<code>within</code>, or a name reached through
-destructuring — is rejected before the litany runs. So is a second
+destructuring) is rejected before the litany runs. So is a second
 <code>consecrated</code> of the same name, and a <code>consecrated</code>
 written inside a loop body, which would rebind on every iteration while
 reading like one declaration.</p>
@@ -1167,16 +1167,16 @@ way is recent: the construct used to reach the compiler through it.</p>
 <p>Chapter VII, "The limits of consecrated," sets down what this
 enforcement does not reach.</p>
 
-<h3>litany — a rite re-chanted on failure</h3>
+<h3>litany: a rite re-chanted on failure</h3>
 
 <div class="code-block"><pre><span class="kw">litany</span>(thrice, resting=2, curse=TimeoutError):
     send_offering()</pre></div>
 
 <p><code>litany(count, resting=..., curse=...):</code> runs its body once,
 and if it raises one of the exceptions named by <code>curse=</code>, runs it
-again — up to <code>count</code> <b>total attempts</b>, not
+again, up to <code>count</code> <b>total attempts</b>, not
 <code>count</code> retries. <code>curse=</code> is required and must be
-passed by keyword — spelled out, not smuggled in through a <code>**</code>
+passed by keyword: spelled out, not smuggled in through a <code>**</code>
 expansion; there is no spelling of <code>litany</code> that catches
 everything, on the view that a retry block silently swallowing an exception
 it was never told about is worse than no retry block at all.
@@ -1185,8 +1185,8 @@ attempt with no pause and generates no timing code whatsoever. Exhausting
 every attempt re-raises the last failure, unchanged.</p>
 
 <p><code>count</code> and <code>resting</code> are each evaluated exactly
-once, however they are spelled — a bare <code>thrice</code>, a variable, or
-a call — and each is guarded the same two-tier way: a count below one, or a
+once, however they are spelled (a bare <code>thrice</code>, a variable, or
+a call), and each is guarded the same two-tier way: a count below one, or a
 negative resting, is rejected at compile time when written as a literal and
 at run time when computed. The run-time check fires before the first
 attempt, so a bad value is its own loud fault rather than something an outer
@@ -1196,10 +1196,10 @@ attempt, so a bad value is its own loud fault rather than something an outer
 litany's own body are rejected at compile time, because they would bind to
 the retry loop the construct generates, not to anything the author wrote.
 The same two words inside a real <code>foreach</code> or <code>whilst</code>
-nested in that body are untouched — there, they bind to that loop, exactly
+nested in that body are untouched; there, they bind to that loop, exactly
 as expected.</p>
 
-<h3>augur — a precondition, not an assertion</h3>
+<h3>augur: a precondition, not an assertion</h3>
 
 <div class="code-block"><pre><span class="kw">rite</span> divide(a: float, b: float) -&gt; float:
     <span class="kw">augur</span>:
@@ -1207,8 +1207,8 @@ as expected.</p>
         b != 0
     <span class="kw">render</span> a / b</pre></div>
 
-<p><code>augur:</code> opens a rite — after its docstring if it has one,
-never after any other statement — with one bare condition per line, the
+<p><code>augur:</code> opens a rite (after its docstring if it has one,
+never after any other statement) with one bare condition per line, the
 <code>augur:</code> itself standing alone on its own. Each
 condition is checked before the rite's own body runs. The first one that is
 false raises <code>ImpureOffering</code>, with a message that quotes the
@@ -1216,7 +1216,7 @@ false raises <code>ImpureOffering</code>, with a message that quotes the
 <code>the omens forbid it -- b != 0</code>. Anything in the block that is
 not a bare condition is rejected at compile time: a statement of any kind, a
 constant (a docstring is not a condition), a walrus assignment. A call is
-accepted, and its <i>truth</i> is the omen — <code>augur:</code> over
+accepted, and its <i>truth</i> is the omen: <code>augur:</code> over
 <code>seen.append(x)</code> fails every time, because <code>append</code>
 renders Void. The augury judges the value of what you wrote; it cannot know
 what you meant to check.</p>
@@ -1226,7 +1226,7 @@ it survives <code>chant</code>ing under <code>-O</code>, where a Python
 <code>assert</code> would compile away to nothing. It raises
 <code>ImpureOffering</code> rather than some purpose-built exception class
 of its own, because there is no Liturgy runtime package for generated code
-to import from — its exceptions have to be ones Python already provides.</p>
+to import from; its exceptions have to be ones Python already provides.</p>
 
 <p>A nested rite's own opening augury is independent of any augury on the
 rite that contains it; each rite's opening belongs to that rite alone.</p>
@@ -1249,9 +1249,9 @@ litany, <code>transcribe</code> writes one, <code>forge</code> compiles one
 without chanting it, <code>consecrate</code> checks the seals across all of
 them, <code>sanctify</code> sets one's form in order, and <code>purge</code>
 clears what chanting left behind. <code>prove</code> is the exception that
-does run a litany — but only the trials you wrote to be run.</p>
+does run a litany, but only the trials you wrote to be run.</p>
 
-<h3>augur — the omens read before the chant</h3>
+<h3>augur: the omens read before the chant</h3>
 
 <p>Not to be confused with Chapter X's <code>augur:</code> construct, which
 is source and guards a rite. This is a command-line verb, and it guards a
@@ -1278,18 +1278,18 @@ deferred. A finding without it is a collision that will announce itself
 loudly somewhere; a finding with it is one that will not.</p>
 
 <p>Arguments may be files or directories, and a directory is walked for
-<code>.lit</code> and <code>.py</code> files — <code>augur</code> reads
+<code>.lit</code> and <code>.py</code> files; <code>augur</code> reads
 plain Python too, because a <code>.py</code> file in a Liturgy project is a
 file whose names a litany may one day import. The walk prunes the usual
 noise: names beginning with a dot, <code>__pycache__</code>, and any
-directory holding a <code>pyvenv.cfg</code> — a vendored virtual environment
+directory holding a <code>pyvenv.cfg</code>, since a vendored virtual environment
 would otherwise drown real findings under every third-party <code>.py</code>
 that binds <code>render</code> or <code>span</code>. A directory named
 directly as an argument is always read, hidden or not: naming it is asking.
 Arguments that overlap report each finding once. The exit status is 0 when
 nothing was reported and 1 when anything was. A directory reached through a
 symlink, or a hidden <code>.lit</code>/<code>.py</code> file inside a walked
-directory, is named in the report rather than passed over in silence — a
+directory, is named in the report rather than passed over in silence, since a
 reader that quietly does not read a file is worse than no reader. (A
 symlinked directory the walk would prune anyway, a symlinked
 <code>.venv</code> say, is pruned as quietly as a real one.)</p>
@@ -1301,15 +1301,15 @@ flag asks for it.</p>
 
 <p><b>Words that become another word, used as your own names.</b> A binding
 collides two ways, and both are reported. Either you wrote the reserved word
-and the substitution produced the bound name — <code>span = ...</code>
-becoming <code>range = ...</code> — or one of Chapter VI's exemptions
+and the substitution produced the bound name (<code>span = ...</code>
+becoming <code>range = ...</code>), or one of Chapter VI's exemptions
 protected the word from substitution and left you bound to it whole.</p>
 
 <p>This check reaches the sixty words that have a Python spelling, not all
 sixty-four. The four construct words are outside it by construction: they
 are never substituted, so no binding of one can quietly come to mean
 something else. <code>consecrated</code> and <code>unsanctioned</code> are
-still caught — by the second check, as a compile failure — and
+still caught, by the second check, as a compile failure, and
 <code>litany</code> and <code>augur</code> are genuinely not faults. The
 machine's own names (Chapter VII) are within it: they have no Python spelling to become, but a <code>.py</code>
 file that binds one is a file no litany can import by that name, and the
@@ -1325,8 +1325,8 @@ taught anything.</p>
 
 <p>There is deliberately no third <i>standing</i> check. No line-length rule,
 no unused-import check, no naming convention. <code>augur</code> reports the
-class of fault that is specific to Liturgy — the class no other tool in your
-setup can see — and leaves the rest to the tools that already do it well. It
+class of fault that is specific to Liturgy, the class no other tool in your
+setup can see, and leaves the rest to the tools that already do it well. It
 is not a general linter and is not going to become one.</p>
 
 <p>The third check is asked for, and being asked for is the whole of the
@@ -1344,8 +1344,8 @@ target bound under a reserved name stays bound under it:</p>
 
 <div class="code-block"><pre><span class="kw">within</span> json <span class="kw">invoke</span> loads <span class="kw">styled</span> render</pre></div>
 
-<p><code>render</code> is not substituted here — the exemption protects
-it — so the module is genuinely bound to the name <code>render</code>. Every
+<p><code>render</code> is not substituted here (the exemption protects
+it), so the module is genuinely bound to the name <code>render</code>. Every
 <i>later</i> mention of <code>render</code> is outside the exemption and
 becomes <code>return</code>, so the litany fails at the point of use, with a
 syntax error that says nothing about the import that caused it. This is the
@@ -1366,7 +1366,7 @@ own, and only the last of them is yours to have got wrong.</p>
 about what is safe to be bound to, and the two are not the same
 question.</p>
 
-<h3><code>--archetypes</code> — the third check, and the one that is asked for</h3>
+<h3><code>--archetypes</code>: the third check, and the one that is asked for</h3>
 
 <p>Chapter XII requires that an archetype be <i>written</i>. This reads
 whether it is <i>true</i>. The two are not the same question, and neither
@@ -1422,7 +1422,7 @@ what a <code># type: ignore[...]</code> would have to name.</p>
 <code>consecrated</code> carrier was moved out of the annotation slot,
 <code>consecrated PORT: int = 8080</code> generated
 <code>PORT: __consecrated__ = 8080</code>, and a checker told that could not
-know <code>PORT</code>'s archetype at all — never mind that it is the wrong
+know <code>PORT</code>'s archetype at all, never mind that it is the wrong
 one to hand <code>greet</code>. That change was worth making on its own
 merits; this is what it bought.</p>
 
@@ -1441,8 +1441,8 @@ whose sentence is about Python's own protocols:</p>
                            ^
    mypy's own words: "int" has no attribute "__iter__"; maybe "__int__"? (not iterable)  [attr-defined]</pre></div>
 
-<p>A half-translated diagnostic — Liturgy words inside a Python sentence, or a
-type name mangled by an over-eager substitution — would be worse than an
+<p>A half-translated diagnostic (Liturgy words inside a Python sentence, or a
+type name mangled by an over-eager substitution) would be worse than an
 honest untranslated one, so the shapes that are recognised are translated
 whole and every other one is passed through untouched and attributed. This is
 the discipline <code>sanctify</code> keeps when it refuses rather than
@@ -1466,7 +1466,7 @@ path:</p>
    reading them needs it:  pip install 'liturgy[archetypes]'</pre></div>
 
 <p>That refusal is the shape of the whole check. <b>An empty report means the
-checker ran, was understood, and found nothing — it never means the reading
+checker ran, was understood, and found nothing; it never means the reading
 did not happen.</b> Every other outcome, a checker that crashed or timed out
 or said something the translator could not parse, is reported against the
 litany as <code>archetypes unread</code> and exits 1. A reader that pronounces
@@ -1477,14 +1477,14 @@ every way of reaching it says so instead.</p>
 by the two standing checks, but it carries no substitutions and so no map, and
 anything this verb said about it would be mypy's own report wearing Liturgy's
 banner. Run mypy on your Python directly; its output will be better than this
-could relay. A <code>.py</code> beside litanies is simply skipped — but ask for
+could relay. A <code>.py</code> beside litanies is simply skipped, but ask for
 archetypes and give no litany at all, and the verb says that too, rather than
 handing back the empty report of a check that never ran:</p>
 
 <div class="warning"><pre>++ NO ARCHETYPES WERE READ: no litany was given ++
    only .lit files carry the substitutions this check maps back</pre></div>
 
-<h3>transcribe — a Python file rendered into the proper tongue</h3>
+<h3>transcribe: a Python file rendered into the proper tongue</h3>
 
 <pre class="shell"><span class="prompt">$</span> liturgy transcribe greet.py
 <span class="alert">++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
@@ -1505,7 +1505,7 @@ foreach i among span(2):
 definition: Python does not require archetypes and Liturgy does, so a
 faithful transcription of a bare <code>def</code> is a litany that will not
 chant until an adept annotates it or marks it <code>unsanctioned</code>.
-Nothing is prepended on the adept's behalf — an <code>unsanctioned</code>
+Nothing is prepended on the adept's behalf, because an <code>unsanctioned</code>
 line ahead of the litany would break the round-trip self-check below, which
 is the whole reason the verb can be trusted. Python that <i>was</i> annotated
 transcribes to a litany that chants, and is not warned about at all.</p>
@@ -1523,7 +1523,7 @@ before a rite to exempt it -- or alone at the margin to exempt the file.</pre>
 
 <p><code>transcribe</code> refuses in preference to producing something
 subtly wrong. It refuses a source that will not parse, a source it cannot
-decode, and — the case that matters — a source binding a name Liturgy
+decode, and, in the case that matters, a source binding a name Liturgy
 reserves, because no correct Liturgy spelling of that program exists:</p>
 
 <div class="warning"><pre>++ CANNOT TRANSCRIBE: 1 COLLISION ++
@@ -1536,9 +1536,9 @@ collision.</p>
 
 <p>The last line of defence is broader than the collision rule: the output
 is compiled before anything is written or printed. A Python program only the
-compile can catch — one that binds a bare <code>consecrated</code>, or
+compile can catch (one that binds a bare <code>consecrated</code>, or
 speaks one of the machine's own names in a position the binding scan does
-not see — is refused as one no litany can express. That compile asks whether
+not see) is refused as one no litany can express. That compile asks whether
 the output is a <i>program</i>, not whether it satisfies Chapter XII: the
 archetype rule is suppressed for it, which is why a missing annotation is the
 warning above and not a refusal here.</p>
@@ -1549,7 +1549,7 @@ warning above and not a refusal here.</p>
 rewrite or rename what it names, then transcribe again</pre>
 
 <p>The same rule is applied a second time, to the Liturgy about to be
-written. Transcription can introduce a collision the Python never had —
+written. Transcription can introduce a collision the Python never had:
 <code>input</code> is rendered <code>hearken</code>, and
 <code>hearken</code> is reserved. That output is not wrong: it round-trips,
 and its words are faithful. So it is a warning, not a refusal:</p>
@@ -1585,7 +1585,7 @@ would decode them, and compared again. Line endings and the source's
 declared encoding are carried through unchanged, so the transcribed file
 differs from its source in its words and in nothing else.</p>
 
-<h3>forge — the bytecode beaten out beforehand</h3>
+<h3>forge: the bytecode beaten out beforehand</h3>
 
 <p><code>forge</code> compiles litanies to bytecode ahead of the import that
 would otherwise have to do it. Given no paths it works on the current
@@ -1651,7 +1651,7 @@ carries on to the next:</p>
 current, and 1 if the interpreter refused the whole run or any single litany
 failed.</p>
 
-<h3>consecrate — the seals read across every litany</h3>
+<h3>consecrate: the seals read across every litany</h3>
 
 <p>Chapter VII sets out what <code>consecrated</code> can and cannot enforce,
 and is exact about the boundary: rejection happens at compile time, against
@@ -1660,8 +1660,8 @@ second litany reaching in through the module object is, to the compiler,
 another file entirely.</p>
 
 <p><code>consecrate</code> reads the whole tree instead of one unit at a
-time. It walks twice — once to learn what is sealed, once to find what
-reaches a seal — and reports the pair:</p>
+time. It walks twice, once to learn what is sealed, once to find what
+reaches a seal, and reports the pair:</p>
 
 <div class="warning"><pre><span class="prompt">$</span> <span class="cmd">liturgy consecrate</span>
 ++ THE SEAL IS BROKEN ++
@@ -1676,7 +1676,7 @@ reaches a seal — and reports the pair:</p>
 <p>Three shapes are read: assignment through the module object
 (<code>config.PORT = 9</code>), <code>setattr</code> with a literal name, and
 deletion. All three are named plainly enough in the source for a walk to find
-them. A <code>.py</code> file counts as much as a litany — it imports through
+them. A <code>.py</code> file counts as much as a litany: it imports through
 the same hook, and can reach the same attribute.</p>
 
 <h3>What consecrate still cannot see</h3>
@@ -1686,7 +1686,7 @@ time; it tells you the rebinding is written down somewhere.</p>
 
 <p>Two of Chapter VII's escapes remain invisible, and are not guessed at.
 <code>globals()["PORT"] = 9</code> names nothing a walk can match. Neither
-does <code>setattr(config, name, 9)</code>, where the attribute is computed —
+does <code>setattr(config, name, 9)</code>, where the attribute is computed:
 the literal form is read, the computed form is not, and reporting a maybe
 would make the verb worth less than silence.</p>
 
@@ -1709,7 +1709,7 @@ server.lit:4:12: PORT is consecrated in config.lit line 1 and assigned here</pre
 <p>The exit status is 0 when every seal held, and 1 when any was reached or
 any litany could not be read.</p>
 
-<h3>sanctify — a litany's form set in order</h3>
+<h3>sanctify: a litany's form set in order</h3>
 
 <p><code>sanctify</code> reshapes the whitespace between a litany's tokens
 and changes nothing else. Indentation becomes four spaces to the level,
@@ -1729,7 +1729,7 @@ which is the form a chant-hall's own trials want.</p>
 
 <p>Only <code>.lit</code> files are touched. Formatting Python is
 <code>ruff</code>'s work or <code>black</code>'s, and neither of them can
-read a litany — which is the whole reason this verb exists.</p>
+read a litany, which is the whole reason this verb exists.</p>
 
 <h3>What sanctify refuses to do</h3>
 
@@ -1758,7 +1758,7 @@ takes the depth of the statement it belongs to.</li>
 
 <p>Before returning anything, <code>sanctify</code> reads its own output
 back and compares two things against the original: every token that carries
-meaning — comments emphatically included — and the tree the litany compiles
+meaning (comments emphatically included) and the tree the litany compiles
 to. If either differs, the verb refuses and the file is left exactly as it
 was.</p>
 
@@ -1771,7 +1771,7 @@ being written, and refused rather than writing the damaged file.</p>
 <code>transcribe</code> preserves them. A litany that does not parse is
 refused and left untouched, and one refusal does not end the walk.</p>
 
-<h3>prove — the trials of a litany</h3>
+<h3>prove: the trials of a litany</h3>
 
 <p><code>prove</code> runs pytest with the import hook installed and
 <code>test_*.lit</code> collected. That is the whole verb.</p>
@@ -1790,8 +1790,8 @@ E       AssertionError
 test_rites.lit:5: AssertionError
 ========================= 1 failed, 1 passed in 0.01s ==========================</pre>
 
-<p>The failure quotes Liturgy — <code>rite</code>, <code>attest</code>,
-<code>measure</code>, at the litany's own line number — because the loader
+<p>The failure quotes Liturgy (<code>rite</code>, <code>attest</code>,
+<code>measure</code>, at the litany's own line number) because the loader
 does not override <code>get_source</code>, and pytest reads the source the
 same way a traceback does.</p>
 
@@ -1841,7 +1841,7 @@ reports <code>AssertionError</code> and the source line, not
 <code>3 == 99</code>. The rewriting works on Python source pytest itself
 imports, and a litany arrives already compiled by our loader.</p>
 
-<h3>purge — the clearing of relics</h3>
+<h3>purge: the clearing of relics</h3>
 
 <p><code>purge</code> removes every <code>__pycache__</code> directory
 beneath the working directory, and, given <code>--heresies</code>, the
@@ -1858,7 +1858,7 @@ be. Symlinked directories are never entered.</p>
 
 <p>The reporting is guarded in the same spirit. Each removal is named on its
 own line, and that line is printed only once the delete beneath it has
-actually succeeded — the report never claims a deletion that did not happen.
+actually succeeded, so the report never claims a deletion that did not happen.
 A directory that will not go, for want of permission or because it vanished
 between the walk and the delete, is reported and stepped over rather than
 raising; one unreadable cache must not strand the rest. The run ends with a
@@ -1906,7 +1906,7 @@ word, and that word is for refusing the rule.</p>
 ++ the machine spirit is displeased ++</pre></div>
 
 <p>Declare the parameter and the fault moves to the return, reported against
-the rite's own name — the AST gives a function's name no position of its
+the rite's own name: the AST gives a function's name no position of its
 own, so the caret is placed by hand:</p>
 
 <div class="warning"><pre>   the rite was ill-written at prayer.lit, line 1
@@ -1985,19 +1985,19 @@ one down. Whether you were right is between you and the third check.</p>
 <p>Four exemptions, and each is a thing the rule could not ask for without
 asking for the impossible.</p>
 
-<p><b><code>self</code> and <code>cls</code></b> — in the <i>first</i>
+<p><b><code>self</code> and <code>cls</code></b>: in the <i>first</i>
 positional slot of a method, and only there. A receiver's archetype is the
 pattern it is declared in, and spelling it out is noise that every Python
 type checker also waives. A later parameter named <code>self</code> is an
 ordinary parameter wearing the name and gets no pass.</p>
 
-<p><b><code>versicle</code></b> — a lambda, entirely. Python has no syntax
+<p><b><code>versicle</code></b>: a lambda, entirely. Python has no syntax
 for annotating one's parameters; <code>versicle x: int = 1</code> is not a
 stricter lambda, it is a syntax error. A rule requiring what cannot be
 written would forbid the construct outright, so the rule stops at the
 door.</p>
 
-<p><b><code>commune</code></b> — the prompt does not enforce. Every entry is
+<p><b><code>commune</code></b>: the prompt does not enforce. Every entry is
 its own compilation unit, so there is nowhere to put an exemption that would
 still be in force on the next line, and a prompt that rejects
 <code>rite f(x):</code> is not a prompt anyone will use twice. Chapter VII's
@@ -2010,11 +2010,11 @@ the precedent; this is the same boundary seen from the other side.</p>
 &gt;&gt;&gt; greet(<span class="string">"adept"</span>)
 Ave adept</pre>
 
-<p><b><code>.py</code> files</b> — Liturgy compiles <code>.lit</code>. A
+<p><b><code>.py</code> files</b>: Liturgy compiles <code>.lit</code>. A
 Python file is Python's own business, whether a litany imports it or
 <code>augur</code> reads it.</p>
 
-<h3>unsanctioned — the omission spoken aloud</h3>
+<h3>unsanctioned: the omission spoken aloud</h3>
 
 <p>The fifth exemption is not something the machine works out. It is
 something you say, and <code>unsanctioned</code> is the word for saying it.
@@ -2031,15 +2031,15 @@ precedes:</p>
 
 <span class="kw">unsanctioned</span> <span class="kw">consecrated</span> PORT = 8080</pre></div>
 
-<p>It reaches a <code>remote rite</code> as well — the word between the
+<p>It reaches a <code>remote rite</code> as well: the word between the
 modifier and <code>rite</code> is <code>async</code>, and an exemption that
 stopped at the sight of it would be a rule about spelling rather than about
 rites.</p>
 
 <p><b>An exempted rite exempts everything nested inside it.</b> A closure or
 a <code>pattern</code> written within an <code>unsanctioned</code> rite is
-exempt too. The alternative — waiving the header and then nagging about a
-two-line helper three lines below it — would make the modifier useless on
+exempt too. The alternative (waiving the header and then nagging about a
+two-line helper three lines below it) would make the modifier useless on
 exactly the old code it exists for, and there is no second word to reach
 for. A nested rite that wants the rule back can be lifted out of the
 exempted one.</p>
@@ -2081,7 +2081,7 @@ the list of words this project spends twice, and the pair is on it.</p>
 <h3>Why the annotation itself gained no word</h3>
 
 <p>An earlier design gave the annotation operator a ritual spelling of its
-own — <code>anoint</code>, then <code>wrought</code>, then
+own: <code>anoint</code>, then <code>wrought</code>, then
 <code>designated</code>. Each was cut, and the reasons are worth
 keeping.</p>
 
@@ -2094,20 +2094,20 @@ collide.</p>
 <p>Any such word also solves only half the problem. A rite's return is
 spelled <code>-&gt;</code>, so
 <code>rite f(x wrought int) begets str:</code> needs a <i>second</i>
-reserved word to stay consistent — two words for what Python spells with
+reserved word to stay consistent: two words for what Python spells with
 punctuation, and two more names an adept may not use.</p>
 
 <p>And the annotations themselves already worked. <code>:</code> and
 <code>-&gt;</code> have always been legal in a litany; what was missing was
 the requirement, and a requirement needs no vocabulary of its own.
 <code>archetype</code> is <code>type</code>, <code>pattern</code> is
-<code>class</code>, and the type vocabulary is spent — spent well, and spent
+<code>class</code>, and the type vocabulary is spent, spent well, and spent
 already.</p>
 </section>
 
 <section id="appendix">
 <pre class="rule">--------------------------------------------------------------------------------</pre>
-<h2><pre>[APX] APPENDIX — THE FULL CONCORDANCE</pre></h2>
+<h2><pre>[APX] APPENDIX: THE FULL CONCORDANCE</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
 <p>Liturgy to Python, then Python to Liturgy. The mapping is a bijection:

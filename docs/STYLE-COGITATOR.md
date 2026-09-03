@@ -6,7 +6,7 @@
 This is the design protocol both HTML doc pages in this directory follow:
 `liber-liturgiae.html` (the full language reference) and
 `liturgy-data-slate.html` (the short data-slate overview). Text content is
-never authored in these pages — `LIBER-LITURGIAE.md` stays the canonical
+never authored in these pages; `LIBER-LITURGIAE.md` stays the canonical
 source, and the pages render its text. Capitalization of descriptive prose
 is applied with CSS `text-transform: uppercase`, not by editing the text,
 so the rendered pages and the canonical Markdown remain the same text.

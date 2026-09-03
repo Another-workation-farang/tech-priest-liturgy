@@ -71,7 +71,7 @@ def test_parenthesised_import_list_is_protected():
     assert py(src) == "from x import (render,\n    measure)\n"
 
 
-# Regression: Finding 1 — relative imports (a leading dot is not attribute
+# Regression (Finding 1): relative imports (a leading dot is not attribute
 # access when it appears inside an import statement).
 def test_single_dot_relative_import_still_translates_invoke():
     assert py("within . invoke x\n") == "from . import x\n"
@@ -96,13 +96,13 @@ def test_attribute_access_still_protected_outside_import():
     assert py("template.render()\n") == "template.render()\n"
 
 
-# Regression: Finding 2 — import scope must end at a semicolon, not just at
+# Regression (Finding 2): import scope must end at a semicolon, not just at
 # NEWLINE, so a second statement on the same line is not swallowed.
 def test_import_scope_ends_at_semicolon():
     assert py("invoke os; render measure\n") == "import os; return len\n"
 
 
-# Regression: Finding 3 — PEP 701 f-string debug (`{name=}`) and format-spec
+# Regression (Finding 3): PEP 701 f-string debug (`{name=}`) and format-spec
 # (`{name=:>10}`) syntax tokenizes a bare "=" that must not be mistaken for
 # a keyword-argument name.
 def test_fstring_debug_equals_value_is_still_substituted():
@@ -124,7 +124,7 @@ def test_keyword_argument_value_is_still_substituted_after_fstring_fix():
     assert py("f(mode=Sanctioned)\n") == "f(mode=True)\n"
 
 
-# Regression: C2 — an import keyword in *attribute* position must not open
+# Regression (C2): an import keyword in *attribute* position must not open
 # import scope. `is_import_start` used to fire on any NAME whose target was
 # import/from, and the import-safe bypass then rewrote it before Rule 1 could
 # protect it. `button.invoke()` is standard Tkinter (idlelib uses it); so are

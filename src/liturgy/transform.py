@@ -194,7 +194,7 @@ def _walk_tokens(
     (`LEXICON` for Liturgy -> Python, `INVERSE` for the reverse pass).
     `import_safe` holds the *destination*-language spellings of the
     import/from/as keywords, since that is the set actually compared against
-    `target` below — it differs per direction because the two languages
+    `target` below; it differs per direction because the two languages
     spell those keywords differently.
     """
     subs: list[Substitution] = []
@@ -288,7 +288,7 @@ def _walk_tokens(
             if not is_fstring_debug:
                 continue
 
-        # Rule 3: import statements — only the statement keywords translate.
+        # Rule 3: import statements. Only the statement keywords translate.
         if in_import and target not in import_safe:
             continue
 

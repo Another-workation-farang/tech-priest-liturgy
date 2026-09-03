@@ -107,7 +107,7 @@ def test_repl_recovers_after_dedent_mismatch_over_stdin():
 
 
 def test_repl_can_import_a_lit_module(tmp_path):
-    # Regression: I4 — loader.install() was only ever called from chant(), so
+    # Regression (I4): loader.install() was only ever called from chant(), so
     # the REPL could not import .lit modules at all. It is the natural place
     # to poke at a module you have just written.
     (tmp_path / "shrine.lit").write_text('GREETING = "ave"\n')

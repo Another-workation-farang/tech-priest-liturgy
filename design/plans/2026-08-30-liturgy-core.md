@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the Core of Liturgy — a superset of Python whose surface syntax is Warhammer 40,000 tech-priest ritual language — so alias-only `.lit` programs can be written, imported, run, and debugged with honest tracebacks.
+**Goal:** Build the Core of Liturgy, a superset of Python whose surface syntax is Warhammer 40,000 tech-priest ritual language, so alias-only `.lit` programs can be written, imported, run, and debugged with honest tracebacks.
 
 **Architecture:** A pure `transform(src) -> (python_src, SourceMap)` function tokenizes Liturgy source, substitutes NAME tokens against a lexicon, and splices replacements into the original lines without ever adding or removing a line. That line invariant makes traceback line numbers correct for free; the SourceMap exists solely to fix caret columns. A `SourceFileLoader` subclass registered as a path hook compiles `.lit` on import, and a `sys.excepthook` renders themed "machine curses".
 
@@ -638,7 +638,7 @@ def test_parenthesised_import_list_is_protected():
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `.venv/bin/pytest tests/test_context_rules.py -v`
-Expected: FAIL — several tests, e.g. `template.render()` producing `template.return()`
+Expected: FAIL. Several tests, e.g. `template.render()` producing `template.return()`
 
 - [ ] **Step 3: Replace `alias_pass` in `src/liturgy/transform.py`**
 
@@ -708,7 +708,7 @@ def alias_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
         ):
             continue
 
-        # Rule 3: import statements — only the statement keywords translate.
+        # Rule 3: import statements. Only the statement keywords translate.
         if in_import and py not in _IMPORT_SAFE:
             continue
 
@@ -739,7 +739,7 @@ git commit -m "feat(transform): context rules for attributes, kwargs, and import
 
 **Interfaces:**
 - Consumes: `liturgy.lexicon.INVERSE`; `liturgy.transform.transform`.
-- Produces: `liturgy._reverse.to_liturgy(src: str) -> str` — a test-support inverse used only to generate Liturgy fixtures. It is private and is **not** the Spec III `transcribe` verb.
+- Produces: `liturgy._reverse.to_liturgy(src: str) -> str`, a test-support inverse used only to generate Liturgy fixtures. It is private and is **not** the Spec III `transcribe` verb.
 
 This task exercises bijectivity and the whole lexicon at once, and catches lexicon entries no hand-written test covers.
 
@@ -884,7 +884,7 @@ def to_liturgy(src: str) -> str:
 - [ ] **Step 4: Run the whole suite**
 
 Run: `.venv/bin/pytest -v`
-Expected: all passed. If a sample fails, the lexicon or a context rule is at fault — fix the source, not the sample.
+Expected: all passed. If a sample fails, the lexicon or a context rule is at fault; fix the source, not the sample.
 
 - [ ] **Step 5: Commit**
 
@@ -1513,7 +1513,7 @@ git commit -m "feat(heresy): escalating rebukes for mundane verb aliases"
 
 ---
 
-### Task 9: CLI — `chant`
+### Task 9: CLI, `chant`
 
 **Files:**
 - Create: `src/liturgy/cli.py`
@@ -1738,7 +1738,7 @@ git commit -m "feat(cli): chant verb, heretical aliases, profane escape hatch"
 
 ---
 
-### Task 10: CLI — `commune`
+### Task 10: CLI, `commune`
 
 **Files:**
 - Create: `src/liturgy/commune.py`
@@ -1932,7 +1932,7 @@ def test_fibonacci_example_runs():
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_examples.py -v`
-Expected: FAIL — `examples/fibonacci.lit` does not exist
+Expected: FAIL. `examples/fibonacci.lit` does not exist
 
 - [ ] **Step 3: Write `examples/fibonacci.lit`**
 

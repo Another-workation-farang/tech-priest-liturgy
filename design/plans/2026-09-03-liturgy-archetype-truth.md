@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development.
 
 **Goal:** `augur --archetypes` reports archetypes that are *false*, not merely
-absent — by delegating to mypy and translating its diagnostics back into
+absent, by delegating to mypy and translating its diagnostics back into
 Liturgy.
 
 **Architecture:** Liturgy does not need a type checker; it needs a translator.
@@ -15,7 +15,7 @@ through `SourceMap.to_lit`. mypy is an optional extra.
 
 ## Global Constraints
 
-- Python 3.12 floor. **The core keeps zero runtime dependencies** — mypy is an
+- Python 3.12 floor. **The core keeps zero runtime dependencies**: mypy is an
   optional extra, as Pygments is for `[highlight]` and pytest for `[trials]`.
   Nothing outside the new module may import it.
 - `ast` and `traceback` count UTF-8 bytes; everything else counts characters.
@@ -24,7 +24,7 @@ through `SourceMap.to_lit`. mypy is an optional extra.
 - `-> int` CLI contracts never raise for bad input.
 - Every documented command and output is run before it ships.
 
-## Measured facts — verified against the post-Spec-IV tree, do not re-derive
+## Measured facts: verified against the post-Spec-IV tree, do not re-derive
 
 1. **Line mapping is free.** `transform` preserves line count exactly. mypy's
    errors land on the litany's own lines with no arithmetic.
@@ -51,7 +51,7 @@ through `SourceMap.to_lit`. mypy is an optional extra.
 
 Transform the litany, write the generated Python to a temp file, run mypy over
 it, parse the diagnostics, map each back, and return them. Nothing is printed
-here — rendering is Task 2's.
+here; rendering is Task 2's.
 
 **Hazards:**
 - Run mypy through `mypy.api.run` or a subprocess, but **isolate its cache**
@@ -62,12 +62,12 @@ here — rendering is Task 2's.
   the reported path before it reaches a `Finding`.
 - A diagnostic with no column (mypy omits it for some codes) must still
   produce a usable `Finding`. Do not invent a column.
-- mypy failing to run at all — not installed, crashed, timed out — is not a
+- mypy failing to run at all (not installed, crashed, timed out) is not a
   finding. Raise something the caller can distinguish, or the verb will report
   "no type errors" when it checked nothing. **That silent-success mode is the
   worst outcome available here; guard it explicitly and test it.**
 - Filter `name-defined` diagnostics naming `__litany__` or `__augur__`. Take
-  the names from `constructs`, never a literal — a third carrier must not
+  the names from `constructs`, never a literal: a third carrier must not
   slip through because someone typed a string. `__consecrated__` is gone but
   costs nothing to include.
 
@@ -110,7 +110,7 @@ the set you translate, test each, and let the rest through unharmed.
 Five surfaces. State plainly:
 - what the checker knows, and that it is a **third** check asked for by flag;
 - that imports are **not followed** in this version, so it checks one litany at
-  a time — say so rather than implying whole-project coverage;
+  a time; say so rather than implying whole-project coverage;
 - that `chant` still runs code mypy dislikes. This is a reading rite. The
   checker's judgement is advisory, and `augur`'s own two checks are unchanged.
 

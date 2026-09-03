@@ -25,7 +25,7 @@ def _has_word(text: str, word: str) -> bool:
 # produces from the first. This is the primary check, not `lit != src`:
 # Liturgy is a superset of Python, so a word the reverse pass fails to
 # translate is still valid Python and comes back through `transform`
-# unchanged — under-translation is invisible to a round-trip identity
+# unchanged. Under-translation is invisible to a round-trip identity
 # check alone, no matter how narrow the sample, as long as anything else
 # in that sample still translates. Requiring specific words closes that
 # hole by checking the intermediate directly, for the exact words each
@@ -88,7 +88,7 @@ SAMPLES: list[tuple[str, list[str]]] = [
     # These samples target the exact spots the refactor had to get right,
     # each with an explicit list of words the reverse pass must produce.
     # A regression that stops translating one of them fails immediately,
-    # regardless of what else in the sample still translates correctly —
+    # regardless of what else in the sample still translates correctly,
     # which is precisely what `lit != src` could not guarantee (see the
     # module docstring above).
     #
@@ -121,7 +121,7 @@ SAMPLES: list[tuple[str, list[str]]] = [
         ["invoke"],
     ),
     # Fix 2: import scope must end at a semicolon, not just at NEWLINE.
-    # `Sanctioned` is the word that depends on it — it sits after the `;`,
+    # `Sanctioned` is the word that depends on it: it sits after the `;`,
     # so if the semicolon doesn't clear import scope it stays protected
     # (and un-translated) as if it were still part of the import.
     (
@@ -147,7 +147,7 @@ SAMPLES: list[tuple[str, list[str]]] = [
     # f-string expression must still be protected by the kwarg rule, even
     # though it sits in the same syntactic position PEP 701 debug syntax
     # does. Only the outer `print` should translate; the inner one is a
-    # real kwarg name and must stay put — that half is still guarded by
+    # real kwarg name and must stay put; that half is still guarded by
     # the round-trip check below, since a wrongly-translated kwarg name
     # would come back through `transform` still translated (its own Rule 2
     # would refuse to translate it back), breaking the round trip.
