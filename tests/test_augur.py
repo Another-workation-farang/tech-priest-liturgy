@@ -154,12 +154,12 @@ def test_a_non_ascii_condition_is_quoted_exactly():
     src = (
         "rite f(s: str) -> str:\n"
         "    augur:\n"
-        '        s != "→"\n'
+        '        s != "✠"\n'
         "    render s\n"
     )
     with pytest.raises(ValueError) as exc:
-        run(src)["f"]("→")
-    assert str(exc.value) == 'the omens forbid it -- s != "→"'
+        run(src)["f"]("✠")
+    assert str(exc.value) == 'the omens forbid it -- s != "✠"'
 
 
 def test_two_conditions_one_line_first_has_a_multibyte_character():
@@ -171,12 +171,12 @@ def test_two_conditions_one_line_first_has_a_multibyte_character():
     src = (
         "rite f(a: int, b: int) -> int:\n"
         "    augur:\n"
-        '        a != "→"; b == 1\n'
+        '        a != "✠"; b == 1\n'
         "    render a\n"
     )
     with pytest.raises(ValueError) as exc:
-        run(src)["f"]("→", 1)
-    assert str(exc.value) == 'the omens forbid it -- a != "→"'
+        run(src)["f"]("✠", 1)
+    assert str(exc.value) == 'the omens forbid it -- a != "✠"'
 
     with pytest.raises(ValueError) as exc:
         run(src)["f"]("x", 0)
@@ -187,13 +187,13 @@ def test_a_condition_both_multiline_and_non_ascii():
     src = (
         "rite f(a: int, b: int) -> int:\n"
         "    augur:\n"
-        '        (a != "→"\n'
+        '        (a != "✠"\n'
         "         and b > 0)\n"
         "    render a\n"
     )
     with pytest.raises(ValueError) as exc:
-        run(src)["f"]("→", 1)
-    assert str(exc.value) == 'the omens forbid it -- a != "→" and b > 0'
+        run(src)["f"]("✠", 1)
+    assert str(exc.value) == 'the omens forbid it -- a != "✠" and b > 0'
 
 
 def test_the_unparse_fallback_triggers_when_the_slice_cannot_work():
