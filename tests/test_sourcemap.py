@@ -87,3 +87,44 @@ def test_char_offset_passes_through_when_there_is_no_line_to_measure():
 def test_char_offset_of_a_byte_past_the_end_is_the_whole_line():
     line = "✠✠\n"
     assert char_offset(line, 999) == len(line)
+
+
+# --- to_py: the inverse, for a diagnostic raised in Liturgy coordinates -----
+
+
+def test_to_py_maps_a_column_after_a_substitution_back():
+    # `consecrated ` swallowed: 12 Liturgy columns become none.
+    m = SourceMap()
+    m.add(1, Span(0, 0, 0, 12))
+    m.freeze()
+    assert m.to_py(1, 12) == 0
+    assert m.to_py(1, 20) == 8
+
+
+def test_to_py_maps_a_column_inside_a_substitution_to_its_start():
+    m = SourceMap()
+    m.add(1, Span(0, 2, 0, 6))
+    m.freeze()
+    assert m.to_py(1, 3) == 0
+
+
+def test_to_py_leaves_a_column_before_every_substitution_alone():
+    m = SourceMap()
+    m.add(1, Span(4, 6, 4, 10))
+    m.freeze()
+    assert m.to_py(1, 2) == 2
+
+
+def test_to_py_is_the_inverse_of_to_lit_outside_the_spans():
+    # `should x:` -> `if x:`: one substitution, four characters to two.
+    m = SourceMap()
+    m.add(1, Span(0, 2, 0, 6))
+    m.freeze()
+    for py_col in range(2, 12):
+        assert m.to_py(1, m.to_lit(1, py_col)) == py_col
+
+
+def test_to_py_on_a_line_with_no_substitutions_is_the_identity():
+    m = SourceMap()
+    m.freeze()
+    assert m.to_py(9, 4) == 4

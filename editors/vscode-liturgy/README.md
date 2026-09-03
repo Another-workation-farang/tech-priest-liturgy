@@ -43,6 +43,12 @@ It also approximates the transform's context rules:
 - **Construct headers**: `consecrated`, `litany(...)`: and a lone `augur:`
   paint as keywords only in header position; `litany = 5` is your own name
   and stays plain.
+- **`unsanctioned`**: paints in front of a `rite` (or a `remote rite`) or a
+  `consecrated` name, and alone on a line at the margin, where it exempts
+  the whole litany. An `unsanctioned` in front of either header does not
+  stop the header itself painting. Anywhere else the compiler rejects the
+  word outright, and the grammar simply leaves it plain rather than
+  guessing at `invalid.illegal`.
 
 A TextMate grammar cannot be exact about any of this — for compiler-exact
 highlighting (docs, pipelines), use the Pygments lexer that ships with the

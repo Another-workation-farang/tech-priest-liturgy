@@ -88,6 +88,31 @@ class SourceMap:
             return spans[i].lit_start
         return col + self._cum[line][i]
 
+    def to_py(self, line: int, col: int) -> int:
+        """Map a column in the .lit source forward to generated Python.
+
+        The inverse of `to_lit`, and needed by anything holding a Liturgy
+        column that must reach a reader who will map it back -- a
+        `TechHeresy`'s offset is read by `curse._render_syntax_location`,
+        which runs every offset through `to_lit`. A diagnostic raised from
+        Liturgy coordinates has to come the other way through here first or
+        the caret is mapped twice and lands nowhere near the fault.
+
+        Spans are stored in `py_start` order, which is also `lit_start`
+        order: a substitution never moves text past its neighbours.
+        """
+        spans = self._spans.get(line)
+        if not spans:
+            return col
+        delta = 0
+        for s in spans:
+            if col < s.lit_start:
+                break
+            if col < s.lit_end:
+                return s.py_start
+            delta += (s.py_end - s.py_start) - (s.lit_end - s.lit_start)
+        return col + delta
+
     def span_at(self, line: int, col: int) -> Span | None:
         """The substitution span covering generated-Python column `col`.
 

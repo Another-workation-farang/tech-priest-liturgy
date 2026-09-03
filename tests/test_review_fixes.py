@@ -109,7 +109,7 @@ class TestAuguryConditions:
         # A docstring in the block was silently a truthy "condition".
         with pytest.raises(TechHeresy, match="constant"):
             compile_litany(
-                'rite f(x):\n    augur:\n        "x is positive"\n'
+                'rite f(x: int) -> int:\n    augur:\n        "x is positive"\n'
                 "    render x\n",
                 "p.lit",
             )
@@ -117,13 +117,13 @@ class TestAuguryConditions:
     def test_a_walrus_is_not_a_condition(self):
         with pytest.raises(TechHeresy, match="assignment"):
             compile_litany(
-                "rite f(x):\n    augur:\n        (y := x)\n    render x\n",
+                "rite f(x: int) -> int:\n    augur:\n        (y := x)\n    render x\n",
                 "p.lit",
             )
 
     def test_a_call_is_a_condition_judged_by_its_truth(self):
         code = compile_litany(
-            "rite f(x):\n    augur:\n        isinstance(x, int)\n"
+            "rite f(x: int) -> int:\n    augur:\n        isinstance(x, int)\n"
             "    render x\n"
             "y = f(3)\n",
             "p.lit",
@@ -239,7 +239,7 @@ class TestResting:
     def test_resting_is_evaluated_exactly_once(self):
         code = compile_litany(
             "calls = []\n"
-            "rite pause():\n"
+            "rite pause() -> int:\n"
             "    calls.append(1)\n"
             "    render 0\n"
             "attempt:\n"
@@ -261,11 +261,11 @@ class TestNestedColon:
     def test_a_dict_colon_does_not_open_an_import_statement(self):
         # `invoke` after `{1:` used to set in_import, which suppressed the
         # substitution of every later word on the line.
-        py, _ = transform("x = {1: invoke, 2: measure}\n")
+        py = transform("x = {1: invoke, 2: measure}\n").python
         assert "len" in py
 
     def test_a_one_line_compound_import_still_translates(self):
-        py, _ = transform("should Sanctioned: invoke json\n")
+        py = transform("should Sanctioned: invoke json\n").python
         assert py == "if True: import json\n"
 
 

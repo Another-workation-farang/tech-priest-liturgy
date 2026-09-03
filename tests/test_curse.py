@@ -15,7 +15,7 @@ from liturgy import curse, loader
 
 BROKEN = textwrap.dedent(
     """\
-    rite invoke_spirit(tome):
+    rite invoke_spirit(tome: int) -> float:
         render tome / 0
     """
 )
@@ -112,7 +112,7 @@ def test_deleted_source_file_degrades_gracefully(tmp_path, monkeypatch):
     # it either. Everything is unavailable, so we must fall back to an
     # uncaretted frame rather than raise or print wrong columns.
     path = tmp_path / "vanishing.lit"
-    path.write_text("rite boom():\n    proclaim MachineCurse('gone')\n")
+    path.write_text("rite boom() -> Void:\n    proclaim MachineCurse('gone')\n")
     monkeypatch.syspath_prepend(str(tmp_path))
     loader.install()
     import vanishing
@@ -141,7 +141,7 @@ def test_modified_source_after_import_shows_the_line_that_actually_ran(
     # *current* file contents -- which is not what raised. The rendered
     # curse must show the line that was actually executed.
     path = tmp_path / "drifting.lit"
-    path.write_text("rite invoke_spirit(tome):\n    render tome / 0\n")
+    path.write_text("rite invoke_spirit(tome: int) -> float:\n    render tome / 0\n")
     monkeypatch.syspath_prepend(str(tmp_path))
     loader.install()
     import drifting
@@ -149,7 +149,7 @@ def test_modified_source_after_import_shows_the_line_that_actually_ran(
     # Rewrite with different content at a clearly later mtime, independent
     # of filesystem timestamp resolution, so linecache would actually see
     # it as stale.
-    path.write_text("rite invoke_spirit(tome):\n    render 999999\n")
+    path.write_text("rite invoke_spirit(tome: int) -> int:\n    render 999999\n")
     later = os.path.getmtime(str(path)) + 5
     os.utime(str(path), (later, later))
     linecache.checkcache(str(path))
@@ -170,7 +170,7 @@ def test_own_plumbing_frames_are_suppressed(tmp_path):
     # the specific case that motivated the general "drop every frame above
     # the first .lit frame" rule below; it must still be caught by it.
     script = tmp_path / "boomchant.lit"
-    script.write_text("rite boom():\n    render 1 / 0\n\n\nboom()\n")
+    script.write_text("rite boom() -> float:\n    render 1 / 0\n\n\nboom()\n")
 
     try:
         loader.chant(str(script), [])
@@ -261,7 +261,7 @@ def test_no_lit_frame_renders_every_frame(tmp_path):
 
 def test_module_level_frame_does_not_claim_to_be_a_rite(tmp_path):
     script = tmp_path / "topcall.lit"
-    script.write_text("rite boom():\n    render 1 / 0\n\n\nboom()\n")
+    script.write_text("rite boom() -> float:\n    render 1 / 0\n\n\nboom()\n")
 
     try:
         loader.chant(str(script), [])
@@ -294,7 +294,7 @@ def test_form_feed_does_not_shift_the_reported_source_line(tmp_path):
     # on it and the tokenizer does not, so the recorded source must be split
     # the tokenizer's way or the curse quotes the wrong line.
     script = tmp_path / "pagebreak.lit"
-    script.write_text('intone("one")\n\x0c\nrite boom():\n    render 1 / 0\n\n\nboom()\n')
+    script.write_text('intone("one")\n\x0c\nrite boom() -> float:\n    render 1 / 0\n\n\nboom()\n')
 
     try:
         loader.chant(str(script), [])
@@ -315,7 +315,7 @@ DRIFT_DRIVER = textwrap.dedent(
     import drifting
     path = os.path.join(sys.argv[1], "drifting.lit")
     with open(path, "w") as fh:
-        fh.write("rite invoke_spirit(tome):\\n    render 999999\\n")
+        fh.write("rite invoke_spirit(tome: int) -> int:\\n    render 999999\\n")
     later = os.path.getmtime(path) + 5
     os.utime(path, (later, later))
     linecache.checkcache(path)
@@ -328,7 +328,7 @@ DRIFT_DRIVER = textwrap.dedent(
     """
 )
 
-ORIGINAL_DRIFT = "rite invoke_spirit(tome):\n    render tome / 0\n"
+ORIGINAL_DRIFT = "rite invoke_spirit(tome: int) -> float:\n    render tome / 0\n"
 
 
 def test_modified_source_still_shows_the_executed_line_on_a_warm_pycache(
@@ -463,7 +463,7 @@ def test_hiding_import_machinery_spares_libraries_a_litany_calls_into(
     # user's answer, not noise.
     script = tmp_path / "usesjson.lit"
     script.write_text(
-        'invoke json\nrite parse():\n    render json.loads("{bad}")\nparse()\n'
+        'invoke json\nrite parse() -> dict:\n    render json.loads("{bad}")\nparse()\n'
     )
 
     try:
@@ -658,11 +658,11 @@ def test_a_multiline_expression_still_gets_a_caret(tmp_path):
     # different lines, decided end < start, and dropped the caret.
     script = tmp_path / "spread.lit"
     script.write_text(
-        "rite boom(a, b):\n"
+        "rite boom(a: int, b: int) -> float:\n"
         "    render a / b\n"
         "\n"
         "\n"
-        "rite outer():\n"
+        "rite outer() -> float:\n"
         "    x = boom(\n"
         "1,\n"
         "0,\n"
@@ -775,7 +775,7 @@ def test_a_tech_heresy_caret_is_placed_in_characters_not_bytes(tmp_path):
     # renderer.
     out = _chant(
         tmp_path,
-        "consecrated PORT = 8080\n"
+        "consecrated PORT: int = 8080\n"
         'sigil = "✠✠✠✠✠"; PORT = 9999; tail = "bbbb"\n',
     )
     assert "may not be rebound" in out
@@ -803,12 +803,12 @@ def test_an_ascii_caret_is_unchanged(tmp_path):
 def test_a_runtime_caret_on_a_consecrated_header_is_not_shifted_by_the_carrier(
     tmp_path,
 ):
-    # `consecrated NAME = ` is swallowed and `NAME` grows an
-    # `: __consecrated__` annotation -- a net carrier delta of 5 columns.
+    # `consecrated ` is swallowed -- a carrier delta of 12 columns (it was
+    # 5 while the keyword was traded for a `: __consecrated__` annotation).
     # Without the carrier pass in curse's own map, the caret for the
-    # TypeError raised evaluating "a" + Void lands 5 columns too far right.
-    out = _chant(tmp_path, 'consecrated NAME = "a" + Void\n')
-    line = 'consecrated NAME = "a" + Void'
+    # TypeError raised evaluating "a" + Void lands 12 columns too far right.
+    out = _chant(tmp_path, 'consecrated NAME: str = "a" + Void\n')
+    line = 'consecrated NAME: str = "a" + Void'
     start, width = _caret_span(out)
     assert (start, width) == (line.index('"a" + Void'), len('"a" + Void'))
     assert _caret_underlines(out, '"a" + Void'), out
@@ -819,12 +819,12 @@ def test_a_techheresy_caret_on_a_consecrated_rebinding_is_not_shifted_by_the_car
 ):
     # The `TechHeresy` half of the same defect class: rebinding a
     # `consecrated` name is caught by `ConstructPass`, which raises with a
-    # single-character caret at the second `PORT`. The same 5-column carrier
-    # delta on the *first* `consecrated` header shifted it -- this is the
+    # single-character caret at the second `PORT`. The same carrier delta on
+    # the *first* `consecrated` header shifted it -- this is the
     # defect class `de88d60` ("carets in characters, not UTF-8 bytes") was
     # written to fix; shipping this would undercut it.
-    out = _chant(tmp_path, "consecrated PORT = 8080; PORT = 9\n")
-    line = "consecrated PORT = 8080; PORT = 9"
+    out = _chant(tmp_path, "consecrated PORT: int = 8080; PORT = 9\n")
+    line = "consecrated PORT: int = 8080; PORT = 9"
     second_port = line.index("PORT", line.index("PORT") + 1)
     start, width = _caret_span(out)
     assert (start, width) == (second_port, 1)
@@ -871,3 +871,17 @@ def test_a_carrier_typo_renders_clean_and_names_the_file(tmp_path, name):
     assert "<unknown>" not in rendered, rendered
     for frame in PLUMBING:
         assert frame not in rendered, f"{frame} frame leaked:\n{rendered}"
+
+
+def test_a_caret_on_an_unbound_consecrated_header_points_at_the_name(tmp_path):
+    # Spec IV. `_reject_unsealed` is the one heresy raised from a position
+    # the compiler was *told* -- a `Consecration`, in Liturgy coordinates --
+    # rather than one read off a node in generated-Python coordinates. The
+    # renderer maps every offset back through the SourceMap, so an offset
+    # handed over in Liturgy columns is mapped a second time and the caret
+    # lands 12 columns past the name (or off the end of the line entirely).
+    out = _chant(tmp_path, "consecrated PORT: int\n")
+    assert "not bound to a single value" in out
+    # One caret, at the P of PORT -- column 12 of the litany, and column 0
+    # of the `PORT: int` the transform generated from it.
+    assert _caret_span(out) == (12, 1), out

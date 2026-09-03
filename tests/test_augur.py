@@ -10,7 +10,7 @@ def run(src, **ns):
 
 
 DIVIDE = (
-    "rite divide(a, b):\n"
+    "rite divide(a: int, b: int) -> float:\n"
     "    augur:\n"
     "        b be nay Void\n"
     "        b != 0\n"
@@ -51,7 +51,7 @@ def test_it_survives_optimisation():
 
 def test_an_augury_may_follow_a_docstring():
     src = (
-        "rite f(x):\n"
+        "rite f(x: int) -> int:\n"
         '    """Divide the thing."""\n'
         "    augur:\n"
         "        x > 0\n"
@@ -69,14 +69,14 @@ def test_an_augury_outside_a_rite_is_rejected():
 
 
 def test_an_augury_after_real_statements_is_rejected():
-    src = "rite f(x):\n    y = x\n    augur:\n        x > 0\n    render y\n"
+    src = "rite f(x: int) -> int:\n    y = x\n    augur:\n        x > 0\n    render y\n"
     with pytest.raises(TechHeresy) as exc:
         compile_litany(src, "prayer.lit")
     assert "opening" in str(exc.value)
 
 
 def test_a_statement_inside_an_augury_is_rejected():
-    src = "rite f(x):\n    augur:\n        y = 1\n    render x\n"
+    src = "rite f(x: int) -> int:\n    augur:\n        y = 1\n    render x\n"
     with pytest.raises(TechHeresy) as exc:
         compile_litany(src, "prayer.lit")
     assert "condition" in str(exc.value)
@@ -84,10 +84,10 @@ def test_a_statement_inside_an_augury_is_rejected():
 
 def test_a_nested_rite_may_have_its_own_augury():
     src = (
-        "rite outer(x):\n"
+        "rite outer(x: int) -> int:\n"
         "    augur:\n"
         "        x > 0\n"
-        "    rite inner(y):\n"
+        "    rite inner(y: int) -> int:\n"
         "        augur:\n"
         "            y > 0\n"
         "        render y\n"
@@ -100,7 +100,7 @@ def test_a_nested_rite_may_have_its_own_augury():
 
 def test_augur_as_a_plain_call_is_untouched():
     # NAMED REGRESSION. Somebody's function, not a construct.
-    ns = run("rite augur(n):\n    render n + 1\nresult = augur(1)\n")
+    ns = run("rite augur(n: int) -> int:\n    render n + 1\nresult = augur(1)\n")
     assert ns["result"] == 2
 
 
@@ -123,7 +123,7 @@ def test_the_traceback_points_at_the_augur_line():
 
 def test_a_condition_spanning_two_lines_is_quoted_in_full():
     src = (
-        "rite f(a, b):\n"
+        "rite f(a: int, b: int) -> int:\n"
         "    augur:\n"
         "        (a > 0\n"
         "         and b > 0)\n"
@@ -136,7 +136,7 @@ def test_a_condition_spanning_two_lines_is_quoted_in_full():
 
 def test_a_condition_spanning_three_lines_is_quoted_in_full():
     src = (
-        "rite f(a, b, c):\n"
+        "rite f(a: int, b: int, c: int) -> int:\n"
         "    augur:\n"
         "        (a > 0\n"
         "         and b > 0\n"
@@ -152,7 +152,7 @@ def test_a_condition_spanning_three_lines_is_quoted_in_full():
 
 def test_a_non_ascii_condition_is_quoted_exactly():
     src = (
-        "rite f(s):\n"
+        "rite f(s: str) -> str:\n"
         "    augur:\n"
         '        s != "→"\n'
         "    render s\n"
@@ -169,7 +169,7 @@ def test_two_conditions_one_line_first_has_a_multibyte_character():
     # message. Check both directions: whichever condition fails, its own
     # message must be exact, not bleeding into or truncating its neighbour.
     src = (
-        "rite f(a, b):\n"
+        "rite f(a: int, b: int) -> int:\n"
         "    augur:\n"
         '        a != "→"; b == 1\n'
         "    render a\n"
@@ -185,7 +185,7 @@ def test_two_conditions_one_line_first_has_a_multibyte_character():
 
 def test_a_condition_both_multiline_and_non_ascii():
     src = (
-        "rite f(a, b):\n"
+        "rite f(a: int, b: int) -> int:\n"
         "    augur:\n"
         '        (a != "→"\n'
         "         and b > 0)\n"
@@ -207,11 +207,12 @@ def test_the_unparse_fallback_triggers_when_the_slice_cannot_work():
 
     from liturgy.rewrite import ConstructPass
     from liturgy.sourcemap import SourceMap
+    from liturgy.transform import ConstructFacts
 
     smap = SourceMap()
     smap.freeze()
     lines = ["line one\n"]
-    cp = ConstructPass("prayer.lit", lines, smap, lines)
+    cp = ConstructPass("prayer.lit", lines, smap, lines, ConstructFacts())
     node = ast.parse("x > 0", mode="eval").body
     node.lineno = 99
     node.end_lineno = 99

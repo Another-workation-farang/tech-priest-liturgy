@@ -31,4 +31,4 @@ def test_the_line_count_is_preserved():
 
 def test_it_round_trips_through_transform():
     src = "class C:\n    def m(self):\n        return [i for i in range(3)]\n"
-    assert transform(to_liturgy(src))[0] == src
+    assert transform(to_liturgy(src)).python == src

@@ -12,7 +12,7 @@ from liturgy.transform import (
 
 
 def py(src):
-    return transform(src)[0]
+    return transform(src).python
 
 
 def test_substitutes_a_keyword():
@@ -73,7 +73,8 @@ def test_identity_on_python_without_liturgy_words(src):
 
 def test_columns_map_back_to_original():
     src = "should x:\n    abide\n"
-    out, smap = transform(src)
+    result = transform(src)
+    out, smap = result.python, result.source_map
     assert out == "if x:\n    pass\n"
     # "x" sits at python col 3, liturgy col 7
     assert smap.to_lit(1, 3) == 7
@@ -134,7 +135,7 @@ def test_splice_span_guard_allows_the_full_line_up_to_the_newline():
     def replaces_the_whole_line(toks):
         return [Substitution(1, 0, 5, "fghij")]
 
-    out, _ = transform("abcde\n", passes=(replaces_the_whole_line,))
+    out = transform("abcde\n", passes=(replaces_the_whole_line,)).python
     assert out == "fghij\n"
 
 

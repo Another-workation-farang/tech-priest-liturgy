@@ -2,6 +2,13 @@
 
 The carrier pass rewrites a construct header in place, on one line, into
 valid Python that parses. The AST pass in `rewrite` then restructures it.
+
+A construct that needs no carrier reports itself out of band instead, in the
+`ConstructFacts` the pass returns alongside its substitutions. `consecrated`
+does: the annotation it used to hide in is the author's to spend on an
+archetype. `unsanctioned` never had a choice -- it is a modifier with no
+Python spelling at all, so the pass splices it away and its absence is the
+only thing the generated source can say about it.
 """
 
 from __future__ import annotations
@@ -10,7 +17,16 @@ import token as tokmod
 import tokenize
 
 from .lexicon import CONSTRUCT_KEYWORDS
-from .transform import _CLOSERS, _INSIGNIFICANT, _OPENERS, Substitution
+from .transform import (
+    _CLOSERS,
+    _INSIGNIFICANT,
+    _OPENERS,
+    Consecration,
+    ConstructFacts,
+    Exemption,
+    PassResult,
+    Substitution,
+)
 
 
 # Statements whose depth-zero `:` opens a block. Both spellings appear,
@@ -42,6 +58,12 @@ _BLOCK_OPENERS = frozenset(
 # matching both use these constants, and MACHINE_NAMES is built from them,
 # so a fourth construct cannot be added without its carrier name joining
 # the reserved set.
+#
+# `__consecrated__` is the exception, and stays reserved on purpose: no pass
+# writes it any more -- `consecrated` travels in `ConstructFacts` now -- but
+# a name the machine has ever claimed does not become the author's again.
+# Un-reserving it would turn `x: __consecrated__ = 5`, which is loud today,
+# into an ordinary annotation.
 CONSECRATED_CARRIER = "__consecrated__"
 LITANY_CARRIER = "__litany__"
 AUGUR_CARRIER = "__augur__"
@@ -172,11 +194,26 @@ def is_machine_name(name: str) -> bool:
     )
 
 
-def carrier_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
-    """Rewrite construct headers, in place, into parseable Python."""
+# What `unsanctioned` may stand in front of. `remote` earns its place
+# because `remote rite f():` is a rite -- the word between the modifier and
+# `rite` is `async`, and an exemption that stopped at the sight of it would
+# be a rule about spelling rather than about rites.
+_UNSANCTIONABLE: frozenset[str] = frozenset({"rite", "remote", "consecrated"})
+
+
+def carrier_pass(toks: list[tokenize.TokenInfo]) -> PassResult:
+    """Rewrite construct headers, in place, into parseable Python.
+
+    Returns the substitutions and the facts no substitution can carry --
+    every `consecrated` header this pass recognised, and every
+    `unsanctioned` marker it spliced away.
+    """
     significant = [t for t in toks if t.type not in _INSIGNIFICANT]
     starts = statement_starts(significant)
     subs: list[Substitution] = []
+    consecrated: list[Consecration] = []
+    exempt: list[Exemption] = []
+    exempt_file = False
 
     # Before anything is rewritten: a machine name spelled by the author.
     # Only attribute position is spared, on Rule 1's reasoning -- another
@@ -193,24 +230,197 @@ def carrier_pass(toks: list[tokenize.TokenInfo]) -> list[Substitution]:
             "<unknown>", tok.start[0], tok.start[1] + 1, tok.line,
         )
 
+    # Every `unsanctioned` in the file, in source order, before anything is
+    # rewritten: silence would be a modifier that looked applied and was not.
+    _check_unsanctioned(significant, starts)
+
     for i in sorted(starts):
         tok = significant[i]
         if tok.type != tokmod.NAME or tok.string not in CONSTRUCT_KEYWORDS:
             continue
+
+        marked = False
+        if tok.string == "unsanctioned":
+            sub, kind = _unsanctioned_modifier(significant, i)
+            subs.append(sub)
+            if kind is None:
+                exempt_file = True
+                continue
+            # The modifier is not the statement. What follows it is, and it
+            # is not itself a statement start, so the dispatch below has to
+            # be pointed at it by hand.
+            i += 1
+            tok = significant[i]
+            marked = True
+            if kind == "rite":
+                exempt.append(Exemption(tok.start[0], tok.start[1], "rite"))
+
         if tok.string == "consecrated":
-            subs.extend(_consecrated_carrier(significant, i))
+            header, seal = _consecrated_carrier(significant, i)
+            subs.extend(header)
+            consecrated.append(seal)
+            if marked:
+                # The name's column, which is what survives the splice and
+                # what an AST pass can ask a binding for. See `Exemption`.
+                exempt.append(Exemption(seal.row, seal.col, "consecrated"))
         elif tok.string == "litany":
             subs.extend(_litany_carrier(significant, i))
         elif tok.string == "augur":
             subs.extend(_augur_carrier(significant, i))
 
-    return subs
+    return PassResult(
+        subs,
+        ConstructFacts(
+            consecrated=frozenset(consecrated),
+            unsanctioned=frozenset(exempt),
+            unsanctioned_file=exempt_file,
+        ),
+    )
+
+
+def _check_unsanctioned(
+    significant: list[tokenize.TokenInfo], starts: set[int]
+) -> None:
+    """Judge every `unsanctioned` in the file, left to right.
+
+    One scan, in source order, so the first fault in the file is the one
+    reported. The header loop in `carrier_pass` visits statement starts
+    only, and a stray word further down would otherwise be judged before a
+    malformed header above it -- `unsanctioned = 5` on line 1 blamed on
+    line 2. `_unsanctioned_modifier` is pure, so calling it here to judge
+    and again there to splice costs nothing but the walk.
+
+    Outside statement position the word is a heresy, not a name. It is
+    reserved and has no Python spelling, so leaving a stray one alone would
+    generate `x = unsanctioned` and defer the complaint to a `NameError` at
+    prayer -- or, worse, to nothing at all, when the author wrote
+    `y = unsanctioned rite ...` believing something was exempted.
+
+    Two positions are spared, on the same reasoning the alias pass spares
+    them. After a dot the word is another object's attribute and no
+    business of ours (Rule 1), and as a keyword-argument name inside a call
+    it is the callee's parameter, not a word in this litany (Rule 2). The
+    corpus sweep's skip test spares exactly these two as well, which is why
+    `transform` may be handed a stdlib file containing either.
+
+    Rule 2 asks for the *innermost* open bracket, not merely for a nonzero
+    depth. PEP 701 f-string debug syntax (`f"{unsanctioned=}"`, and the
+    spaced `f"{unsanctioned = }"`) tokenizes the same NAME-then-`=` shape
+    one bracket deep, because on 3.12+ a replacement field's `{` is a real
+    `OP` token that depth alone cannot tell from a call's `(`. Sparing it
+    would defer exactly the `NameError` this scan exists to prevent. The
+    bracket stack carries each open bracket's own character so the sparing
+    can require a literal `(`, which an f-string's `{`, a dict or set
+    literal's `{`, and a subscript's `[` never are. This is the shape
+    `tests/test_roundtrip.py`'s sweep predicate settled on for the same
+    question.
+    """
+    # One entry per currently-open bracket: its own character.
+    brackets: list[str] = []
+    for i, tok in enumerate(significant):
+        if tok.type == tokmod.OP:
+            if tok.string in _OPENERS:
+                brackets.append(tok.string)
+            elif tok.string in _CLOSERS:
+                if brackets:
+                    brackets.pop()
+            continue
+        if tok.type != tokmod.NAME or tok.string != "unsanctioned":
+            continue
+        prev = significant[i - 1] if i else None
+        if prev is not None and prev.type == tokmod.OP and prev.string == ".":
+            continue
+        nxt = significant[i + 1] if i + 1 < len(significant) else None
+        if (
+            brackets
+            and brackets[-1] == "("
+            and nxt is not None
+            and nxt.type == tokmod.OP
+            and nxt.string == "="
+        ):
+            continue
+        if i in starts:
+            _unsanctioned_modifier(significant, i)  # raises, or is well-formed
+            continue
+        raise heresy(
+            "unsanctioned cannot stand mid-statement",
+            "<unknown>", tok.start[0], tok.start[1] + 1, tok.line,
+        )
+
+
+def _unsanctioned_modifier(
+    significant: list[tokenize.TokenInfo], i: int
+) -> tuple[Substitution, str | None]:
+    """Splice `unsanctioned` away and say what it marked.
+
+    Returns the substitution and the kind of exemption: `"rite"`,
+    `"consecrated"`, or `None` for the bare form, which exempts the whole
+    litany.
+
+    The span runs from the word's own column **through the whitespace after
+    it**, to the start of whatever it marks. Replacing only the word would
+    leave that whitespace behind and shift a `pattern`'s method a dozen
+    columns to the right of its siblings; splicing the gap too means the
+    remainder of the line slides left and the leading indentation -- which
+    lies before the span -- is never touched.
+
+    The bare form spans the word alone, leaving an empty line. It must
+    never remove one: line N of the generated Python is line N of the
+    litany, and every traceback depends on it.
+    """
+    kw = significant[i]
+    nxt = significant[i + 1] if i + 1 < len(significant) else None
+
+    if nxt is None or nxt.type == tokmod.NEWLINE:
+        if kw.start[1] != 0:
+            # Indented, it is inside somebody's block, and splicing it out
+            # would leave an empty line where Python demanded a statement.
+            # The author meant to mark something and marked nothing.
+            raise heresy(
+                "unsanctioned alone on a line exempts the whole litany "
+                "and must stand at the margin",
+                "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
+            )
+        return Substitution(kw.start[0], kw.start[1], kw.end[1], ""), None
+
+    if nxt.type != tokmod.NAME or nxt.string not in _UNSANCTIONABLE:
+        raise heresy(
+            "unsanctioned marks a rite or a consecrated name",
+            "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
+        )
+    if nxt.string == "remote":
+        after = significant[i + 2] if i + 2 < len(significant) else None
+        if after is None or after.type != tokmod.NAME or after.string != "rite":
+            raise heresy(
+                "unsanctioned marks a rite or a consecrated name",
+                "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
+            )
+    if nxt.start[0] != kw.start[0]:
+        # The same trap `_consecrated_carrier` documents: the span would
+        # take its row from one line and its end column from another, and
+        # `_splice` would cut whatever happens to sit at that column here.
+        raise heresy(
+            "unsanctioned and what it marks must share a line",
+            "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
+        )
+    kind = "consecrated" if nxt.string == "consecrated" else "rite"
+    return (
+        Substitution(kw.start[0], kw.start[1], nxt.start[1], ""),
+        kind,
+    )
 
 
 def _consecrated_carrier(
     significant: list[tokenize.TokenInfo], i: int
-) -> list[Substitution]:
-    """`consecrated NAME = v` -> `NAME: __consecrated__ = v`."""
+) -> tuple[list[Substitution], Consecration]:
+    """`consecrated NAME = v` -> `NAME = v`, plus the fact that it was one.
+
+    The annotation slot is left alone, so `consecrated NAME: T = v`
+    -> `NAME: T = v` and a sealed name may declare its archetype like any
+    other. Nothing in the generated Python says the binding is consecrated;
+    the returned `Consecration` is the only record, and `rewrite` matches it
+    back to the statement by row, column and name.
+    """
     kw = significant[i]
     name = significant[i + 1] if i + 1 < len(significant) else None
     if name is None or name.type != tokmod.NAME:
@@ -232,14 +442,14 @@ def _consecrated_carrier(
             "consecrated and its name must share a line",
             "<unknown>", kw.start[0], kw.start[1] + 1, kw.line,
         )
-    return [
+    return (
         # Swallow the keyword and the space after it, keeping indentation.
-        Substitution(kw.start[0], kw.start[1], name.start[1], ""),
-        Substitution(
-            name.start[0], name.start[1], name.end[1],
-            f"{name.string}: {CONSECRATED_CARRIER}",
-        ),
-    ]
+        [Substitution(kw.start[0], kw.start[1], name.start[1], "")],
+        # `name.start[1]` is a character column in the *Liturgy* line, which
+        # is the coordinate system `SourceMap.to_lit` hands back and the one
+        # `rewrite` compares against.
+        Consecration(name.start[0], name.start[1], name.string),
+    )
 
 
 def _litany_carrier(

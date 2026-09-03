@@ -7,14 +7,15 @@ into real semantics, and rejects the misuses the compiler can see.
 from __future__ import annotations
 
 import ast
+import re
 
 from .constructs import (
     AUGUR_CARRIER,
-    CONSECRATED_CARRIER,
     LITANY_CARRIER,
     heresy,
 )
 from .sourcemap import char_offset
+from .transform import Consecration, ConstructFacts, Exemption
 
 # The two litany guards fire either at compile time (a literal) or at run
 # time (a computed value); one spelling per fault, shared by both tiers, so
@@ -22,16 +23,45 @@ from .sourcemap import char_offset
 _AT_LEAST_ONCE = "a litany must be chanted at least once"
 _NO_NEGATIVE_REST = "a litany cannot rest for a negative span"
 
+# The generated Python a rite's header begins with, up to its name.
+# `remote rite` becomes `async def`, so the `async` is optional.
+_DEF_HEADER = re.compile(r"(?:async\s+)?def\s+")
+
 
 class ConstructPass(ast.NodeTransformer):
     def __init__(
-        self, filename: str, lines: list[str], smap, py_lines: list[str]
+        self,
+        filename: str,
+        lines: list[str],
+        smap,
+        py_lines: list[str],
+        facts: ConstructFacts,
+        sanction: bool = True,
     ) -> None:
         self.filename = filename
         self.lines = lines
         self.smap = smap
         self.py_lines = py_lines
+        self.facts = facts
+        # Every `Consecration` matched to a statement. What is left over at
+        # the end of a module is a header that generated valid Python of
+        # the wrong shape -- see `_reject_unsealed`.
+        self._sealed: set[Consecration] = set()
         self._litany_seq = 0
+        # A bare `unsanctioned` at the margin exempts the whole litany, so
+        # the rule is simply off for this compilation. `visit_Interactive`
+        # turns it off the same way, and so does a caller passing
+        # `sanction=False`: one switch, so the three cannot drift apart.
+        #
+        # `sanction=False` is for a caller compiling Liturgy that nobody
+        # authored -- `transcribe`, checking its own machine-made output.
+        # It suppresses the archetype rule and NOTHING else: every other
+        # rejection here is a property of well-formed Liturgy, while this
+        # one is a policy about litanies an author writes.
+        self._sanctioning = sanction and not facts.unsanctioned_file
+        # True while inside a rite the author marked `unsanctioned`. The
+        # mark is inherited -- see `_scope`.
+        self._exempt = False
 
     def _heresy(self, node: ast.AST, message: str):
         """A located TechHeresy, in the same coordinates `constructs.heresy`
@@ -51,6 +81,224 @@ class ConstructPass(ast.NodeTransformer):
         py_line = self.py_lines[line - 1] if line - 1 < len(self.py_lines) else ""
         col = char_offset(py_line, node.col_offset or 0)
         return heresy(message, self.filename, line, col + 1, text)
+
+    def _lit_col(self, node) -> int:
+        """A node's 0-based column in the Liturgy line it came from.
+
+        The same two-step every column here makes: `col_offset` is a UTF-8
+        *byte* offset into the **generated Python** line (an `ast` quirk),
+        so `char_offset` converts it against that line before the SourceMap
+        -- which speaks characters throughout -- carries it back to Liturgy.
+        """
+        line = node.lineno
+        py_line = self.py_lines[line - 1] if line - 1 < len(self.py_lines) else ""
+        return self.smap.to_lit(line, char_offset(py_line, node.col_offset or 0))
+
+    def _consecrated_target(self, stmt) -> ast.Name | None:
+        """The name this statement consecrates, or None if it consecrates none.
+
+        Nothing in the generated Python says a binding is consecrated any
+        more -- that is the point; the annotation slot is the author's. The
+        carrier pass recorded each header's row, column and name in
+        `ConstructFacts`, and this is where the record is matched back to
+        the statement it came from.
+
+        The column is what makes the match exact, and dropping it would be a
+        silent defect twice over: `consecrated A = 1; consecrated B = 2`
+        puts two declarations on one row, and
+        `consecrated PORT = 8080; PORT = 9` puts a declaration and a
+        rebinding of the same name there -- which must still be rejected as
+        a rebinding, not mistaken for a second declaration.
+        """
+        if isinstance(stmt, ast.Assign):
+            if len(stmt.targets) != 1:
+                return None
+            target = stmt.targets[0]
+        elif isinstance(stmt, ast.AnnAssign):
+            # An annotation with no value binds nothing, and `consecrated
+            # NAME` with no value never reached here even as a carrier.
+            if stmt.value is None:
+                return None
+            target = stmt.target
+        else:
+            return None
+        if not isinstance(target, ast.Name):
+            return None
+        seal = Consecration(target.lineno, self._lit_col(target), target.id)
+        if seal not in self.facts.consecrated:
+            return None
+        self._sealed.add(seal)
+        return target
+
+    def _reject_unsealed(self) -> None:
+        """Every `consecrated` header must have become a binding.
+
+        While the construct travelled through the annotation slot, the
+        shapes it does not accept were rejected for free: `consecrated
+        A, B = 1, 2` generated `A: __consecrated__, B = 1, 2` and
+        `consecrated A += 1` generated an annotated augmented assignment,
+        and neither parses. Now the generated Python is whatever the author
+        wrote minus one word -- all of those are ordinary valid Python --
+        and nothing but this stands between the author and a name they
+        believe is sealed and is not.
+
+        `consecrated A: int` with no value is the same fault, and is new:
+        the freed annotation slot is what makes it expressible at all.
+        """
+        unsealed = sorted(
+            self.facts.consecrated - self._sealed, key=lambda s: (s.row, s.col)
+        )
+        if not unsealed:
+            return
+        seal = unsealed[0]
+        text = self.lines[seal.row - 1] if seal.row - 1 < len(self.lines) else ""
+        # A `Consecration` is in Liturgy coordinates and every other heresy
+        # raised here is in generated-Python ones, which is what the curse
+        # renderer maps back through the SourceMap. Hand it the same, or the
+        # caret is mapped a second time and lands off the end of the line.
+        raise heresy(
+            f"{seal.name} is consecrated but not bound to a single value",
+            self.filename, seal.row, self.smap.to_py(seal.row, seal.col) + 1,
+            text,
+        )
+
+    # -- the declaration of archetypes -----------------------------------
+    def _located_heresy(self, lineno: int, py_col: int, length: int, message: str):
+        """A TechHeresy pointing at a span of the *generated Python* line.
+
+        `_heresy` covers the common case -- a node whose own `col_offset`
+        names the fault -- and underlines a single column. Two of the three
+        sanction faults need neither: a missing return annotation is
+        reported against the rite's *name*, which no node carries a
+        location for, and every one of them reads better with the whole
+        name underlined.
+
+        `py_col` is a 0-based **character** column in the generated Python,
+        the same coordinate `_heresy` hands over, because
+        `curse._render_syntax_location` maps both `offset` and `end_offset`
+        through `SourceMap.to_lit` before drawing the caret.
+        """
+        text = self.lines[lineno - 1] if lineno - 1 < len(self.lines) else ""
+        exc = heresy(message, self.filename, lineno, py_col + 1, text)
+        exc.end_lineno = lineno
+        exc.end_offset = py_col + 1 + length
+        return exc
+
+    def _py_col(self, node) -> int:
+        """A node's 0-based *character* column in the generated Python line.
+
+        `col_offset` counts UTF-8 bytes; everything downstream counts
+        characters. This is `_lit_col` without the final hop back through
+        the SourceMap -- which is what a heresy wants, since the renderer
+        makes that hop itself.
+        """
+        py_line = self._py_line(node.lineno)
+        return char_offset(py_line, node.col_offset or 0)
+
+    def _py_line(self, lineno: int) -> str:
+        return self.py_lines[lineno - 1] if lineno - 1 < len(self.py_lines) else ""
+
+    def _exempted(self, node, kind: str) -> bool:
+        """Did an `unsanctioned` modifier mark this statement?
+
+        `Exemption` is recorded in Liturgy coordinates against the first
+        token of the marked statement that survives the splice -- `rite`
+        (or `remote`) for a rite, the name for a consecrated binding --
+        which is exactly what `_lit_col` returns for the node the statement
+        parsed into. See `transform.Exemption`.
+        """
+        return (
+            Exemption(node.lineno, self._lit_col(node), kind)
+            in self.facts.unsanctioned
+        )
+
+    def _reject_undeclared_rite(self, node) -> None:
+        """Every parameter, and the return, must declare an archetype.
+
+        Presence, not correctness: Liturgy can see that an annotation is
+        written and cannot see whether it is true.
+
+        `self`/`cls` are exempt in the *first* positional slot only, which
+        is where a method's receiver actually is; a later parameter of that
+        name is an ordinary parameter wearing the name and gets no pass.
+        `*args` and `**kwargs` are annotatable in Python and so are not
+        exempt. A `servitor` never reaches here -- a lambda is not a
+        `FunctionDef`, and Python has no syntax for annotating one's
+        parameters, so a rule requiring it would forbid the construct.
+        """
+        args = node.args
+        positional = [*args.posonlyargs, *args.args]
+        receiver = (
+            positional[0]
+            if positional and positional[0].arg in ("self", "cls")
+            else None
+        )
+        ordered = [*positional]
+        if args.vararg is not None:
+            ordered.append(args.vararg)
+        ordered += args.kwonlyargs
+        if args.kwarg is not None:
+            ordered.append(args.kwarg)
+
+        for arg in ordered:
+            if arg is receiver or arg.annotation is not None:
+                continue
+            raise self._located_heresy(
+                arg.lineno,
+                self._py_col(arg),
+                len(arg.arg),
+                f"{arg.arg} is unsanctioned; "
+                "every parameter must declare its archetype",
+            )
+
+        if node.returns is None:
+            raise self._located_heresy(
+                node.lineno,
+                self._rite_name_col(node),
+                len(node.name),
+                f"{node.name} is unsanctioned; "
+                "a rite must declare what it renders",
+            )
+
+    def _rite_name_col(self, node) -> int:
+        """The generated-Python column of a rite's own name.
+
+        The AST gives a function's name as a bare string with no location
+        of its own, and the only column it carries is that of `def` (or of
+        `async`, for a `remote rite`). Searching the line for the name is
+        not good enough -- `rite f(f):` generates `def f(f):`, whose first
+        `f` is the one in `def` -- so the header keyword is matched
+        explicitly and the name taken to begin where it ends.
+        """
+        start = self._py_col(node)
+        py_line = self._py_line(node.lineno)
+        match = _DEF_HEADER.match(py_line, start)
+        return match.end() if match else start
+
+    def _reject_undeclared_seal(self, stmt) -> None:
+        """A consecrated name must declare its archetype.
+
+        `consecrated PORT: int = 8080` generates `PORT: int = 8080`, so the
+        annotated form is an `AnnAssign` and the bare one an `Assign`. That
+        distinction is the whole check -- and it exists at all only because
+        the carrier moved out of the annotation slot.
+
+        Only a statement `_consecrated_target` already matched reaches
+        here, so the bare form is an `Assign` with exactly one `Name`
+        target.
+        """
+        if not isinstance(stmt, ast.Assign):
+            return
+        target = stmt.targets[0]
+        if self._exempted(target, "consecrated"):
+            return
+        raise self._located_heresy(
+            target.lineno,
+            self._py_col(target),
+            len(target.id),
+            f"{target.id} is unsanctioned; "
+            "a consecrated name must declare its archetype",
+        )
 
     def _liturgy_source(self, node: ast.expr) -> str:
         """The Liturgy text of an expression, for an augury's message.
@@ -101,7 +349,12 @@ class ConstructPass(ast.NodeTransformer):
 
     # -- scopes ------------------------------------------------------
     def visit_Module(self, node):
-        return self._scope(node)
+        node = self._scope(node)
+        # The root's visit is the last one to finish -- `_scope` descends
+        # into every nested scope before returning -- so this is where the
+        # whole file's consecrations have all been accounted for.
+        self._reject_unsealed()
+        return node
 
     def visit_Interactive(self, node):
         # `commune` compiles with mode="single", which parses to Interactive,
@@ -109,7 +362,16 @@ class ConstructPass(ast.NodeTransformer):
         # rebinding check, and -- worse -- no consecrated carrier ever
         # desugared, so on 3.12/3.13 the eagerly-evaluated annotation made
         # every `consecrated` at the prompt a NameError.
-        return self._scope(node)
+        #
+        # The archetype rule is the one check the prompt does NOT get. Every
+        # entry is its own compilation unit, so there is nowhere to put an
+        # `unsanctioned` that would still be in force on the next line, and
+        # a prompt that rejects `rite f(x):` is not a REPL anyone will use.
+        # Chapter VIII's note about per-unit enforcement is the precedent.
+        self._sanctioning = False
+        node = self._scope(node)
+        self._reject_unsealed()
+        return node
 
     def visit_FunctionDef(self, node):
         return self._scope(node)
@@ -121,11 +383,41 @@ class ConstructPass(ast.NodeTransformer):
         return self._scope(node)
 
     def _scope(self, node):
+        """Every rule that is asked once per scope, in one place.
+
+        The archetype rule is the last of them, so a scope that is wrong in
+        an older way is still reported that way: a `consecrated` in a loop
+        is a loop fault whether or not it declares an archetype.
+
+        **An `unsanctioned` rite exempts everything nested inside it.** A
+        rite marked here sets `_exempt` for the whole of its subtree and
+        clears it on the way out, so a closure or a `pattern` defined
+        within an exempt rite is exempt too. The alternative -- exempting
+        the header and then nagging about a two-line helper three lines
+        below it -- would make the modifier useless on exactly the legacy
+        code it exists for, and there is no second word to reach for. A
+        nested rite that wants sanctioning again can be lifted out; a
+        module that wants the reverse has the bare `unsanctioned` line.
+        """
+        outer = self._exempt
+        if isinstance(node, _RITES) and self._exempted(node, "rite"):
+            self._exempt = True
+
         _reject_misplaced_auguries(node, self._heresy)
-        consecrated = _collect_consecrated(node, self._heresy)
+        consecrated = _collect_consecrated(
+            node, self._heresy, self._consecrated_target
+        )
         if consecrated:
             _reject_rebindings(node, consecrated, self._heresy)
+
+        if self._sanctioning and not self._exempt:
+            if isinstance(node, _RITES):
+                self._reject_undeclared_rite(node)
+            for stmt in consecrated.values():
+                self._reject_undeclared_seal(stmt)
+
         self.generic_visit(node)
+        self._exempt = outer
         return node
 
     # -- litany / augur --------------------------------------------------
@@ -244,7 +536,8 @@ def _literal_number(node):
 
 
 _LOOPS = (ast.For, ast.AsyncFor, ast.While)
-_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+_RITES = (ast.FunctionDef, ast.AsyncFunctionDef)
+_SCOPES = _RITES + (ast.ClassDef,)
 _MODULES = (ast.Module, ast.Interactive)
 
 # A `servitor` is a scope too, and it is the one that hides. It holds no
@@ -297,51 +590,42 @@ def _repeats(node) -> bool:
     )
 
 
-def _collect_consecrated(scope, mkerr) -> dict[str, ast.AST]:
-    """Find every `NAME: __consecrated__ = v` belonging to this scope.
+def _collect_consecrated(scope, mkerr, target_of) -> dict[str, ast.AST]:
+    """Every `consecrated` declaration belonging to this scope, by name.
 
-    Rewrites each into a plain assignment as it goes, and records the
-    *replacement* node -- the rebinding check compares against these by
-    identity, so recording the original would make every declaration look
-    like a rebinding of itself. Nested function and class scopes are left
-    for their own visit.
+    `target_of` answers "does this statement consecrate a name, and which" --
+    `ConstructPass._consecrated_target`, which reads the carrier pass's
+    `ConstructFacts`. Nothing is rewritten: the generated Python for a
+    declaration is already the plain (or annotated) assignment it should be.
+    The statement itself is recorded, because the rebinding check compares
+    by identity, and `_stored_names` reports an assignment against the
+    statement node.
+
+    Nested function and class scopes are left for their own visit.
 
     Recursion is by child node, like every other walker here. It used to
     recurse only into fields that were a list whose first element was an
     `ast.stmt`, which silently skipped `Try.handlers` (a list of
     `ExceptHandler`) and `Match.cases` (a list of `match_case`) -- neither
     element type is a statement, so a `consecrated` in a `curse` or a
-    `wherein` block was never desugared at all. The carrier survived into the
-    compiled tree, enforcement was off, and on Python 3.12/3.13 -- where a
-    module-scope annotation is still evaluated eagerly -- the module died
-    with `NameError: __consecrated__`.
+    `wherein` block was never seen at all, and enforcement was simply off
+    there.
     """
     found: dict[str, ast.AST] = {}
 
-    def declare(stmt, body, index, in_loop):
-        name = stmt.target.id
+    def declare(stmt, target, in_loop):
+        name = target.id
         if in_loop:
             raise mkerr(stmt, f"{name} is consecrated inside a loop")
         if name in found:
             raise mkerr(stmt, f"{name} is already consecrated")
-        stmt.target.ctx = ast.Store()
-        plain = ast.Assign(targets=[stmt.target], value=stmt.value)
-        ast.copy_location(plain, stmt)
-        ast.fix_missing_locations(plain)
-        body[index] = plain
-        found[name] = plain
+        found[name] = stmt
 
     def descend(node, in_loop):
-        """Visit `node`'s children. Statement lists are handled by index,
-        because a declaration has to be *replaced* in the list holding it."""
         for _field, value in ast.iter_fields(node):
             if isinstance(value, list):
-                for index, item in enumerate(value):
-                    if not isinstance(item, ast.AST):
-                        continue
-                    if _is_consecrated(item):
-                        declare(item, value, index, in_loop)
-                    else:
+                for item in value:
+                    if isinstance(item, ast.AST):
                         visit(item, in_loop)
             elif isinstance(value, ast.AST):
                 visit(value, in_loop)
@@ -349,20 +633,14 @@ def _collect_consecrated(scope, mkerr) -> dict[str, ast.AST]:
     def visit(node, in_loop):
         if isinstance(node, _BOUNDARIES):
             return  # its own visit will collect its own declarations
+        target = target_of(node)
+        if target is not None:
+            declare(node, target, in_loop)
+            return  # a declaration holds no further declarations
         descend(node, in_loop or _repeats(node))
 
     descend(scope, False)
     return found
-
-
-def _is_consecrated(stmt) -> bool:
-    return (
-        isinstance(stmt, ast.AnnAssign)
-        and isinstance(stmt.annotation, ast.Name)
-        and stmt.annotation.id == CONSECRATED_CARRIER
-        and isinstance(stmt.target, ast.Name)
-        and stmt.value is not None
-    )
 
 
 def _reaching_declaration(scope):

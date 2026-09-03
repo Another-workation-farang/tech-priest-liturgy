@@ -75,7 +75,7 @@ runs a Python one. Arguments after the filename are passed to the prayer.
 ```
 $ liturgy commune
 ++ COMMUNION ESTABLISHED ++
->>> rite fib(n):
+>>> rite fib(n: int) -> int:
 ...     should n < 2:
 ...         render n
 ...     render fib(n-1) + fib(n-2)
@@ -276,10 +276,10 @@ value in the data a rite works on:
 
 ```
 pattern Reliquary:
-    rite __init__(self, relics):
+    rite __init__(self, relics: list[str]) -> Void:
         self.relics = relics
 
-    rite blessed(self):
+    rite blessed(self) -> list[str]:
         render [r foreach r among self.relics should r.startswith("sanctified")]
 
 
@@ -474,9 +474,9 @@ invocations work as expected — `within . invoke sibling`, and deeper.
 *A word given to the Machine God is no longer yours. Choose your own names
 knowing which are already spoken for.*
 
-Sixty-three words are reserved: thirty-eight rites, five builtins, fifteen
-curses, two numerals, and three constructs. Using one as your own identifier
-is an error. Most such errors are loud, and a loud error costs you a minute.
+Sixty-four words are reserved: thirty-eight rites, five builtins, fifteen
+curses, two numerals, and four construct words. Using one as your own
+identifier is an error. Most such errors are loud, and a loud error costs you a minute.
 
 ```
 render = compute()
@@ -517,32 +517,32 @@ and `archetype` become `match`, `case` and `type`, which are ordinary
 identifiers anywhere they are not heading their own statement. So
 `discern = 5` compiles, runs, and has quietly bound the name `match`.
 
-Two of the three constructs are quiet too, for a different reason. A
+Two of the four construct words are quiet too, for a different reason. A
 construct word is only a construct in the position its header occupies;
 anywhere else it is an ordinary name, and the carrier pass leaves it alone.
-So `litany = 5`, `litany: int = 5`, `rite augur(x):` and `pattern litany:`
-all compile, and the name is yours until the day you want the construct on
-that line:
+So `litany = 5`, `litany: int = 5`, `rite augur(x: int) -> int:` and
+`pattern litany:` all compile, and the name is yours until the day you want
+the construct on that line:
 
 ```
 litany = 5
 augur = compute()
-rite augur(x):
+rite augur(x: int) -> int:
     render x
 pattern litany:
     abide
 ```
 
-Every line of that compiles. `consecrated` is the exception among the three:
-it can only ever be a header, so `consecrated = 5` is a loud heresy. One
+Every line of that compiles. `consecrated` and `unsanctioned` are the two
+that are not quiet: each can only ever be a header or a modifier, so
+`consecrated = 5` and `unsanctioned = 5` are both loud heresies. One
 spelling of `augur` is refused as well: a bare, valueless annotation —
 `augur: b != 0` — reads exactly like a one-line augury wherever it stands,
 and treating it as the annotation it technically is would check nothing. An
 augury's conditions belong on the lines beneath `augur:`, and the heresy says
 so; an annotation *with* a value (`augur: int = 5`) is unmistakably yours and
-compiles. Ten of the sixty-three words
-are quiet, then — the five builtins, the three soft keywords, `litany`,
-`augur` — and the rest are loud.
+compiles. Ten of the sixty-four words are quiet, then — the five builtins,
+the three soft keywords, `litany`, `augur` — and the rest are loud.
 
 `span` in particular is a natural name for a range of text, and it is
 precisely the wrong one. Eight of the ten no longer have to be carried in
@@ -557,8 +557,8 @@ you have already spent. That one stays yours to track.
 ### The machine's own names
 
 Three names appear in no table and are reserved all the same:
-`__consecrated__`, `__litany__` and `__augur__` — the private carriers the
-construct pass writes into the generated Python — along with every name
+`__consecrated__`, `__litany__` and `__augur__` — the private names the
+construct compiler claims for itself — along with every name
 beginning `__liturgy_`, which the retry loop mints its bookkeeping under. A
 litany that spoke one would be indistinguishable from the machinery itself,
 so speaking one anywhere but after a dot is a loud heresy:
@@ -582,13 +582,13 @@ not let you *declare* one, because a declaration is not in attribute position:
 
 ```
 pattern Template:
-    rite render(self):
+    rite render(self) -> str:
         render "rendered"
 ```
 
 ```
    the rite was ill-written at template.lit, line 2
-       rite render(self):
+       rite render(self) -> str:
             ^^^^^^
    SyntaxError: invalid syntax (render is Liturgy for return)
 ```
@@ -716,6 +716,15 @@ actually collide — they live in entirely different namespaces — but the same
 word meaning two different things in the same project is exactly the kind of
 thing worth spelling out rather than leaving implicit.
 
+`Sanctioned` and `unsanctioned` belong on the same list, and they are the
+closer pair of the three: both are source words. `Sanctioned` is Chapter
+III's alias for `True`; `unsanctioned` is Chapter XII's modifier waiving the
+archetype rule, and one is not the negation of the other. They are told apart
+by case and by position — one is a value, the other stands at the head of a
+statement — and no table can confuse them, since `unsanctioned` has no Python
+spelling to be substituted for. It is written down here rather than
+discovered later.
+
 ---
 
 ## Chapter X — The Greater Rites
@@ -730,10 +739,17 @@ it into real semantics, or rejects the misuse outright. Nothing beyond the
 standard library is imported to make any of the three work — there is no
 Liturgy runtime for them to depend on.
 
+`consecrated` is the one that no longer needs a carrier at all. It used to
+generate `NAME: __consecrated__ = value` and let the second pass read the
+consecration back off the annotation, which cost the author the annotation
+slot; what the header declared now travels beside the generated Python
+instead, and `consecrated PORT: int = 8080` generates exactly
+`PORT: int = 8080`.
+
 ### consecrated — a binding that will not move
 
 ```
-consecrated PORT = 8080
+consecrated PORT: int = 8080
 ```
 
 `consecrated NAME = value` declares a binding once. Every later assignment
@@ -750,6 +766,11 @@ not a rebinding of the enclosing one. Rebinding through `universal` inside a
 nested rite is still caught, because a `universal` declaration followed by
 an assignment is a real write back into the declaring scope, and the
 compiler can see it there too.
+
+The archetype is not decoration. Chapter XII requires it of every
+`consecrated` binding, and `consecrated PORT = 8080` without one is a heresy.
+That the annotation slot is free to be spent this way is recent: the construct
+used to reach the compiler through it.
 
 Chapter VII, "The limits of consecrated," sets down what this enforcement
 does not reach.
@@ -789,7 +810,7 @@ bind to that loop, exactly as expected.
 ### augur — a precondition, not an assertion
 
 ```
-rite divide(a, b):
+rite divide(a: float, b: float) -> float:
     augur:
         b be nay Void
         b != 0
@@ -890,17 +911,20 @@ and the substitution produced the bound name — `span = ...` becoming
 substitution and left you bound to it whole.
 
 This check reaches the sixty words that have a Python spelling, not all
-sixty-three. The three construct words are outside it by construction: they
+sixty-four. The four construct words are outside it by construction: they
 are never substituted, so no binding of one can quietly come to mean
-something else. `consecrated` is still caught — by the second check, as a
-compile failure — and `litany` and `augur` are genuinely not faults. The
-machine's own carrier names (Chapter VII) are within it: they have no
+something else. `consecrated` and `unsanctioned` are still caught — by the
+second check, as a compile failure — and `litany` and `augur` are genuinely
+not faults. The machine's own names (Chapter VII) are within it: they have no
 Python spelling to become, but a `.py` file that binds one is a file no
 litany can import by that name, and the finding says so.
 
 **That the litany compiles.** For a `.lit` file, `augur` compiles the source
 after gathering collisions, so a file `augur` calls clean is a file `chant`
-will accept. The two must not be able to disagree about that.
+will accept. The two must not be able to disagree about that. This is also
+why Chapter XII's archetype rule needs no line of `augur`'s own: an
+undeclared parameter is a compile failure, so the second check reports it
+without being taught anything.
 
 There is deliberately no third. No line-length rule, no unused-import check,
 no naming convention. `augur` reports the class of fault that is specific to
@@ -944,6 +968,11 @@ what is safe to be bound to, and the two are not the same question.
 
 ```
 $ liturgy transcribe greet.py
+++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.py:1  name is unsanctioned; every parameter must declare its archetype
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone at the margin to exempt the file.
 rite greet(name):
     should nay name:
         render "Ave Omnissiah"
@@ -954,11 +983,25 @@ foreach i among span(2):
     intone(greet(""))
 ```
 
+The warning is Chapter XII's, and unannotated Python earns it by definition:
+Python does not require archetypes and Liturgy does, so a faithful
+transcription of a bare `def` is a litany that will not chant until an adept
+annotates it or marks it `unsanctioned`. Nothing is prepended on the adept's
+behalf — an `unsanctioned` line ahead of the litany would break the
+round-trip self-check below, which is the whole reason the verb can be
+trusted. Python that *was* annotated transcribes to a litany that chants, and
+is not warned about at all.
+
 Given `-o`, it writes the file instead of printing it and reports the count:
 
 ```
 $ liturgy transcribe greet.py -o greet.lit
 ++ 8 lines transcribed ++
+++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.lit:1  name is unsanctioned; every parameter must declare its archetype
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone at the margin to exempt the file.
 ```
 
 `transcribe` refuses in preference to producing something subtly wrong. It
@@ -980,7 +1023,10 @@ The last line of defence is broader than the collision rule: the output is
 compiled before anything is written or printed. A Python program only the
 compile can catch — one that binds a bare `consecrated`, or speaks one of
 the machine's own names in a position the binding scan does not see — is
-refused as one no litany can express:
+refused as one no litany can express. That compile asks whether the output is
+a *program*, not whether it satisfies Chapter XII: the archetype rule is
+suppressed for it, which is why a missing annotation is the warning above and
+not a refusal here.
 
 ```
 $ liturgy transcribe cons.py
@@ -992,15 +1038,19 @@ rewrite or rename what it names, then transcribe again
 The same rule is applied a second time, to the Liturgy about to be written.
 Transcription can introduce a collision the Python never had — `input` is
 rendered `hearken`, and `hearken` is reserved. That output is not wrong: it
-round-trips, and it chants exactly as the Python ran. So it is a warning,
-not a refusal:
+round-trips, and its words are faithful. So it is a warning, not a refusal:
 
 ```
 $ liturgy transcribe codec.py -o codec.lit
 ++ 2 lines transcribed ++
 ++ THE OUTPUT CARRIES 1 COLLISION ++
   codec.lit:1  hearken      -> reserved (input)
-augur will flag these; the litany is correct and chants as written
+augur will flag these; the words are faithful and run the same
+++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  codec.lit:1  input is unsanctioned; every parameter must declare its archetype
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone at the margin to exempt the file.
 ```
 
 When the litany goes to stdout the warning goes to stderr instead, so a
@@ -1234,7 +1284,7 @@ test_rites.lit .F                                                        [100%]
 =================================== FAILURES ===================================
 __________________________ test_the_omnissiah_is_not ___________________________
 
-    rite test_the_omnissiah_is_not():
+    rite test_the_omnissiah_is_not() -> Void:
 >       attest measure("cog") == 99
                ^^^^^^^^^^^^^^^^
 E       AssertionError
@@ -1327,6 +1377,240 @@ count of what actually went:
 
 The exit status is 0 when everything asked for went, and 1 if the guard
 refused or any single removal failed.
+
+---
+
+## Chapter XII — The Declaration of Archetypes
+
+*An offering laid before the machine without its nature declared is an
+offering the machine must guess at, and the machine does not guess. Name the
+archetype of everything you hand a rite, and of everything the rite hands
+back. If you will not name it, say so aloud: an omission spoken is a
+decision, and an omission unspoken is a fault.*
+
+Python invites type hints and enforces nothing. A `def` carrying no
+annotation anywhere on it is perfectly ordinary Python, and no interpreter
+will ever complain. Liturgy requires them. A litany must declare the
+archetype of every rite's parameters, of every rite's return, and of every
+`consecrated` binding. An undeclared one is a heresy at compile time,
+alongside the rest of Chapter X's rejections.
+
+`archetype` was already Liturgy for `type`, and `pattern` already `class`, so
+the vocabulary this chapter needs was spent before the rule existed. The rule
+adds exactly one word, and that word is for refusing the rule.
+
+### What the machine requires
+
+```
+rite greet(name):
+    intone(f"Ave {name}")
+```
+
+```
+++ MACHINE CURSE ++
+   the rite was ill-written at prayer.lit, line 1
+       rite greet(name):
+                  ^^^^
+   TechHeresy: name is unsanctioned; every parameter must declare its archetype
+++ the machine spirit is displeased ++
+```
+
+Declare the parameter and the fault moves to the return, reported against the
+rite's own name — the AST gives a function's name no position of its own, so
+the caret is placed by hand:
+
+```
+   the rite was ill-written at prayer.lit, line 1
+       rite greet(name: str):
+            ^^^^^
+   TechHeresy: greet is unsanctioned; a rite must declare what it renders
+```
+
+A rite that renders nothing renders `Void`, and `-> Void` is the idiomatic
+way to say so:
+
+```
+rite greet(name: str) -> Void:
+    intone(f"Ave {name}")
+```
+
+A `consecrated` binding is the third shape, and the fault points at the name:
+
+```
+   the rite was ill-written at prayer.lit, line 1
+       consecrated PORT = 8080
+                   ^^^^
+   TechHeresy: PORT is unsanctioned; a consecrated name must declare its archetype
+```
+
+`consecrated PORT: int = 8080` is the cure, and it is **newly legal**. In
+every version before this one it was a syntax error, for a reason that was
+nobody's business but the compiler's: the construct smuggled itself through
+the annotation slot, generating `PORT: __consecrated__ = 8080`, so the slot a
+consecrated name needed was already occupied. Consecration travels beside the
+generated Python now, and the slot is the author's again.
+
+Nothing else is required. Plain assignments, `foreach` targets, comprehension
+variables, `anointed ... styled` targets and the name a `curse` binds all go
+unannotated in idiomatic Python, and demanding an archetype for each of them
+would make the language tiresome rather than strict.
+
+Every parameter position Python can annotate is required, which is all of
+them: positional-only, ordinary, keyword-only, `*args` and `**kwargs`.
+
+The rule lives in the compile path, beside the other construct rejections,
+rather than in a tool of its own that might come to disagree with the
+compiler. `chant`, `prove` and `augur` therefore all report it, identically,
+because all three compile:
+
+```
+$ liturgy augur --plain prayer.lit
+prayer.lit:1:1: TechHeresy: name is unsanctioned; every parameter must declare its archetype
+```
+
+### Presence is not correctness
+
+**Liturgy can see that an annotation is written. It cannot see whether it is
+true.**
+
+`rite count(n: str) -> int:` satisfies this rule completely while being a lie
+in both halves, and nothing in the language will ever say so. Checking that
+an archetype describes the value that actually arrives is a type checker's
+work, and a type checker is a different program of a different size. One has
+been designed. It is not scheduled, and until it exists this page will not
+imply it.
+
+This is the same boundary Chapter VII draws around `consecrated`, drawn again
+for the same reason: the word "enforced" invites more confidence than the
+mechanism can support. What is enforced is that you thought about the
+archetype long enough to write one down. Whether you were right is between
+you and a type checker.
+
+### What cannot be declared is exempt
+
+Four exemptions, and each is a thing the rule could not ask for without
+asking for the impossible.
+
+**`self` and `cls`** — in the *first* positional slot of a method, and only
+there. A receiver's archetype is the pattern it is declared in, and spelling
+it out is noise that every Python type checker also waives. A later parameter
+named `self` is an ordinary parameter wearing the name and gets no pass.
+
+**`servitor`** — a lambda, entirely. Python has no syntax for annotating
+one's parameters; `servitor x: int = 1` is not a stricter lambda, it is a
+syntax error. A rule requiring what cannot be written would forbid the
+construct outright, so the rule stops at the door.
+
+**`commune`** — the prompt does not enforce. Every entry is its own
+compilation unit, so there is nowhere to put an exemption that would still be
+in force on the next line, and a prompt that rejects `rite f(x):` is not a
+prompt anyone will use twice. Chapter VII's note about `consecrated` being
+enforced per compilation unit is the precedent; this is the same boundary seen
+from the other side.
+
+```
+>>> rite greet(name):
+...     intone(f"Ave {name}")
+...
+>>> greet("adept")
+Ave adept
+```
+
+**`.py` files** — Liturgy compiles `.lit`. A Python file is Python's own
+business, whether a litany imports it or `augur` reads it.
+
+### unsanctioned — the omission spoken aloud
+
+The fifth exemption is not something the machine works out. It is something
+you say, and `unsanctioned` is the word for saying it. It is the one word this
+rule adds to the tongue, and it has no Python spelling at all: the transform
+splices it away and records what it marked, so a litany using it compiles to
+exactly the Python it would have compiled to without it.
+
+As a **modifier** it exempts the one rite, or the one binding, it precedes:
+
+```
+unsanctioned rite legacy(x):
+    render x
+
+unsanctioned consecrated PORT = 8080
+```
+
+It reaches a `remote rite` as well — the word between the modifier and `rite`
+is `async`, and an exemption that stopped at the sight of it would be a rule
+about spelling rather than about rites.
+
+**An exempted rite exempts everything nested inside it.** A closure or a
+`pattern` written within an `unsanctioned` rite is exempt too. The
+alternative — waiving the header and then nagging about a two-line helper
+three lines below it — would make the modifier useless on exactly the old
+code it exists for, and there is no second word to reach for. A nested rite
+that wants the rule back can be lifted out of the exempted one.
+
+Standing **alone on a line at the margin**, `unsanctioned` exempts the whole
+litany:
+
+```
+unsanctioned
+
+rite one(a):
+    render a
+
+rite two(b):
+    render b
+```
+
+That is deliberately blunt. There is no per-line form: two granularities are
+what the language offers, and a third can be argued for once the first two
+have proved insufficient.
+
+Anywhere else the word is a heresy rather than a silent no-op, because a
+modifier that looks applied and is not is worse than no modifier at all:
+
+```
+unsanctioned x = 5
+```
+
+```
+   TechHeresy: unsanctioned marks a rite or a consecrated name
+```
+
+```
+x = unsanctioned
+```
+
+```
+   TechHeresy: unsanctioned cannot stand mid-statement
+```
+
+The two positions Chapter VI spares are spared here as well: after a dot the
+word is another object's attribute, and in keyword-argument position it is the
+callee's parameter. Neither is a word in your litany.
+
+Note that `Sanctioned`, with a capital S, is Liturgy for `True` and has
+nothing to do with any of this. Chapter IX keeps the list of words this
+project spends twice, and the pair is on it.
+
+### Why the annotation itself gained no word
+
+An earlier design gave the annotation operator a ritual spelling of its own —
+`anoint`, then `wrought`, then `designated`. Each was cut, and the reasons are
+worth keeping.
+
+`anoint` is one letter from `anointed`, which is already `with`. Two
+near-identical words in one namespace with unrelated meanings is a worse trap
+than the doubled `augur` and `purge`, which live in different namespaces and
+cannot collide.
+
+Any such word also solves only half the problem. A rite's return is spelled
+`->`, so `rite f(x wrought int) begets str:` needs a *second* reserved word to
+stay consistent — two words for what Python spells with punctuation, and two
+more names an adept may not use.
+
+And the annotations themselves already worked. `:` and `->` have always been
+legal in a litany; what was missing was the requirement, and a requirement
+needs no vocabulary of its own. `archetype` is `type`, `pattern` is `class`,
+and the type vocabulary is spent — spent well, and spent already.
 
 ---
 

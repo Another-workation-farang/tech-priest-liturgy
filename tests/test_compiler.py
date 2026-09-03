@@ -47,35 +47,39 @@ def test_line_numbers_are_liturgy_line_numbers():
 #
 # The carriers are the private names the token pass invents so a construct
 # header parses. Every one of them must be consumed by `ConstructPass`. One
-# left behind is not cosmetic: `PORT: __consecrated__ = 8080` is a live
-# annotation, and at module scope on Python 3.12/3.13 -- where PEP 649 has
-# not yet made annotations lazy -- evaluating it raises
-# `NameError: __consecrated__` and the module dies. This is the check that
-# catches C1 (a `consecrated` in a `curse` or `wherein` block, never
-# desugared) the moment it reappears, on any interpreter.
+# left behind is not cosmetic: `with __litany__(3):` reaching the compiled
+# tree is a call to a name nothing defines, and the module dies with
+# `NameError` the moment it runs.
+#
+# `__consecrated__` is still in the set below and no pass writes it any
+# more -- Spec IV moved consecration out of the annotation slot -- so this
+# check no longer guards `consecrated`. What guards that is
+# `test_rebinding_is_rejected_inside_every_kind_of_block` in
+# `test_consecrated.py`: a declaration `_collect_consecrated` fails to see
+# is a name that silently is not sealed.
 
 CARRIERS = {"__consecrated__", "__litany__", "__augur__"}
 
 CARRIER_SOURCES = {
-    "module": "consecrated PORT = 8080\n",
-    "rite": "rite f():\n    consecrated PORT = 1\n    render PORT\n",
-    "pattern": "pattern C:\n    consecrated PORT = 1\n",
+    "module": "consecrated PORT: int = 8080\n",
+    "rite": "rite f() -> int:\n    consecrated PORT: int = 1\n    render PORT\n",
+    "pattern": "pattern C:\n    consecrated PORT: int = 1\n",
     "curse-block": (
-        "attempt:\n    abide\ncurse MachineCurse:\n    consecrated PORT = 1\n"
+        "attempt:\n    abide\ncurse MachineCurse:\n    consecrated PORT: int = 1\n"
     ),
     "regardless-block": (
-        "attempt:\n    abide\nregardless:\n    consecrated PORT = 1\n"
+        "attempt:\n    abide\nregardless:\n    consecrated PORT: int = 1\n"
     ),
-    "wherein-block": "discern 1:\n    wherein 1:\n        consecrated PORT = 1\n",
-    "should-block": "should Sanctioned:\n    consecrated PORT = 1\n",
+    "wherein-block": "discern 1:\n    wherein 1:\n        consecrated PORT: int = 1\n",
+    "should-block": "should Sanctioned:\n    consecrated PORT: int = 1\n",
     "anointed-block": (
-        "anointed unseal('/dev/null') styled fh:\n    consecrated PORT = 1\n"
+        "anointed unseal('/dev/null') styled fh:\n    consecrated PORT: int = 1\n"
     ),
     "litany": "litany(thrice, curse=MotiveFailure):\n    abide\n",
-    "augur": "rite f(x):\n    augur:\n        x > 0\n    render x\n",
+    "augur": "rite f(x: int) -> int:\n    augur:\n        x > 0\n    render x\n",
     "all-three": (
-        "consecrated LIMIT = 2\n"
-        "rite f(x):\n"
+        "consecrated LIMIT: int = 2\n"
+        "rite f(x: int) -> int:\n"
         "    augur:\n"
         "        x > 0\n"
         "    litany(LIMIT, curse=MotiveFailure):\n"

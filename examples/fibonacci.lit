@@ -1,13 +1,13 @@
 ## The Rite of Recurrent Numeration
 ## Chanted before the cogitator, that it may recall the sacred sequence.
 
-rite fibonacci(n):
+rite fibonacci(n: int) -> int:
     should n < 2:
         render n
     render fibonacci(n - 1) + fibonacci(n - 2)
 
 
-rite litany_of_numeration(count):
+rite litany_of_numeration(count: int) -> Void:
     recited = []
     foreach i among span(count):
         value = fibonacci(i)

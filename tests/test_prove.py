@@ -10,8 +10,8 @@ import pytest
 
 from liturgy.tooling import prove
 
-PASSING = "rite test_pleased():\n    attest 1 + 1 == 2\n"
-FAILING = "rite test_displeased():\n    attest measure('cog') == 99\n"
+PASSING = "rite test_pleased() -> Void:\n    attest 1 + 1 == 2\n"
+FAILING = "rite test_displeased() -> Void:\n    attest measure('cog') == 99\n"
 
 
 def run_cli(cwd, *args):
@@ -54,7 +54,7 @@ def test_it_needs_no_conftest(tmp_path):
 
 
 def test_a_litany_that_is_not_a_trial_is_not_collected(tmp_path):
-    (tmp_path / "helper.lit").write_text("rite test_looks_like_one():\n    attest 0\n")
+    (tmp_path / "helper.lit").write_text("rite test_looks_like_one() -> Void:\n    attest 0\n")
     (tmp_path / "test_rites.lit").write_text(PASSING)
     r = run_cli(tmp_path)
     assert r.returncode == 0
@@ -70,9 +70,9 @@ def test_python_trials_still_run_alongside(tmp_path):
 
 def test_a_trial_may_import_a_litany(tmp_path):
     # Proof the hook is installed, not just that .lit files are collected.
-    (tmp_path / "helper.lit").write_text('rite greet():\n    render "ave"\n')
+    (tmp_path / "helper.lit").write_text('rite greet() -> str:\n    render "ave"\n')
     (tmp_path / "test_rites.lit").write_text(
-        "invoke helper\n\nrite test_imported():\n    attest helper.greet() == 'ave'\n"
+        "invoke helper\n\nrite test_imported() -> Void:\n    attest helper.greet() == 'ave'\n"
     )
     r = run_cli(tmp_path)
     assert r.returncode == 0, r.stdout + r.stderr
@@ -80,7 +80,7 @@ def test_a_trial_may_import_a_litany(tmp_path):
 
 def test_arguments_are_passed_through_to_pytest(tmp_path):
     (tmp_path / "test_rites.lit").write_text(
-        PASSING + "\nrite test_other():\n    attest 1\n"
+        PASSING + "\nrite test_other() -> Void:\n    attest 1\n"
     )
     r = run_cli(tmp_path, "-k", "pleased")
     assert r.returncode == 0

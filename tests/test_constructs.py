@@ -5,7 +5,12 @@ import tokenize
 import pytest
 
 from liturgy import transform as _t
-from liturgy.constructs import TechHeresy, heresy, statement_starts
+from liturgy.constructs import (
+    TechHeresy,
+    carrier_pass,
+    heresy,
+    statement_starts,
+)
 
 
 def positions(src):
@@ -106,7 +111,7 @@ def test_a_single_line_consecrated_is_untouched_by_the_guard():
     from liturgy.compiler import compile_litany
 
     ns = {}
-    exec(compile_litany("consecrated PORT = 8080\n", "prayer.lit"), ns)
+    exec(compile_litany("consecrated PORT: int = 8080\n", "prayer.lit"), ns)
     assert ns["PORT"] == 8080
 
 
@@ -127,3 +132,68 @@ def test_splice_still_accepts_a_span_that_ends_at_the_end_of_its_row():
     # The newline is part of the line, so col_end may reach it.
     py, _smap = _t._splice("abc\n", [_t.Substitution(1, 0, 3, "xyz")])
     assert py == "xyz\n"
+
+
+# --- Spec IV: consecration travels beside the source, not through it --------
+#
+# `consecrated NAME = v` used to generate `NAME: __consecrated__ = v`. That
+# spent the annotation slot on the machine's own bookkeeping, so a
+# consecrated name could never declare an archetype -- `consecrated PORT:
+# int = 8080` was a syntax error, the slot already being taken. The
+# generated Python is now exactly what the author wrote minus the keyword,
+# and the fact that the line was a header rides in the `ConstructFacts` the
+# pass returns alongside its substitutions.
+
+
+def carried(src):
+    toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
+    return carrier_pass(toks)
+
+
+def generated(src):
+    from liturgy.compiler import _PASSES
+
+    return _t.transform(src, _PASSES).python
+
+
+def test_a_consecrated_header_generates_a_plain_assignment():
+    assert generated("consecrated PORT = 8080\n") == "PORT = 8080\n"
+
+
+def test_a_consecrated_header_leaves_the_annotation_slot_alone():
+    assert generated("consecrated PORT: int = 8080\n") == "PORT: int = 8080\n"
+
+
+def test_an_indented_header_keeps_its_indentation():
+    src = "rite f():\n    consecrated INNER: int = 1\n"
+    assert generated(src) == "def f():\n    INNER: int = 1\n"
+
+
+def test_the_header_still_costs_no_line():
+    src = "consecrated PORT: int = 8080\nintone(PORT)\n"
+    assert generated(src).count("\n") == src.count("\n")
+
+
+def test_the_pass_reports_the_row_column_and_name_of_the_header():
+    assert carried("consecrated PORT = 8080\n").facts.consecrated == frozenset(
+        {_t.Consecration(1, 12, "PORT")}
+    )
+
+
+def test_the_reported_column_is_the_name_not_the_keyword():
+    facts = carried("rite f():\n    consecrated INNER = 1\n").facts
+    assert facts.consecrated == frozenset({_t.Consecration(2, 16, "INNER")})
+
+
+def test_two_headers_on_one_row_are_both_reported():
+    # Why the record carries a column and not a row alone: a row can hold
+    # two declarations, and -- worse -- a declaration and a rebinding of the
+    # same name, which the compiler has to tell apart.
+    facts = carried("consecrated A = 1; consecrated B = 2\n").facts
+    assert facts.consecrated == frozenset(
+        {_t.Consecration(1, 12, "A"), _t.Consecration(1, 31, "B")}
+    )
+
+
+def test_a_litany_that_consecrates_nothing_reports_no_facts():
+    assert not carried("x = 1\nintone(x)\n").facts

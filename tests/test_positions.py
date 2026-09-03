@@ -13,18 +13,18 @@ SOURCES = {
     # the expected line by coincidence and the fixture proved nothing.
     "consecrated": (
         "# a comment, so the construct is not on line 1\n"
-        "consecrated PORT = 8080\n"
+        "consecrated PORT: int = 8080\n"
     ),
     "litany": "litany(thrice, resting=1, curse=MotiveFailure):\n    abide\n",
-    "augur": "rite f(x):\n    augur:\n        x > 0\n    render x\n",
+    "augur": "rite f(x: int) -> int:\n    augur:\n        x > 0\n    render x\n",
     # The `consecrated` sits beside the litany rather than inside it: a
     # declaration in a litany body would rebind on every attempt, and is
     # rejected (see test_litany.py).
     "nested": (
-        "rite f(x):\n"
+        "rite f(x: int) -> int:\n"
         "    augur:\n"
         "        x > 0\n"
-        "    consecrated INNER = x\n"
+        "    consecrated INNER: int = x\n"
         "    litany(twice, curse=MotiveFailure):\n"
         "        render INNER\n"
     ),
@@ -42,9 +42,12 @@ def _tree_before_fixup(src: str, filename: str = "prayer.lit") -> ast.AST:
     by hand here, stopping short of the fixup, is what makes a missing
     `copy_location` actually observable.
     """
-    py, smap = transform(src, _PASSES, filename=filename)
+    out = transform(src, _PASSES, filename=filename)
+    py, smap, facts = out.python, out.source_map, out.facts
     tree = ast.parse(py, filename, "exec")
-    return ConstructPass(filename, split_lines(src), smap, split_lines(py)).visit(tree)
+    return ConstructPass(
+        filename, split_lines(src), smap, split_lines(py), facts
+    ).visit(tree)
 
 
 @pytest.mark.parametrize("name", sorted(SOURCES))
@@ -159,6 +162,17 @@ def test_litany_retry_scaffold_carries_the_litany_header_line(name):
         assert n.lineno == expected, f"Assign at line {n.lineno}, expected {expected}"
 
 
+def _sole_target(node):
+    """The single `Name` this assignment binds, or None."""
+    if isinstance(node, ast.AnnAssign):
+        target = node.target
+    elif len(node.targets) == 1:
+        target = node.targets[0]
+    else:
+        return None
+    return target if isinstance(target, ast.Name) else None
+
+
 CONSECRATED_HEADER_LINE = {
     "consecrated": (2, "PORT"),
     "nested": (4, "INNER"),
@@ -169,15 +183,18 @@ CONSECRATED_HEADER_LINE = {
 def test_consecrated_assign_carries_the_consecrated_header_line(name):
     expected_line, target_name = CONSECRATED_HEADER_LINE[name]
     tree = _tree_before_fixup(SOURCES[name])
+    # The fixtures declare an archetype, as Spec IV now requires of every
+    # consecrated binding, so the generated Python is an `AnnAssign`. The
+    # bare `Assign` form still exists behind `unsanctioned`, and both must
+    # carry the header's own line.
     assigns = [
         n
         for n in ast.walk(tree)
-        if isinstance(n, ast.Assign)
-        and len(n.targets) == 1
-        and isinstance(n.targets[0], ast.Name)
-        and n.targets[0].id == target_name
+        if isinstance(n, (ast.Assign, ast.AnnAssign))
+        and _sole_target(n) is not None
+        and _sole_target(n).id == target_name
     ]
-    assert assigns, f"expected a plain assign to {target_name}"
+    assert assigns, f"expected an assign to {target_name}"
     for n in assigns:
         assert n.lineno == expected_line, (
             f"Assign at line {n.lineno}, expected {expected_line}"

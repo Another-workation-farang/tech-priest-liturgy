@@ -137,3 +137,17 @@ def test_an_unreadable_file_is_reported_not_raised(tmp_path):
     code, out = run(tmp_path)
     assert code == 1
     assert "CANNOT CONSECRATE" in out
+
+
+def test_a_seal_on_an_annotated_name_is_still_checked(tmp_path):
+    # Spec IV: `consecrated PORT: int = 8080` is a seal like any other, and
+    # the caret still lands on the name.
+    forge_tree(tmp_path, **{
+        "config.lit": "consecrated PORT: int = 8080\n",
+        "server.lit": "invoke config\nconfig.PORT = 9\n",
+    })
+    code, out = run(tmp_path)
+    assert code == 1
+    assert "THE SEAL IS BROKEN" in out
+    assert "\n       consecrated PORT: int = 8080\n" in out
+    assert "\n                   ^^^^\n" in out

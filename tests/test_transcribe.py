@@ -246,3 +246,91 @@ def test_the_stdout_payload_stays_clean_and_the_warning_goes_to_stderr(
     assert "COLLISION" not in out
     assert out == "rite encode(self, hearken, errors=\"strict\"):\n    render hearken\n"
     assert "hearken" in capsys.readouterr().err
+
+
+# --- Spec IV: transcribed Python is unannotated by definition --------------
+#
+# Python does not require annotations, so a transcription never carries
+# them. The backstop compiles with the archetype rule suppressed -- asking
+# "is this a program?", not "does this meet the annotation policy?" -- and
+# the omens say plainly that the output needs archetypes before it chants.
+# Refusing instead refused every real Python file with a function in it.
+
+_UNANNOTATED = "def greet(name):\n    return name\n"
+_ANNOTATED = "def greet(name: str) -> str:\n    return name\n"
+
+
+def test_a_function_without_annotations_is_still_transcribed(tmp_path):
+    dest = tmp_path / "out.lit"
+    code, out = run(tmp_path, _UNANNOTATED, dest=str(dest))
+    assert code == 0
+    assert "CANNOT TRANSCRIBE" not in out
+    assert dest.read_text() == "rite greet(name):\n    render name\n"
+
+
+def test_the_output_is_warned_to_need_archetypes(tmp_path):
+    dest = tmp_path / "out.lit"
+    _, out = run(tmp_path, _UNANNOTATED, dest=str(dest))
+    assert "WILL NOT CHANT AS WRITTEN" in out
+    # The exact fault and its line, so the reader need not go looking.
+    assert "name is unsanctioned" in out
+    assert ":1" in out
+    # And what to do about it, in both scopes.
+    assert "unsanctioned" in out and "archetype" in out
+
+
+def test_nothing_is_prepended_to_the_output(tmp_path):
+    # An `unsanctioned` line ahead of the litany was the obvious fix and it
+    # is wrong: it breaks transcribe's own round-trip self-check, which is
+    # the guarantee that makes the verb trustworthy.
+    dest = tmp_path / "out.lit"
+    run(tmp_path, _UNANNOTATED, dest=str(dest))
+    assert not dest.read_text().startswith("unsanctioned")
+
+
+def test_a_source_that_was_annotated_in_python_is_not_warned_about(tmp_path):
+    # The warning is earned, not blanket: annotated Python transcribes to a
+    # litany that chants as written, and saying otherwise would be a lie.
+    dest = tmp_path / "out.lit"
+    code, out = run(tmp_path, _ANNOTATED, dest=str(dest))
+    assert code == 0
+    assert "WILL NOT CHANT" not in out
+    assert dest.read_text() == "rite greet(name: str) -> str:\n    render name\n"
+
+
+def test_the_archetype_warning_goes_to_stderr_in_stdout_mode(tmp_path, capsys):
+    code, out = run(tmp_path, _UNANNOTATED)
+    assert code == 0
+    assert out == "rite greet(name):\n    render name\n"
+    assert "WILL NOT CHANT" in capsys.readouterr().err
+
+
+def test_the_backstop_still_refuses_a_structural_impossibility(tmp_path):
+    # Suppressing the archetype rule must suppress nothing else. These are
+    # shapes that are not Liturgy at all -- no annotation saves them -- and
+    # the backstop exists for exactly them.
+    for source in ("consecrated = 5\n", "def __litany__(n):\n    return n\n"):
+        code, out = run(tmp_path, source)
+        assert code == 1, source
+        assert "CANNOT TRANSCRIBE" in out
+
+
+def test_the_transcribe_then_augur_workflow_names_the_archetypes(tmp_path):
+    # `augur` is how the user finds out, and it is unchanged: the rule lives
+    # on the compile path, so the verb reports it without a line of its own.
+    from liturgy.tooling import augur
+
+    dest = tmp_path / "out.lit"
+    assert run(tmp_path, _UNANNOTATED, dest=str(dest))[0] == 0
+    buf = io.StringIO()
+    assert augur([str(dest)], out=buf) == 1
+    assert "every parameter must declare its archetype" in buf.getvalue()
+
+
+def test_augur_is_content_once_the_archetypes_are_declared(tmp_path):
+    from liturgy.tooling import augur
+
+    dest = tmp_path / "out.lit"
+    assert run(tmp_path, _ANNOTATED, dest=str(dest))[0] == 0
+    buf = io.StringIO()
+    assert augur([str(dest)], out=buf) == 0

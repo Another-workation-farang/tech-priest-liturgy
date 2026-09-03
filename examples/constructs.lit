@@ -1,22 +1,22 @@
 ## The Three Constructs
 ## Chanted to demonstrate what Python cannot say.
 
-consecrated MAX_ATTEMPTS = 3
+consecrated MAX_ATTEMPTS: int = 3
 
 
-rite divide(a, b):
+rite divide(a: float, b: float) -> float:
     augur:
         b be nay Void
         b != 0
     render a / b
 
 
-rite flaky(attempts):
+rite flaky(attempts: list) -> Void:
     attempts.append(1)
     proclaim MotiveFailure("the spirit is silent")
 
 
-rite main():
+rite main() -> Void:
     intone(f"++ 6 / 2 is {divide(6, 2)} ++")
 
     attempt:

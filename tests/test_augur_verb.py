@@ -56,7 +56,7 @@ def test_a_consecrated_construct_used_correctly_passes(tmp_path):
     # Regression: find_collisions used to transform with the alias pass
     # alone, so a construct header was still raw Python and ast.parse
     # rejected it -- augur failed on ordinary, correct code.
-    code, out = run(tmp_path, "ok.lit", "consecrated PORT = 8080\nintone(PORT)\n")
+    code, out = run(tmp_path, "ok.lit", "consecrated PORT: int = 8080\nintone(PORT)\n")
     assert code == 0
 
 
@@ -69,7 +69,7 @@ def test_a_litany_construct_used_correctly_passes(tmp_path):
 def test_an_augur_construct_used_correctly_passes(tmp_path):
     # The Spec II `augur` construct, not the verb under test here.
     src = (
-        "rite divide(a, b):\n"
+        "rite divide(a: int, b: int) -> float:\n"
         "    augur:\n"
         "        b be nay Void\n"
         "    render a / b\n"

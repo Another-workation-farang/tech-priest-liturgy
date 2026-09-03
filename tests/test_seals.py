@@ -39,6 +39,22 @@ def test_several_seals_in_one_file_are_all_found():
     assert {s.name for s in seals_of(src)} == {"PORT", "HOST"}
 
 
+def test_an_annotated_consecrated_is_a_seal():
+    # Spec IV: the archetype occupies the slot the carrier used to. A seal
+    # is now told from an ordinary binding by the facts alone.
+    (seal,) = seals_of("consecrated PORT: int = 8080\n")
+    assert (seal.name, seal.line, seal.col) == ("PORT", 1, 12)
+
+
+def test_an_ordinary_annotated_binding_is_not_a_seal():
+    assert seals_of("PORT: int = 8080\n") == []
+
+
+def test_two_seals_on_one_row_are_both_found():
+    src = "consecrated A = 1; consecrated B = 2\n"
+    assert {(s.name, s.col) for s in seals_of(src)} == {("A", 12), ("B", 31)}
+
+
 def test_a_consecrated_inside_a_rite_is_not_a_seal():
     # Only module-level names are reachable as `module.NAME`, so only they
     # can be breached from another file.

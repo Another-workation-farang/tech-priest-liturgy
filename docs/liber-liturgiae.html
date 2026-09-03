@@ -232,6 +232,7 @@ right, and this one needs the same edit.</div>
    <a href="#ch9">[IX]   RITES NOT YET WRITTEN</a>
    <a href="#ch10">[X]    THE GREATER RITES</a>
    <a href="#ch11">[XI]   THE READING OF OMENS</a>
+   <a href="#ch12">[XII]  THE DECLARATION OF ARCHETYPES</a>
    <a href="#appendix">[APX]  THE FULL CONCORDANCE</a>
 </pre>
 </nav>
@@ -306,7 +307,7 @@ Python one. Arguments after the filename are passed to the prayer.</p>
 
 <pre class="shell"><span class="prompt">$</span> liturgy commune
 ++ COMMUNION ESTABLISHED ++
-&gt;&gt;&gt; <span class="kw">rite</span> fib(n):
+&gt;&gt;&gt; <span class="kw">rite</span> fib(n: int) -&gt; int:
 ...     <span class="kw">should</span> n &lt; 2:
 ...         <span class="kw">render</span> n
 ...     <span class="kw">render</span> fib(n-1) + fib(n-2)
@@ -535,10 +536,10 @@ a value in the data a rite works on:</p>
 <h3>A worked litany</h3>
 
 <div class="code-block"><pre><span class="kw">pattern</span> Reliquary:
-    <span class="kw">rite</span> __init__(self, relics):
+    <span class="kw">rite</span> __init__(self, relics: list[str]) -&gt; Void:
         self.relics = relics
 
-    <span class="kw">rite</span> blessed(self):
+    <span class="kw">rite</span> blessed(self) -&gt; list[str]:
         <span class="kw">render</span> [r <span class="kw">foreach</span> r <span class="kw">among</span> self.relics <span class="kw">should</span> r.startswith(<span class="string">"sanctified"</span>)]
 
 
@@ -744,9 +745,9 @@ deeper.</p>
 <p class="epigraph">A word given to the Machine God is no longer yours. Choose your own names
 knowing which are already spoken for.</p>
 
-<p>Sixty-three words are reserved: thirty-eight rites, five builtins, fifteen
-curses, two numerals, and three constructs. Using one as your own identifier
-is an error. Most such errors are loud, and a loud error costs you a
+<p>Sixty-four words are reserved: thirty-eight rites, five builtins, fifteen
+curses, two numerals, and four construct words. Using one as your own
+identifier is an error. Most such errors are loud, and a loud error costs you a
 minute.</p>
 
 <div class="code-block"><pre><span class="kw">render</span> = compute()</pre></div>
@@ -786,31 +787,32 @@ ordinary identifiers anywhere they are not heading their own statement. So
 <code>discern = 5</code> compiles, runs, and has quietly bound the name
 <code>match</code>.</p>
 
-<p>Two of the three constructs are quiet too, for a different
+<p>Two of the four construct words are quiet too, for a different
 reason. A construct word is only a construct in the position its header
 occupies; anywhere else it is an ordinary name, and the carrier pass leaves
 it alone. So <code>litany = 5</code>, <code>litany: int = 5</code>,
-<code>rite augur(x):</code> and
+<code>rite augur(x: int) -&gt; int:</code> and
 <code>pattern litany:</code> all compile, and the name is yours until the day
 you want the construct on that line:</p>
 
 <div class="code-block"><pre>litany = 5
 augur = compute()
-<span class="kw">rite</span> augur(x):
+<span class="kw">rite</span> augur(x: int) -&gt; int:
     <span class="kw">render</span> x
 <span class="kw">pattern</span> litany:
     <span class="kw">abide</span></pre></div>
 
-<p>Every line of that compiles. <code>consecrated</code> is the exception
-among the three: it can only ever be a header, so
-<code>consecrated = 5</code> is a loud heresy. One spelling of
+<p>Every line of that compiles. <code>consecrated</code> and
+<code>unsanctioned</code> are the two that are not quiet: each can only ever
+be a header or a modifier, so <code>consecrated = 5</code> and
+<code>unsanctioned = 5</code> are both loud heresies. One spelling of
 <code>augur</code> is refused as well: a bare, valueless annotation —
 <code>augur: b != 0</code> — reads exactly like a one-line augury wherever
 it stands, and treating it as the annotation it technically is would check
 nothing. An augury's conditions belong on the lines beneath
 <code>augur:</code>, and the heresy says so; an annotation <i>with</i> a
 value (<code>augur: int = 5</code>) is unmistakably yours and compiles. Ten
-of the sixty-three words are quiet, then — the five builtins, the three soft
+of the sixty-four words are quiet, then — the five builtins, the three soft
 keywords, <code>litany</code>, <code>augur</code> — and the rest are
 loud.</p>
 
@@ -830,8 +832,8 @@ stays yours to track.</p>
 
 <p>Three names appear in no table and are reserved all the same:
 <code>__consecrated__</code>, <code>__litany__</code> and
-<code>__augur__</code> — the private carriers the construct pass writes into
-the generated Python — along with every name beginning
+<code>__augur__</code> — the private names the construct compiler claims for
+itself — along with every name beginning
 <code>__liturgy_</code>, which the retry loop mints its bookkeeping under. A
 litany that spoke one would be indistinguishable from the machinery itself,
 so speaking one anywhere but after a dot is a loud heresy:</p>
@@ -851,11 +853,11 @@ render such a file, because the litany it would write cannot chant.</p>
 declaration is not in attribute position:</p>
 
 <div class="code-block"><pre><span class="kw">pattern</span> Template:
-    <span class="kw">rite</span> render(self):
+    <span class="kw">rite</span> render(self) -&gt; str:
         <span class="kw">render</span> <span class="string">"rendered"</span></pre></div>
 
 <div class="warning"><pre>   the rite was ill-written at template.lit, line 2
-       rite render(self):
+       rite render(self) -&gt; str:
             ^^^^^^
    SyntaxError: invalid syntax (render is Liturgy for return)</pre></div>
 
@@ -990,6 +992,16 @@ verb (clearing caches). A source word and a CLI verb cannot actually
 collide — they live in entirely different namespaces — but the same word
 meaning two different things in the same project is exactly the kind of
 thing worth spelling out rather than leaving implicit.</p>
+
+<p><code>Sanctioned</code> and <code>unsanctioned</code> belong on the same
+list, and they are the closer pair of the three: both are source words.
+<code>Sanctioned</code> is Chapter III's alias for <code>True</code>;
+<code>unsanctioned</code> is Chapter XII's modifier waiving the archetype
+rule, and one is not the negation of the other. They are told apart by case
+and by position — one is a value, the other stands at the head of a
+statement — and no table can confuse them, since <code>unsanctioned</code>
+has no Python spelling to be substituted for. It is written down here rather
+than discovered later.</p>
 </section>
 
 <section id="ch10">
@@ -1007,9 +1019,16 @@ restructures it into real semantics, or rejects the misuse outright. Nothing
 beyond the standard library is imported to make any of the three work —
 there is no Liturgy runtime for them to depend on.</p>
 
+<p><code>consecrated</code> is the one that no longer needs a carrier at
+all. It used to generate <code>NAME: __consecrated__ = value</code> and let
+the second pass read the consecration back off the annotation, which cost
+the author the annotation slot; what the header declared now travels beside
+the generated Python instead, and <code>consecrated PORT: int = 8080</code>
+generates exactly <code>PORT: int = 8080</code>.</p>
+
 <h3>consecrated — a binding that will not move</h3>
 
-<div class="code-block"><pre><span class="kw">consecrated</span> PORT = 8080</pre></div>
+<div class="code-block"><pre><span class="kw">consecrated</span> PORT: int = 8080</pre></div>
 
 <p><code>consecrated NAME = value</code> declares a binding once. Every
 later assignment to that name that the compiler can see, in the scope where
@@ -1028,6 +1047,11 @@ binding, not a rebinding of the enclosing one. Rebinding through
 <code>universal</code> declaration followed by an assignment is a real
 write back into the declaring scope, and the compiler can see it there
 too.</p>
+
+<p>The archetype is not decoration. Chapter XII requires it of every
+<code>consecrated</code> binding, and <code>consecrated PORT = 8080</code>
+without one is a heresy. That the annotation slot is free to be spent this
+way is recent: the construct used to reach the compiler through it.</p>
 
 <p>Chapter VII, "The limits of consecrated," sets down what this
 enforcement does not reach.</p>
@@ -1066,7 +1090,7 @@ as expected.</p>
 
 <h3>augur — a precondition, not an assertion</h3>
 
-<div class="code-block"><pre><span class="kw">rite</span> divide(a, b):
+<div class="code-block"><pre><span class="kw">rite</span> divide(a: float, b: float) -&gt; float:
     <span class="kw">augur</span>:
         b <span class="kw">be</span> <span class="kw">nay</span> Void
         b != 0
@@ -1170,19 +1194,22 @@ becoming <code>range = ...</code> — or one of Chapter VI's exemptions
 protected the word from substitution and left you bound to it whole.</p>
 
 <p>This check reaches the sixty words that have a Python spelling, not all
-sixty-three. The three construct words are outside it by construction: they
+sixty-four. The four construct words are outside it by construction: they
 are never substituted, so no binding of one can quietly come to mean
-something else. <code>consecrated</code> is still caught — by the second
-check, as a compile failure — and <code>litany</code> and <code>augur</code>
-are genuinely not faults. The machine's own carrier names (Chapter VII) are
-within it: they have no Python spelling to become, but a <code>.py</code>
+something else. <code>consecrated</code> and <code>unsanctioned</code> are
+still caught — by the second check, as a compile failure — and
+<code>litany</code> and <code>augur</code> are genuinely not faults. The
+machine's own names (Chapter VII) are within it: they have no Python spelling to become, but a <code>.py</code>
 file that binds one is a file no litany can import by that name, and the
 finding says so.</p>
 
 <p><b>That the litany compiles.</b> For a <code>.lit</code> file,
 <code>augur</code> compiles the source after gathering collisions, so a file
 <code>augur</code> calls clean is a file <code>chant</code> will accept. The
-two must not be able to disagree about that.</p>
+two must not be able to disagree about that. This is also why Chapter XII's
+archetype rule needs no line of <code>augur</code>'s own: an undeclared
+parameter is a compile failure, so the second check reports it without being
+taught anything.</p>
 
 <p>There is deliberately no third. No line-length rule, no unused-import
 check, no naming convention. <code>augur</code> reports the class of fault
@@ -1223,6 +1250,11 @@ question.</p>
 <h3>transcribe — a Python file rendered into the proper tongue</h3>
 
 <pre class="shell"><span class="prompt">$</span> liturgy transcribe greet.py
+<span class="alert">++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.py:1  name is unsanctioned; every parameter must declare its archetype</span>
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone at the margin to exempt the file.
 rite greet(name):
     should nay name:
         render "Ave Omnissiah"
@@ -1232,11 +1264,25 @@ rite greet(name):
 foreach i among span(2):
     intone(greet(""))</pre>
 
+<p>The warning is Chapter XII's, and unannotated Python earns it by
+definition: Python does not require archetypes and Liturgy does, so a
+faithful transcription of a bare <code>def</code> is a litany that will not
+chant until an adept annotates it or marks it <code>unsanctioned</code>.
+Nothing is prepended on the adept's behalf — an <code>unsanctioned</code>
+line ahead of the litany would break the round-trip self-check below, which
+is the whole reason the verb can be trusted. Python that <i>was</i> annotated
+transcribes to a litany that chants, and is not warned about at all.</p>
+
 <p>Given <code>-o</code>, it writes the file instead of printing it and
 reports the count:</p>
 
 <pre class="shell"><span class="prompt">$</span> liturgy transcribe greet.py -o greet.lit
-++ 8 lines transcribed ++</pre>
+++ 8 lines transcribed ++
+<span class="alert">++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  greet.lit:1  name is unsanctioned; every parameter must declare its archetype</span>
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone at the margin to exempt the file.</pre>
 
 <p><code>transcribe</code> refuses in preference to producing something
 subtly wrong. It refuses a source that will not parse, a source it cannot
@@ -1255,7 +1301,10 @@ collision.</p>
 is compiled before anything is written or printed. A Python program only the
 compile can catch — one that binds a bare <code>consecrated</code>, or
 speaks one of the machine's own names in a position the binding scan does
-not see — is refused as one no litany can express:</p>
+not see — is refused as one no litany can express. That compile asks whether
+the output is a <i>program</i>, not whether it satisfies Chapter XII: the
+archetype rule is suppressed for it, which is why a missing annotation is the
+warning above and not a refusal here.</p>
 
 <pre class="shell"><span class="prompt">$</span> liturgy transcribe cons.py
 <span class="alert">++ CANNOT TRANSCRIBE: the output would not chant ++
@@ -1266,14 +1315,18 @@ rewrite or rename what it names, then transcribe again</pre>
 written. Transcription can introduce a collision the Python never had —
 <code>input</code> is rendered <code>hearken</code>, and
 <code>hearken</code> is reserved. That output is not wrong: it round-trips,
-and it chants exactly as the Python ran. So it is a warning, not a
-refusal:</p>
+and its words are faithful. So it is a warning, not a refusal:</p>
 
 <pre class="shell"><span class="prompt">$</span> liturgy transcribe codec.py -o codec.lit
 ++ 2 lines transcribed ++
-++ THE OUTPUT CARRIES 1 COLLISION ++
-  codec.lit:1  hearken      -&gt; reserved (input)
-augur will flag these; the litany is correct and chants as written</pre>
+<span class="alert">++ THE OUTPUT CARRIES 1 COLLISION ++
+  codec.lit:1  hearken      -&gt; reserved (input)</span>
+augur will flag these; the words are faithful and run the same
+<span class="alert">++ THE OUTPUT WILL NOT CHANT AS WRITTEN ++
+  codec.lit:1  input is unsanctioned; every parameter must declare its archetype</span>
+Python does not require archetypes and Liturgy does. declare one for every
+parameter and return and every consecrated name, or write `unsanctioned`
+before a rite to exempt it -- or alone at the margin to exempt the file.</pre>
 
 <p>When the litany goes to stdout the warning goes to stderr instead, so a
 redirected file receives the words and nothing else.</p>
@@ -1492,7 +1545,7 @@ test_rites.lit .F                                                        [100%]
 =================================== FAILURES ===================================
 __________________________ test_the_omnissiah_is_not ___________________________
 
-    rite test_the_omnissiah_is_not():
+    rite test_the_omnissiah_is_not() -&gt; Void:
 &gt;       attest measure(&quot;cog&quot;) == 99
                ^^^^^^^^^^^^^^^^
 E       AssertionError
@@ -1578,6 +1631,234 @@ count of what actually went:</p>
 
 <p>The exit status is 0 when everything asked for went, and 1 if the guard
 refused or any single removal failed.</p>
+</section>
+
+<section id="ch12">
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+<h2><pre>[XII] THE DECLARATION OF ARCHETYPES</pre></h2>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<p class="epigraph">An offering laid before the machine without its nature declared is an
+offering the machine must guess at, and the machine does not guess. Name the
+archetype of everything you hand a rite, and of everything the rite hands back.
+If you will not name it, say so aloud: an omission spoken is a decision, and an
+omission unspoken is a fault.</p>
+
+<p>Python invites type hints and enforces nothing. A <code>def</code>
+carrying no annotation anywhere on it is perfectly ordinary Python, and no
+interpreter will ever complain. Liturgy requires them. A litany must declare
+the archetype of every rite's parameters, of every rite's return, and of
+every <code>consecrated</code> binding. An undeclared one is a heresy at
+compile time, alongside the rest of Chapter X's rejections.</p>
+
+<p><code>archetype</code> was already Liturgy for <code>type</code>, and
+<code>pattern</code> already <code>class</code>, so the vocabulary this
+chapter needs was spent before the rule existed. The rule adds exactly one
+word, and that word is for refusing the rule.</p>
+
+<h3>What the machine requires</h3>
+
+<div class="code-block"><pre><span class="kw">rite</span> greet(name):
+    intone(<span class="string">f"Ave {name}"</span>)</pre></div>
+
+<div class="warning"><pre>++ MACHINE CURSE ++
+   the rite was ill-written at prayer.lit, line 1
+       rite greet(name):
+                  ^^^^
+   TechHeresy: name is unsanctioned; every parameter must declare its archetype
+++ the machine spirit is displeased ++</pre></div>
+
+<p>Declare the parameter and the fault moves to the return, reported against
+the rite's own name — the AST gives a function's name no position of its
+own, so the caret is placed by hand:</p>
+
+<div class="warning"><pre>   the rite was ill-written at prayer.lit, line 1
+       rite greet(name: str):
+            ^^^^^
+   TechHeresy: greet is unsanctioned; a rite must declare what it renders</pre></div>
+
+<p>A rite that renders nothing renders <code>Void</code>, and
+<code>-&gt; Void</code> is the idiomatic way to say so:</p>
+
+<div class="code-block"><pre><span class="kw">rite</span> greet(name: str) -&gt; Void:
+    intone(<span class="string">f"Ave {name}"</span>)</pre></div>
+
+<p>A <code>consecrated</code> binding is the third shape, and the fault
+points at the name:</p>
+
+<div class="warning"><pre>   the rite was ill-written at prayer.lit, line 1
+       consecrated PORT = 8080
+                   ^^^^
+   TechHeresy: PORT is unsanctioned; a consecrated name must declare its archetype</pre></div>
+
+<p><code>consecrated PORT: int = 8080</code> is the cure, and it is
+<b>newly legal</b>. In every version before this one it was a syntax error,
+for a reason that was nobody's business but the compiler's: the construct
+smuggled itself through the annotation slot, generating
+<code>PORT: __consecrated__ = 8080</code>, so the slot a consecrated name
+needed was already occupied. Consecration travels beside the generated
+Python now, and the slot is the author's again.</p>
+
+<p>Nothing else is required. Plain assignments, <code>foreach</code>
+targets, comprehension variables, <code>anointed ... styled</code> targets
+and the name a <code>curse</code> binds all go unannotated in idiomatic
+Python, and demanding an archetype for each of them would make the language
+tiresome rather than strict.</p>
+
+<p>Every parameter position Python can annotate is required, which is all of
+them: positional-only, ordinary, keyword-only, <code>*args</code> and
+<code>**kwargs</code>.</p>
+
+<p>The rule lives in the compile path, beside the other construct
+rejections, rather than in a tool of its own that might come to disagree
+with the compiler. <code>chant</code>, <code>prove</code> and
+<code>augur</code> therefore all report it, identically, because all three
+compile:</p>
+
+<pre class="shell"><span class="prompt">$</span> liturgy augur --plain prayer.lit
+prayer.lit:1:1: TechHeresy: name is unsanctioned; every parameter must declare its archetype</pre>
+
+<h3>Presence is not correctness</h3>
+
+<p><b>Liturgy can see that an annotation is written. It cannot see whether
+it is true.</b></p>
+
+<p><code>rite count(n: str) -&gt; int:</code> satisfies this rule completely
+while being a lie in both halves, and nothing in the language will ever say
+so. Checking that an archetype describes the value that actually arrives is
+a type checker's work, and a type checker is a different program of a
+different size. One has been designed. It is not scheduled, and until it
+exists this page will not imply it.</p>
+
+<p>This is the same boundary Chapter VII draws around
+<code>consecrated</code>, drawn again for the same reason: the word
+"enforced" invites more confidence than the mechanism can support. What is
+enforced is that you thought about the archetype long enough to write one
+down. Whether you were right is between you and a type checker.</p>
+
+<h3>What cannot be declared is exempt</h3>
+
+<p>Four exemptions, and each is a thing the rule could not ask for without
+asking for the impossible.</p>
+
+<p><b><code>self</code> and <code>cls</code></b> — in the <i>first</i>
+positional slot of a method, and only there. A receiver's archetype is the
+pattern it is declared in, and spelling it out is noise that every Python
+type checker also waives. A later parameter named <code>self</code> is an
+ordinary parameter wearing the name and gets no pass.</p>
+
+<p><b><code>servitor</code></b> — a lambda, entirely. Python has no syntax
+for annotating one's parameters; <code>servitor x: int = 1</code> is not a
+stricter lambda, it is a syntax error. A rule requiring what cannot be
+written would forbid the construct outright, so the rule stops at the
+door.</p>
+
+<p><b><code>commune</code></b> — the prompt does not enforce. Every entry is
+its own compilation unit, so there is nowhere to put an exemption that would
+still be in force on the next line, and a prompt that rejects
+<code>rite f(x):</code> is not a prompt anyone will use twice. Chapter VII's
+note about <code>consecrated</code> being enforced per compilation unit is
+the precedent; this is the same boundary seen from the other side.</p>
+
+<pre class="shell">&gt;&gt;&gt; <span class="kw">rite</span> greet(name):
+...     intone(<span class="string">f"Ave {name}"</span>)
+...
+&gt;&gt;&gt; greet(<span class="string">"adept"</span>)
+Ave adept</pre>
+
+<p><b><code>.py</code> files</b> — Liturgy compiles <code>.lit</code>. A
+Python file is Python's own business, whether a litany imports it or
+<code>augur</code> reads it.</p>
+
+<h3>unsanctioned — the omission spoken aloud</h3>
+
+<p>The fifth exemption is not something the machine works out. It is
+something you say, and <code>unsanctioned</code> is the word for saying it.
+It is the one word this rule adds to the tongue, and it has no Python
+spelling at all: the transform splices it away and records what it marked,
+so a litany using it compiles to exactly the Python it would have compiled
+to without it.</p>
+
+<p>As a <b>modifier</b> it exempts the one rite, or the one binding, it
+precedes:</p>
+
+<div class="code-block"><pre><span class="kw">unsanctioned</span> <span class="kw">rite</span> legacy(x):
+    <span class="kw">render</span> x
+
+<span class="kw">unsanctioned</span> <span class="kw">consecrated</span> PORT = 8080</pre></div>
+
+<p>It reaches a <code>remote rite</code> as well — the word between the
+modifier and <code>rite</code> is <code>async</code>, and an exemption that
+stopped at the sight of it would be a rule about spelling rather than about
+rites.</p>
+
+<p><b>An exempted rite exempts everything nested inside it.</b> A closure or
+a <code>pattern</code> written within an <code>unsanctioned</code> rite is
+exempt too. The alternative — waiving the header and then nagging about a
+two-line helper three lines below it — would make the modifier useless on
+exactly the old code it exists for, and there is no second word to reach
+for. A nested rite that wants the rule back can be lifted out of the
+exempted one.</p>
+
+<p>Standing <b>alone on a line at the margin</b>,
+<code>unsanctioned</code> exempts the whole litany:</p>
+
+<div class="code-block"><pre><span class="kw">unsanctioned</span>
+
+<span class="kw">rite</span> one(a):
+    <span class="kw">render</span> a
+
+<span class="kw">rite</span> two(b):
+    <span class="kw">render</span> b</pre></div>
+
+<p>That is deliberately blunt. There is no per-line form: two granularities
+are what the language offers, and a third can be argued for once the first
+two have proved insufficient.</p>
+
+<p>Anywhere else the word is a heresy rather than a silent no-op, because a
+modifier that looks applied and is not is worse than no modifier at all:</p>
+
+<div class="code-block"><pre><span class="kw">unsanctioned</span> x = 5</pre></div>
+
+<div class="warning"><pre>   TechHeresy: unsanctioned marks a rite or a consecrated name</pre></div>
+
+<div class="code-block"><pre>x = <span class="kw">unsanctioned</span></pre></div>
+
+<div class="warning"><pre>   TechHeresy: unsanctioned cannot stand mid-statement</pre></div>
+
+<p>The two positions Chapter VI spares are spared here as well: after a dot
+the word is another object's attribute, and in keyword-argument position it
+is the callee's parameter. Neither is a word in your litany.</p>
+
+<p>Note that <code>Sanctioned</code>, with a capital S, is Liturgy for
+<code>True</code> and has nothing to do with any of this. Chapter IX keeps
+the list of words this project spends twice, and the pair is on it.</p>
+
+<h3>Why the annotation itself gained no word</h3>
+
+<p>An earlier design gave the annotation operator a ritual spelling of its
+own — <code>anoint</code>, then <code>wrought</code>, then
+<code>designated</code>. Each was cut, and the reasons are worth
+keeping.</p>
+
+<p><code>anoint</code> is one letter from <code>anointed</code>, which is
+already <code>with</code>. Two near-identical words in one namespace with
+unrelated meanings is a worse trap than the doubled <code>augur</code> and
+<code>purge</code>, which live in different namespaces and cannot
+collide.</p>
+
+<p>Any such word also solves only half the problem. A rite's return is
+spelled <code>-&gt;</code>, so
+<code>rite f(x wrought int) begets str:</code> needs a <i>second</i>
+reserved word to stay consistent — two words for what Python spells with
+punctuation, and two more names an adept may not use.</p>
+
+<p>And the annotations themselves already worked. <code>:</code> and
+<code>-&gt;</code> have always been legal in a litany; what was missing was
+the requirement, and a requirement needs no vocabulary of its own.
+<code>archetype</code> is <code>type</code>, <code>pattern</code> is
+<code>class</code>, and the type vocabulary is spent — spent well, and spent
+already.</p>
 </section>
 
 <section id="appendix">

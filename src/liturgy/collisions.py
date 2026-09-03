@@ -204,7 +204,7 @@ def _substitution_at(
     the carrier pass also touches would disagree with the real generated
     Python). But only an `alias_pass` substitution is ever a LEXICON word
     turning into another LEXICON word -- a carrier substitution's own text
-    (`""`, `"with __litany__"`, `NAME: __consecrated__`, ...) is not a
+    (`""`, `"with __litany__"`, `"with __augur__()"`) is not a
     reserved word and must never be reported as one. `reportable` holds
     `id()` of the substitutions that came from `alias_pass`, so a carrier
     substitution can still occupy a span here (to keep the delta right)
@@ -268,7 +268,8 @@ def find_collisions(
         # pass, and `ast.parse` below would reject it as a syntax error on
         # ordinary correct code, never reaching the compile step that is
         # meant to be the one place augur can disagree with chant.
-        py, smap = transform(src, _PASSES, filename=filename)
+        out = transform(src, _PASSES, filename=filename)
+        py, smap = out.python, out.source_map
         # `parse_named`, not bare `ast.parse`: the caller reports a failure
         # here as a compile failure, and the wrapper names the substitution
         # the error sits in, exactly as `chant` would for the same file.
@@ -276,7 +277,7 @@ def find_collisions(
         py_lines = split_lines(py)
         toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
         alias_subs = alias_pass(toks)
-        carrier_subs = carrier_pass(toks)
+        carrier_subs = carrier_pass(toks).subs
         all_subs = alias_subs + carrier_subs
         row_spans = _py_spans(all_subs)
         reportable = {id(s) for s in alias_subs}

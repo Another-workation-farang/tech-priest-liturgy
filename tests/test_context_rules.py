@@ -4,7 +4,7 @@ from liturgy.transform import transform
 
 
 def py(src):
-    return transform(src)[0]
+    return transform(src).python
 
 
 # Rule 1: after a dot

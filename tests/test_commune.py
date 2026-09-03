@@ -159,6 +159,20 @@ def test_consecrated_works_at_the_prompt():
     assert "SyntaxError" not in out.stdout + out.stderr
 
 
+def test_an_annotated_consecrated_works_at_the_prompt():
+    # Spec IV. `visit_Interactive` is the REPL's own scope visit, and the
+    # facts for the entry have to reach it or the prompt sees an ordinary
+    # annotated binding.
+    out = commune("consecrated PORT: int = 8080", "intone(PORT)")
+    assert "8080" in out.stdout
+    assert "SyntaxError" not in out.stdout + out.stderr
+
+
+def test_an_annotated_rebinding_within_one_prompt_entry_is_rejected():
+    out = commune("consecrated PORT: int = 8080; PORT = 9")
+    assert "may not be rebound" in out.stdout + out.stderr
+
+
 def test_a_rebinding_within_one_prompt_entry_is_rejected():
     # Each entry is its own compilation unit, and `commune` compiles with
     # mode="single" -- an `Interactive` node, not a `Module`. `ConstructPass`

@@ -93,9 +93,9 @@ def test_reserved_is_the_union_of_every_taken_word():
     assert lexicon.RESERVED == set(lexicon.LEXICON) | lexicon.CONSTRUCT_KEYWORDS
 
 
-def test_reserved_count_is_sixty_three():
-    # 38 keywords + 5 builtins + 15 curses + 2 numerals + 3 constructs.
-    assert len(lexicon.RESERVED) == 63
+def test_reserved_count_is_sixty_four():
+    # 38 keywords + 5 builtins + 15 curses + 2 numerals + 4 constructs.
+    assert len(lexicon.RESERVED) == 64
 
 
 def test_numerals_do_not_break_bijectivity():
@@ -107,3 +107,25 @@ def test_numerals_do_not_break_bijectivity():
     assert lexicon.INVERSE["3"] == "thrice"
     assert lexicon.INVERSE["2"] == "twice"
     assert set(lexicon.NUMERALS.values()) <= set(lexicon.INVERSE)
+
+
+def test_unsanctioned_is_a_construct_word_not_an_alias():
+    # A modifier: it generates nothing, so it has no Python spelling and
+    # cannot live in a table whose targets are validated against Python.
+    assert "unsanctioned" in lexicon.CONSTRUCT_KEYWORDS
+    assert "unsanctioned" not in lexicon.LEXICON
+    assert "unsanctioned" not in lexicon.INVERSE.values()
+
+
+def test_sanctioned_and_unsanctioned_coexist():
+    # `Sanctioned` is True and `unsanctioned` is the exemption marker. They
+    # differ in case, in table, and in position, and this is the check that
+    # says so out loud -- a later `Unsanctioned` or `sanctioned` would be
+    # the collision, and neither exists.
+    assert lexicon.KEYWORDS["Sanctioned"] == "True"
+    assert "Sanctioned" not in lexicon.CONSTRUCT_KEYWORDS
+    assert "sanctioned" not in lexicon.RESERVED
+    assert "Unsanctioned" not in lexicon.RESERVED
+    # Bijectivity is unharmed: the modifier is not in LEXICON at all, so it
+    # cannot displace anything from INVERSE.
+    assert len(lexicon.INVERSE) == len(lexicon.LEXICON)
