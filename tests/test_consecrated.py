@@ -319,18 +319,18 @@ def test_the_same_bindings_are_fine_in_a_nested_scope():
     assert ns["PORT"] == 8080
 
 
-# --- a servitor is a scope too ---------------------------------------------
+# --- a versicle is a scope too ---------------------------------------------
 #
 # The sixth scope-flattening defect on this branch, and the same shape as I3:
-# `_in_scope` stopped at `rite` and `pattern` but not at `servitor`, so a
+# `_in_scope` stopped at `rite` and `pattern` but not at `versicle`, so a
 # walrus inside a lambda -- which binds the lambda's own local -- was read as
 # a rebinding of ours and a correct program was refused.
 
 
-def test_a_walrus_inside_a_servitor_binds_there_not_here():
+def test_a_walrus_inside_a_versicle_binds_there_not_here():
     src = (
         "consecrated PORT: int = 8080\n"
-        "f = servitor: (PORT := 1)\n"
+        "f = versicle: (PORT := 1)\n"
         "inner = f()\n"
     )
     ns = run(src)
@@ -339,7 +339,7 @@ def test_a_walrus_inside_a_servitor_binds_there_not_here():
 
 def test_a_walrus_in_a_comprehension_still_binds_here():
     # PEP 572: a comprehension assigns a walrus to the CONTAINING scope, so
-    # this one really is a rebinding and the servitor fix must not excuse it.
+    # this one really is a rebinding and the versicle fix must not excuse it.
     src = "consecrated PORT: int = 8080\nxs = [(PORT := i) foreach i among span(3)]\n"
     with pytest.raises(TechHeresy, match="may not be rebound"):
         compile_litany(src, "prayer.lit")

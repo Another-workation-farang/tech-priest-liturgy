@@ -28,7 +28,15 @@ KEYWORDS: dict[str, str] = {
     "invoke": "import",
     "among": "in",
     "be": "is",
-    "servitor": "lambda",
+    # A versicle is a short verse, spoken and answered -- which is what a
+    # lambda is. This was `servitor` until 0.5.0, and the swap is a category
+    # fix rather than a matter of taste: every other word in this table names
+    # an utterance or an act, while a servitor is a *being*, a lobotomised
+    # cyborg welded to a machine. Permanent and installed is the opposite of
+    # anonymous and thrown away, and the gloss the tome already gave this
+    # entry -- "a rite too small to name" -- describes the anonymity that
+    # `servitor` never carried.
+    "versicle": "lambda",
     "adjacent": "nonlocal",
     "nay": "not",
     "elsewise": "or",

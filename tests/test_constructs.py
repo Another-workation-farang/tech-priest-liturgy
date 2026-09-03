@@ -77,7 +77,7 @@ def test_liturgy_spellings_open_blocks_too():
 
 def test_lambda_colon_does_not_start_a_statement():
     assert "beta" not in positions("alpha = lambda: beta\n")
-    assert "beta" not in positions("alpha = servitor: beta\n")
+    assert "beta" not in positions("alpha = versicle: beta\n")
 
 
 def test_heresy_carries_everything_the_curse_renderer_needs():

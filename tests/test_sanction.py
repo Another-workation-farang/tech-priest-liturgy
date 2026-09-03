@@ -161,17 +161,17 @@ def test_a_receiver_outside_a_pattern_is_exempt_too():
     assert run("rite tick(self) -> Void:\n    abide\n")["tick"](None) is None
 
 
-def test_a_servitor_is_exempt_entirely():
+def test_a_versicle_is_exempt_entirely():
     # Python has no syntax for annotating a lambda's parameters --
-    # `servitor x: int = 1` is a syntax error -- so a rule requiring it
+    # `versicle x: int = 1` is a syntax error -- so a rule requiring it
     # would forbid the construct outright.
-    assert run("f = servitor x: x + 1\nresult = f(1)\n")["result"] == 2
+    assert run("f = versicle x: x + 1\nresult = f(1)\n")["result"] == 2
 
 
-def test_a_servitor_inside_a_declared_rite_is_exempt_too():
+def test_a_versicle_inside_a_declared_rite_is_exempt_too():
     src = (
         "rite outer(n: int) -> int:\n"
-        "    inner = servitor x: x * n\n"
+        "    inner = versicle x: x * n\n"
         "    render inner(2)\n"
     )
     assert run(src)["outer"](3) == 6

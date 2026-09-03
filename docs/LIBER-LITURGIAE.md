@@ -180,7 +180,7 @@ fails the suite loudly rather than leaving it unthemed.
 |---|---|---|
 | `rite` | `def` | declare a rite |
 | `pattern` | `class` | declare a pattern |
-| `servitor` | `lambda` | a rite too small to name |
+| `versicle` | `lambda` | a rite too small to name |
 | `styled` | `as` | bind under another name |
 | `universal` | `global` | bind at module scope |
 | `adjacent` | `nonlocal` | bind in the enclosing scope |
@@ -715,6 +715,13 @@ Chapter XI's CLI verb (clearing caches). A source word and a CLI verb cannot
 actually collide — they live in entirely different namespaces — but the same
 word meaning two different things in the same project is exactly the kind of
 thing worth spelling out rather than leaving implicit.
+
+`litany` is the one word that looks doubled and is not. A litany is one
+prayer, and Chapter X's construct chants one again until it takes, so the
+construct holds the word exactly. The suffix a source file carries is `.lit`
+for *Liturgy*, the language — not for `litany` — and a file is a whole
+ceremony rather than a single prayer. Nothing is being told apart here; the
+resemblance is the whole of it.
 
 `Sanctioned` and `unsanctioned` belong on the same list, and they are the
 closer pair of the three: both are source words. `Sanctioned` is Chapter
@@ -1640,8 +1647,8 @@ there. A receiver's archetype is the pattern it is declared in, and spelling
 it out is noise that every Python type checker also waives. A later parameter
 named `self` is an ordinary parameter wearing the name and gets no pass.
 
-**`servitor`** — a lambda, entirely. Python has no syntax for annotating
-one's parameters; `servitor x: int = 1` is not a stricter lambda, it is a
+**`versicle`** — a lambda, entirely. Python has no syntax for annotating
+one's parameters; `versicle x: int = 1` is not a stricter lambda, it is a
 syntax error. A rule requiring what cannot be written would forbid the
 construct outright, so the rule stops at the door.
 
@@ -1780,7 +1787,7 @@ A test asserts it, because the reverse direction is what Chapter XI's
 | `be` | `is` | `render` | `return` |
 | `cease` | `break` | `rite` | `def` |
 | `curse` | `except` | `Sanctioned` | `True` |
-| `discern` | `match` | `servitor` | `lambda` |
+| `discern` | `match` | `versicle` | `lambda` |
 | `elsewise` | `or` | `should` | `if` |
 | `emanate` | `yield` | `styled` | `as` |
 | `foreach` | `for` | `universal` | `global` |
