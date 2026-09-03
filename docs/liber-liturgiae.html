@@ -407,7 +407,7 @@ unthemed.</p>
   <tr><th>LITURGY</th><th>PYTHON</th><th>OFFICE</th></tr>
   <tr><td class="lit">rite</td><td class="py">def</td><td class="note-cell">declare a rite</td></tr>
   <tr><td class="lit">pattern</td><td class="py">class</td><td class="note-cell">declare a pattern</td></tr>
-  <tr><td class="lit">servitor</td><td class="py">lambda</td><td class="note-cell">a rite too small to name</td></tr>
+  <tr><td class="lit">versicle</td><td class="py">lambda</td><td class="note-cell">a rite too small to name</td></tr>
   <tr><td class="lit">styled</td><td class="py">as</td><td class="note-cell">bind under another name</td></tr>
   <tr><td class="lit">universal</td><td class="py">global</td><td class="note-cell">bind at module scope</td></tr>
   <tr><td class="lit">adjacent</td><td class="py">nonlocal</td><td class="note-cell">bind in the enclosing scope</td></tr>
@@ -992,6 +992,14 @@ verb (clearing caches). A source word and a CLI verb cannot actually
 collide — they live in entirely different namespaces — but the same word
 meaning two different things in the same project is exactly the kind of
 thing worth spelling out rather than leaving implicit.</p>
+
+<p><code>litany</code> is the one word that looks doubled and is not. A
+litany is one prayer, and Chapter X's construct chants one again until it
+takes, so the construct holds the word exactly. The suffix a source file
+carries is <code>.lit</code> for <i>Liturgy</i>, the language — not for
+<code>litany</code> — and a file is a whole ceremony rather than a single
+prayer. Nothing is being told apart here; the resemblance is the whole of
+it.</p>
 
 <p><code>Sanctioned</code> and <code>unsanctioned</code> belong on the same
 list, and they are the closer pair of the three: both are source words.
@@ -1880,8 +1888,8 @@ pattern it is declared in, and spelling it out is noise that every Python
 type checker also waives. A later parameter named <code>self</code> is an
 ordinary parameter wearing the name and gets no pass.</p>
 
-<p><b><code>servitor</code></b> — a lambda, entirely. Python has no syntax
-for annotating one's parameters; <code>servitor x: int = 1</code> is not a
+<p><b><code>versicle</code></b> — a lambda, entirely. Python has no syntax
+for annotating one's parameters; <code>versicle x: int = 1</code> is not a
 stricter lambda, it is a syntax error. A rule requiring what cannot be
 written would forbid the construct outright, so the rule stops at the
 door.</p>
@@ -2020,7 +2028,7 @@ XI's <code>transcribe</code> reads.</p>
   <tr><td class="lit">be</td><td class="py">is</td><td class="lit">render</td><td class="py">return</td></tr>
   <tr><td class="lit">cease</td><td class="py">break</td><td class="lit">rite</td><td class="py">def</td></tr>
   <tr><td class="lit">curse</td><td class="py">except</td><td class="lit">Sanctioned</td><td class="py">True</td></tr>
-  <tr><td class="lit">discern</td><td class="py">match</td><td class="lit">servitor</td><td class="py">lambda</td></tr>
+  <tr><td class="lit">discern</td><td class="py">match</td><td class="lit">versicle</td><td class="py">lambda</td></tr>
   <tr><td class="lit">elsewise</td><td class="py">or</td><td class="lit">should</td><td class="py">if</td></tr>
   <tr><td class="lit">emanate</td><td class="py">yield</td><td class="lit">styled</td><td class="py">as</td></tr>
   <tr><td class="lit">foreach</td><td class="py">for</td><td class="lit">universal</td><td class="py">global</td></tr>

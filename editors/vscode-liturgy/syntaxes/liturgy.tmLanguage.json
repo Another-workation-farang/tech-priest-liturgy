@@ -106,7 +106,7 @@
     "storage": {
       "patterns": [
         {
-          "match": "(?<!\\.)\\b(rite|pattern|servitor|def|class|lambda)\\b(?!\\s*=(?!=))",
+          "match": "(?<!\\.)\\b(rite|pattern|versicle|def|class|lambda)\\b(?!\\s*=(?!=))",
           "name": "storage.type.liturgy"
         },
         {

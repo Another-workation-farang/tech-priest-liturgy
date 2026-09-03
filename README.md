@@ -197,7 +197,7 @@ keyword left in its original spelling.
 | `Void` | `None` | | `invoke` | `import` |
 | `Sanctioned` | `True` | | `among` | `in` |
 | `likewise` | `and` | | `be` | `is` |
-| `styled` | `as` | | `servitor` | `lambda` |
+| `styled` | `as` | | `versicle` | `lambda` |
 | `attest` | `assert` | | `adjacent` | `nonlocal` |
 | `remote` | `async` | | `nay` | `not` |
 | `attend` | `await` | | `elsewise` | `or` |
@@ -393,7 +393,7 @@ be annotated at all:
 
 - **`self` and `cls`**, in the first parameter slot only — the same waiver
   every Python type checker makes.
-- **`servitor`** (lambda), entirely. Python has no syntax for annotating a
+- **`versicle`** (lambda), entirely. Python has no syntax for annotating a
   lambda's parameters, so requiring it would forbid the construct.
 - **`commune`**, the REPL. Every entry is its own compilation unit, so there
   is nowhere to put an exemption that outlives the line.

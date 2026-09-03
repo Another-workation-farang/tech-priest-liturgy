@@ -222,7 +222,7 @@ class ConstructPass(ast.NodeTransformer):
         is where a method's receiver actually is; a later parameter of that
         name is an ordinary parameter wearing the name and gets no pass.
         `*args` and `**kwargs` are annotatable in Python and so are not
-        exempt. A `servitor` never reaches here -- a lambda is not a
+        exempt. A `versicle` never reaches here -- a lambda is not a
         `FunctionDef`, and Python has no syntax for annotating one's
         parameters, so a rule requiring it would forbid the construct.
         """
@@ -540,12 +540,12 @@ _RITES = (ast.FunctionDef, ast.AsyncFunctionDef)
 _SCOPES = _RITES + (ast.ClassDef,)
 _MODULES = (ast.Module, ast.Interactive)
 
-# A `servitor` is a scope too, and it is the one that hides. It holds no
+# A `versicle` is a scope too, and it is the one that hides. It holds no
 # statements, so no rule here has anything to say about its interior -- but a
-# walrus inside one binds the *servitor's* local, not ours:
+# walrus inside one binds the *versicle's* local, not ours:
 #
 #     consecrated PORT = 8080
-#     f = servitor: (PORT := 1)      # binds inside f; module PORT untouched
+#     f = versicle: (PORT := 1)      # binds inside f; module PORT untouched
 #
 # so the traversal must still stop at it, or that correct program is rejected.
 # A comprehension is deliberately NOT here: PEP 572 assigns a walrus inside
