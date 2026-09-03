@@ -77,9 +77,18 @@ class Exemption:
     Row alone will not do, for exactly the reasons `Consecration` gives.
     `unsanctioned consecrated A = 1; consecrated B = 2` exempts the first
     binding and not the second, and both stand on one row; a rite may share
-    its row with a binding the same way. `kind` is carried so a record can
-    never be matched against the wrong sort of statement -- the two kinds
-    measure their column from different words.
+    its row with a binding the same way.
+
+    `kind` is defensive redundancy, not a live discriminator: `(row, col)`
+    already separates every input anyone has been able to construct, and
+    dropping `kind` from `rewrite._exempted`'s match leaves the suite green.
+    No collision is constructible today because the two kinds measure their
+    column from different words -- a rite's is the column of `rite` or
+    `remote`, a seal's is the column of the *name*, which `consecrated `
+    pushes to at least 12 -- and two statements cannot begin at the same
+    column of the same row, since a compound statement cannot follow a `;`.
+    The field is kept because that argument rests on the spelling of two
+    unrelated constructs, and a third would have to re-derive it.
     """
 
     row: int

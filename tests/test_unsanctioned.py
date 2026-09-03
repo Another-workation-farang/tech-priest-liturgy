@@ -398,3 +398,21 @@ def test_keyword_argument_position_is_spared():
     # Rule 2's reasoning, and what keeps the corpus sweep able to hand
     # `transform` a stdlib file that calls `f(unsanctioned=1)`.
     assert generated("f(unsanctioned=1)\n") == "f(unsanctioned=1)\n"
+
+
+def test_fstring_debug_specifier_is_not_a_keyword_argument():
+    """PEP 701 debug syntax wears Rule 2's shape but is not a call at all.
+
+    `f"{unsanctioned=}"` tokenizes as NAME-then-`=` one bracket deep, exactly
+    like `f(unsanctioned=1)`, because a replacement field's `{` is a real OP
+    token. Sparing it would generate `f"{unsanctioned=}"` and defer the
+    complaint to the `NameError` at prayer this scan exists to prevent.
+    """
+    for src in (
+        'intone(f"{unsanctioned=}")\n',
+        'intone(f"{unsanctioned = }")\n',
+        'x = f"{unsanctioned=}"\n',
+    ):
+        with pytest.raises(TechHeresy) as exc:
+            result(src)
+        assert "cannot stand mid-statement" in str(exc.value), src

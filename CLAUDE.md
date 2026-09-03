@@ -34,16 +34,21 @@ back to Python spellings, and compile as ordinary Python.
 - **`ast.walk` flattens the tree and destroys scope distinctions.** It has
   caused six separate defects here. `rewrite.py` has one traversal,
   `_in_scope`, and no `ast.walk` anywhere in `src/` -- except
-  `collisions.py`, which is a deliberate exception, not an oversight: the
-  substitution it mirrors is itself scope-blind (Rule 1/2 rewrite a
-  reserved word's every occurrence in the file, textually, regardless of
-  which scope it is bound in), so "is this name bound anywhere as a
-  reserved word" is genuinely a whole-file question with no scope
-  boundary to respect. Flattening is correct there for the same reason it
-  is wrong everywhere else in `src/`: it matches what the code it mirrors
-  actually does. A new scope-blind question may reuse `ast.walk` on that
-  same reasoning; anything that must distinguish one scope from another
-  belongs on `_in_scope` instead.
+  `collisions.py` and `seals.py`, which are deliberate exceptions, not
+  oversights. In `collisions.py` the substitution it mirrors is itself
+  scope-blind (Rule 1/2 rewrite a reserved word's every occurrence in the
+  file, textually, regardless of which scope it is bound in), so "is this
+  name bound anywhere as a reserved word" is genuinely a whole-file
+  question with no scope boundary to respect. In `seals.py` the breach it
+  looks for is scope-blind in the same way: a seal is a property of the
+  module object, and a rebinding through that object -- `config.PORT = 1`,
+  wherever it is written -- breaches it from any scope, so "is a sealed
+  attribute assigned anywhere in this file" has no scope boundary either.
+  Flattening is correct in both for the same reason it is wrong everywhere
+  else in `src/`: it matches what the code it mirrors actually does. A new
+  scope-blind question may reuse `ast.walk` on that same reasoning; anything
+  that must distinguish one scope from another belongs on `_in_scope`
+  instead.
 - **`ast` and `traceback` count UTF-8 bytes; everything else counts
   characters.** Any offset from either must go through
   `sourcemap.char_offset` before a `SourceMap` sees it.

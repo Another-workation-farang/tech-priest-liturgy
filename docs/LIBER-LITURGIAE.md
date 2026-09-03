@@ -972,7 +972,7 @@ $ liturgy transcribe greet.py
   greet.py:1  name is unsanctioned; every parameter must declare its archetype
 Python does not require archetypes and Liturgy does. declare one for every
 parameter and return and every consecrated name, or write `unsanctioned`
-before a rite to exempt it -- or alone on the first line to exempt the file.
+before a rite to exempt it -- or alone at the margin to exempt the file.
 rite greet(name):
     should nay name:
         render "Ave Omnissiah"
@@ -1001,7 +1001,7 @@ $ liturgy transcribe greet.py -o greet.lit
   greet.lit:1  name is unsanctioned; every parameter must declare its archetype
 Python does not require archetypes and Liturgy does. declare one for every
 parameter and return and every consecrated name, or write `unsanctioned`
-before a rite to exempt it -- or alone on the first line to exempt the file.
+before a rite to exempt it -- or alone at the margin to exempt the file.
 ```
 
 `transcribe` refuses in preference to producing something subtly wrong. It
@@ -1050,7 +1050,7 @@ augur will flag these; the words are faithful and run the same
   codec.lit:1  input is unsanctioned; every parameter must declare its archetype
 Python does not require archetypes and Liturgy does. declare one for every
 parameter and return and every consecrated name, or write `unsanctioned`
-before a rite to exempt it -- or alone on the first line to exempt the file.
+before a rite to exempt it -- or alone at the margin to exempt the file.
 ```
 
 When the litany goes to stdout the warning goes to stderr instead, so a

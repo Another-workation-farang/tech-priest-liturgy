@@ -302,14 +302,28 @@ def _check_unsanctioned(
     it is the callee's parameter, not a word in this litany (Rule 2). The
     corpus sweep's skip test spares exactly these two as well, which is why
     `transform` may be handed a stdlib file containing either.
+
+    Rule 2 asks for the *innermost* open bracket, not merely for a nonzero
+    depth. PEP 701 f-string debug syntax (`f"{unsanctioned=}"`, and the
+    spaced `f"{unsanctioned = }"`) tokenizes the same NAME-then-`=` shape
+    one bracket deep, because on 3.12+ a replacement field's `{` is a real
+    `OP` token that depth alone cannot tell from a call's `(`. Sparing it
+    would defer exactly the `NameError` this scan exists to prevent. The
+    bracket stack carries each open bracket's own character so the sparing
+    can require a literal `(`, which an f-string's `{`, a dict or set
+    literal's `{`, and a subscript's `[` never are. This is the shape
+    `tests/test_roundtrip.py`'s sweep predicate settled on for the same
+    question.
     """
-    depth = 0
+    # One entry per currently-open bracket: its own character.
+    brackets: list[str] = []
     for i, tok in enumerate(significant):
         if tok.type == tokmod.OP:
             if tok.string in _OPENERS:
-                depth += 1
+                brackets.append(tok.string)
             elif tok.string in _CLOSERS:
-                depth -= 1
+                if brackets:
+                    brackets.pop()
             continue
         if tok.type != tokmod.NAME or tok.string != "unsanctioned":
             continue
@@ -318,7 +332,8 @@ def _check_unsanctioned(
             continue
         nxt = significant[i + 1] if i + 1 < len(significant) else None
         if (
-            depth > 0
+            brackets
+            and brackets[-1] == "("
             and nxt is not None
             and nxt.type == tokmod.OP
             and nxt.string == "="

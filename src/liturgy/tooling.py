@@ -345,8 +345,8 @@ def _archetype_omens(litany: str, label: str) -> list[str]:
         "every",
         "parameter and return and every consecrated name, or write "
         "`unsanctioned`",
-        "before a rite to exempt it -- or alone on the first line to exempt "
-        "the file.",
+        "before a rite to exempt it -- or alone at the margin to exempt the "
+        "file.",
     ]
 
 
