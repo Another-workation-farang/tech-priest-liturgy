@@ -422,10 +422,10 @@ could never import it by that name.) Second, for a `.lit` file, that it
 actually compiles, so `augur` and `chant` cannot disagree about whether a file
 is well-formed.
 
-The three construct words are outside the first check and belong outside it:
+The four construct words are outside the first check and belong outside it:
 they are never substituted, so a binding of one cannot quietly come to mean
-something else. `consecrated = 5` is caught anyway, by the second check, as a
-compile failure. `litany = 5` and `augur = 6` are reported by neither, because
+something else. `consecrated = 5` and `unsanctioned = 5` are caught anyway, by
+the second check, as compile failures. `litany = 5` and `augur = 6` are reported by neither, because
 neither is a fault — the name is yours until the day you want the construct on
 that line.
 

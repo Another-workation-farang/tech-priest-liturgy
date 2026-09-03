@@ -44,10 +44,10 @@
       ]
     },
     "construct-header": {
-      "comment": "A construct word is only a construct in header position: consecrated before a name, litany before its parenthesised count, augur with the colon ending the line.",
+      "comment": "A construct word is only a construct in header position: consecrated before a name, litany before its parenthesised count, augur with the colon ending the line, unsanctioned before a rite or a consecrated name (or alone at the margin, exempting the whole litany).",
       "patterns": [
         {
-          "match": "^\\s*(consecrated)\\b(?=\\s+[A-Za-z_])",
+          "match": "^\\s*(?:unsanctioned\\s+)?(consecrated)\\b(?=\\s+[A-Za-z_])",
           "captures": { "1": { "name": "keyword.control.construct.liturgy" } }
         },
         {
@@ -56,6 +56,14 @@
         },
         {
           "match": "^\\s*(augur)\\b(?=\\s*:\\s*(#.*)?$)",
+          "captures": { "1": { "name": "keyword.control.construct.liturgy" } }
+        },
+        {
+          "match": "^\\s*(unsanctioned)\\b(?=\\s+(?:remote\\s+)?(?:rite|consecrated)\\b)",
+          "captures": { "1": { "name": "keyword.control.construct.liturgy" } }
+        },
+        {
+          "match": "^(unsanctioned)\\b(?=\\s*(#.*)?$)",
           "captures": { "1": { "name": "keyword.control.construct.liturgy" } }
         }
       ]
@@ -66,7 +74,7 @@
       "name": "invalid.illegal.machine-name.liturgy"
     },
     "rite-definition": {
-      "match": "^\\s*(?:(remote|async)\\s+)?(rite|def)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "match": "^\\s*(?:unsanctioned\\s+)?(?:(remote|async)\\s+)?(rite|def)\\s+([A-Za-z_][A-Za-z0-9_]*)",
       "captures": {
         "1": { "name": "storage.modifier.async.liturgy" },
         "2": { "name": "storage.type.function.liturgy" },

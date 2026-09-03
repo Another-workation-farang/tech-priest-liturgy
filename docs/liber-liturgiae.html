@@ -744,8 +744,8 @@ deeper.</p>
 <p class="epigraph">A word given to the Machine God is no longer yours. Choose your own names
 knowing which are already spoken for.</p>
 
-<p>Sixty-three words are reserved: thirty-eight rites, five builtins, fifteen
-curses, two numerals, and three constructs. Using one as your own identifier
+<p>Sixty-four words are reserved: thirty-eight rites, five builtins, fifteen
+curses, two numerals, and four construct words. Using one as your own identifier
 is an error. Most such errors are loud, and a loud error costs you a
 minute.</p>
 
@@ -786,7 +786,7 @@ ordinary identifiers anywhere they are not heading their own statement. So
 <code>discern = 5</code> compiles, runs, and has quietly bound the name
 <code>match</code>.</p>
 
-<p>Two of the three constructs are quiet too, for a different
+<p>Two of the four construct words are quiet too, for a different
 reason. A construct word is only a construct in the position its header
 occupies; anywhere else it is an ordinary name, and the carrier pass leaves
 it alone. So <code>litany = 5</code>, <code>litany: int = 5</code>,
@@ -810,7 +810,7 @@ it stands, and treating it as the annotation it technically is would check
 nothing. An augury's conditions belong on the lines beneath
 <code>augur:</code>, and the heresy says so; an annotation <i>with</i> a
 value (<code>augur: int = 5</code>) is unmistakably yours and compiles. Ten
-of the sixty-three words are quiet, then — the five builtins, the three soft
+of the sixty-four words are quiet, then — the five builtins, the three soft
 keywords, <code>litany</code>, <code>augur</code> — and the rest are
 loud.</p>
 
@@ -1170,11 +1170,11 @@ becoming <code>range = ...</code> — or one of Chapter VI's exemptions
 protected the word from substitution and left you bound to it whole.</p>
 
 <p>This check reaches the sixty words that have a Python spelling, not all
-sixty-three. The three construct words are outside it by construction: they
+sixty-four. The four construct words are outside it by construction: they
 are never substituted, so no binding of one can quietly come to mean
-something else. <code>consecrated</code> is still caught — by the second
-check, as a compile failure — and <code>litany</code> and <code>augur</code>
-are genuinely not faults. The machine's own carrier names (Chapter VII) are
+something else. <code>consecrated</code> and <code>unsanctioned</code> are
+still caught — by the second check, as a compile failure — and
+<code>litany</code> and <code>augur</code> are genuinely not faults. The machine's own carrier names (Chapter VII) are
 within it: they have no Python spelling to become, but a <code>.py</code>
 file that binds one is a file no litany can import by that name, and the
 finding says so.</p>

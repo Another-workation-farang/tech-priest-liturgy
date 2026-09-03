@@ -99,7 +99,7 @@ def _remap(text: str) -> dict[int, _TokenType] | None:
         for s in carrier_pass(toks).subs:
             word = lines[s.row - 1][s.col_start : s.col_end]
             if word.split(None, 1)[:1] and word.split(None, 1)[0] in (
-                "consecrated", "litany", "augur"
+                "consecrated", "litany", "augur", "unsanctioned"
             ):
                 table.setdefault(at(s.row, s.col_start), Keyword)
     except SyntaxError:

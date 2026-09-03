@@ -83,8 +83,18 @@ NUMERALS: dict[str, str] = {
 
 # Recognised by the carrier pass, not substituted by the alias pass: they map
 # to no Python word at all. Reserved nonetheless.
+#
+# `unsanctioned` is the odd one: the others generate *something*, while it
+# generates nothing and is spliced away, reporting what it marked in
+# `ConstructFacts` instead. It belongs here all the same -- this is the set
+# the carrier pass dispatches on, and the set `RESERVED` is built from.
+#
+# Note `Sanctioned` (capital S) is already `True`, in KEYWORDS above. The two
+# are a different word in a different case met in unrelated positions, and
+# neither table nor `INVERSE` can confuse them; this is written down so the
+# pairing is a recorded decision rather than a later discovery.
 CONSTRUCT_KEYWORDS: frozenset[str] = frozenset(
-    {"consecrated", "litany", "augur"}
+    {"consecrated", "litany", "augur", "unsanctioned"}
 )
 
 LEXICON: dict[str, str] = {**KEYWORDS, **SOFTWORDS, **CURSES, **NUMERALS}

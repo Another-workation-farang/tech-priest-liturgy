@@ -474,8 +474,8 @@ invocations work as expected — `within . invoke sibling`, and deeper.
 *A word given to the Machine God is no longer yours. Choose your own names
 knowing which are already spoken for.*
 
-Sixty-three words are reserved: thirty-eight rites, five builtins, fifteen
-curses, two numerals, and three constructs. Using one as your own identifier
+Sixty-four words are reserved: thirty-eight rites, five builtins, fifteen
+curses, two numerals, and four construct words. Using one as your own identifier
 is an error. Most such errors are loud, and a loud error costs you a minute.
 
 ```
@@ -517,7 +517,7 @@ and `archetype` become `match`, `case` and `type`, which are ordinary
 identifiers anywhere they are not heading their own statement. So
 `discern = 5` compiles, runs, and has quietly bound the name `match`.
 
-Two of the three constructs are quiet too, for a different reason. A
+Two of the four construct words are quiet too, for a different reason. A
 construct word is only a construct in the position its header occupies;
 anywhere else it is an ordinary name, and the carrier pass leaves it alone.
 So `litany = 5`, `litany: int = 5`, `rite augur(x):` and `pattern litany:`
@@ -540,7 +540,7 @@ spelling of `augur` is refused as well: a bare, valueless annotation —
 and treating it as the annotation it technically is would check nothing. An
 augury's conditions belong on the lines beneath `augur:`, and the heresy says
 so; an annotation *with* a value (`augur: int = 5`) is unmistakably yours and
-compiles. Ten of the sixty-three words
+compiles. Ten of the sixty-four words
 are quiet, then — the five builtins, the three soft keywords, `litany`,
 `augur` — and the rest are loud.
 
@@ -890,10 +890,11 @@ and the substitution produced the bound name — `span = ...` becoming
 substitution and left you bound to it whole.
 
 This check reaches the sixty words that have a Python spelling, not all
-sixty-three. The three construct words are outside it by construction: they
+sixty-four. The four construct words are outside it by construction: they
 are never substituted, so no binding of one can quietly come to mean
-something else. `consecrated` is still caught — by the second check, as a
-compile failure — and `litany` and `augur` are genuinely not faults. The
+something else. `consecrated` and `unsanctioned` are still caught — by the
+second check, as a compile failure — and `litany` and `augur` are genuinely
+not faults. The
 machine's own carrier names (Chapter VII) are within it: they have no
 Python spelling to become, but a `.py` file that binds one is a file no
 litany can import by that name, and the finding says so.
