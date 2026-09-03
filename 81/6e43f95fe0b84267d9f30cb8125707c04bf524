@@ -1,0 +1,53 @@
+src/liturgy/lexicon.py
+  s_d162ead593e4de::t_88a88498e1ceee 86-95,97
+src/liturgy/highlight.py
+  s_d162ead593e4de::t_90df7c941f8d8a 102
+src/liturgy/constructs.py
+  s_d162ead593e4de::t_5cac301e9a27d0 197-203,208-209,215-216
+  s_d162ead593e4de::t_1290a63bb3a881 236,241-257,262-265,271-280,282-283,285,298-325,329-395
+  s_d162ead593e4de::t_54da81e1e260a0 9-11
+  s_d162ead593e4de::t_faad390e4ba3b6 233-235,281,284,286-292,326-328
+  s_d162ead593e4de::t_8562258045aa55 293-297
+  s_d162ead593e4de::t_5ff1692012f6a7 26
+editors/vscode-liturgy/syntaxes/liturgy.tmLanguage.json
+  s_d162ead593e4de::t_f3dab508b593e1 47,50,60-67,77
+tests/test_unsanctioned.py
+  s_d162ead593e4de::t_669e8bb0e8937c 13-14,374-375,378-383,385
+  s_d162ead593e4de::t_93992962bfe741 1-12,15-76,81-257,259-268,270-357,368-373,376-377,384,386-400
+  s_d162ead593e4de::t_5d3a3eb7bc7c3f 77-80,258,269
+  s_d162ead593e4de::t_95e1542b0885cb 358-367
+tests/test_lexicon.py
+  s_d162ead593e4de::t_2376f24ca68ae7 96-98
+  s_d162ead593e4de::t_d364c9e5b1197b 110-131
+editors/vscode-liturgy/README.md
+  s_d162ead593e4de::t_2ef9b4304c0483 46-51
+README.md
+  s_d162ead593e4de::t_0c0a3ce17788a1 425,427-428
+docs/liber-liturgiae.html
+  s_d162ead593e4de::t_0c0a3ce17788a1 747-748,789
+  s_d162ead593e4de::t_fb96ec6088828c 813,1173,1175-1177
+docs/LIBER-LITURGIAE.md
+  s_d162ead593e4de::t_fb96ec6088828c 543,893,895-897
+  s_d162ead593e4de::t_0c0a3ce17788a1 477-478,520
+src/liturgy/transform.py
+  s_d162ead593e4de::t_f452bc46ba8689 102-108,112-115,118-122
+  s_d162ead593e4de::t_83004451c7b1a4 125-127
+  s_d162ead593e4de::t_df3b93ef7c052a 58-89
+  s_d162ead593e4de::t_caf14a5054b75c 57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "816e43f95fe0b84267d9f30cb8125707c04bf524",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
