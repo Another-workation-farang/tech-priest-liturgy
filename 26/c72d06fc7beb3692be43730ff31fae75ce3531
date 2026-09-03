@@ -1,0 +1,37 @@
+tests/test_archetypes_verb.py
+  s_d162ead593e4de::t_249a17afa4f591 1-144,150,152-159,164-165,172-209,239-281,288-290,292-294,296-358
+  s_d162ead593e4de::t_9bb7d9b9213937 145-149,151
+  s_d162ead593e4de::t_4f5ba6d689df02 166-170
+  s_d162ead593e4de::t_65604c704ee118 160-163,171
+  s_d162ead593e4de::t_77752d407ab08d 210-238
+  s_d162ead593e4de::t_561852fcefe3c5 282-287,291,295
+src/liturgy/cli.py
+  s_d162ead593e4de::t_a627b2b10e6970 71-77
+  s_d162ead593e4de::t_7803e47e97d718 173
+pyproject.toml
+  s_d162ead593e4de::t_9465df12af9ed3 11
+src/liturgy/tooling.py
+  s_d162ead593e4de::t_d23668a6c1470f 321-327
+  s_d162ead593e4de::t_f86a79d2b80aaa 230,238
+  s_d162ead593e4de::t_a3441ff12a3b76 262-270,274-320,328-337
+  s_d162ead593e4de::t_6c456f6eaf9b2b 14
+  s_d162ead593e4de::t_b1c55316ff25da 139-166,170-179
+  s_d162ead593e4de::t_1884df845b8eba 180
+  s_d162ead593e4de::t_877207dc9fd455 338-339
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "26c72d06fc7beb3692be43730ff31fae75ce3531",
+  "prompts": {},
+  "sessions": {
+    "s_d162ead593e4de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f0c53f6-3f8c-496d-9c39-9ebf272abbff",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
