@@ -1,0 +1,21 @@
+src/liturgy/rubric.py
+  s_28187e8e40d713::t_a96a8ff14225d2 348-388
+tests/test_rubric.py
+  s_28187e8e40d713::t_0aeb75f8a37e5b 4,34-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fe273fb84a8148143ba7192630b35e9b79e4919b",
+  "prompts": {},
+  "sessions": {
+    "s_28187e8e40d713": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f12e5d5a-610b-48a6-9ce0-04f7711d1fc7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
