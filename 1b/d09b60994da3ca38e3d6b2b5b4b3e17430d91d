@@ -1,0 +1,34 @@
+tests/test_unction.py
+  s_28187e8e40d713::t_1dfd4bbf7ff658 9,43-51,75,89-90,157-176
+src/liturgy/tooling.py
+  s_28187e8e40d713::t_ec588e7fbab37e 1064,1066-1068,1105-1106,1112-1113,1132-1136
+  s_28187e8e40d713::t_c96ae925ec58e7 1061
+src/liturgy/sourcemap.py
+  s_28187e8e40d713::t_367834b43de222 96
+tests/conftest.py
+  s_28187e8e40d713::t_4fa10482f84569 9-10,26-29,49-61
+tests/test_anoint.py
+  s_28187e8e40d713::t_c96ae925ec58e7 203
+  s_28187e8e40d713::t_1dfd4bbf7ff658 9,123,147-202,204
+  s_28187e8e40d713::t_63273af65536dd 205-206
+src/liturgy/unction.py
+  s_28187e8e40d713::t_ec588e7fbab37e 30-32,44,99,102-106,120-121
+src/liturgy/rewrite.py
+  s_28187e8e40d713::t_367834b43de222 72,178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1bd09b60994da3ca38e3d6b2b5b4b3e17430d91d",
+  "prompts": {},
+  "sessions": {
+    "s_28187e8e40d713": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f12e5d5a-610b-48a6-9ce0-04f7711d1fc7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
