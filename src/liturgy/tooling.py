@@ -1066,6 +1066,11 @@ def _nuitka(entry: pathlib.Path, output: pathlib.Path) -> int:
     ).returncode
 
 
+def _scratch_name(name: str, nt: bool) -> str:
+    # Nuitka may append .exe on Windows; hand it a name that already has one.
+    return name + ".exe" if nt and not name.lower().endswith(".exe") else name
+
+
 def anoint(path: str, dest: str | None = None, *, out=None, build=None) -> int:
     """Render a litany and everything it imports as one native executable."""
     out = out if out is not None else sys.stdout
@@ -1092,11 +1097,15 @@ def anoint(path: str, dest: str | None = None, *, out=None, build=None) -> int:
     )
     if not target.parent.is_dir():
         return refuse(f"{target.parent} does not exist")
+    if target.is_dir():
+        return refuse(f"{target} is a directory")
     files, notes = _gather([str(root)])
     if notes:
         for d, message in notes:
             refuse(f"{d} {message}")
         return 1
+    if any(os.path.abspath(f) == str(target) for f in files):
+        return refuse(f"{target} is one of the litany's own sources")
     print(f"++ ANOINTING {entry.name} ++", file=out, flush=True)
     with tempfile.TemporaryDirectory(prefix="liturgy-anoint-", ignore_cleanup_errors=True) as t:
         tmp = pathlib.Path(t)
@@ -1110,7 +1119,7 @@ def anoint(path: str, dest: str | None = None, *, out=None, build=None) -> int:
             return refuse(f"{os.path.relpath(fault.path, root)} {fault}")
         print(f"   {n} litan{'y' if n == 1 else 'ies'} rendered; the machine tongue is being forged",
               file=out, flush=True)
-        output = tmp / "out" / target.name
+        output = tmp / "out" / _scratch_name(target.name, os.name == "nt")
         code = build(staging / f"{entry.stem}.py", output)
         if code != 0 or not output.is_file():
             return refuse(f"nuitka failed (exit {code})")

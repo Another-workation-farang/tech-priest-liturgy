@@ -130,3 +130,37 @@ def test_an_anointed_executable_curses_like_chant(codex, tmp_path):
         assert subprocess.run([str(dest), omen], cwd=shipped, capture_output=True, text=True).stderr == expected[omen]
     run = subprocess.run([str(dest), ""], cwd=shipped, capture_output=True, text=True)
     assert run.returncode == 0 and run.stdout == clean
+
+
+@pytest.mark.parametrize("victim", ["hymn.lit", "helper.py"])
+def test_out_naming_a_source_refuses_and_spares_it(codex, victim):
+    before = (codex / victim).read_bytes()
+    calls = []
+    buf = io.StringIO()
+    dest = codex / victim
+    assert tooling.anoint(str(codex / "hymn.lit"), str(dest), out=buf, build=fake_build(calls)) == 1
+    assert buf.getvalue() == f"++ CANNOT ANOINT: {dest} is one of the litany's own sources ++\n"
+    assert dest.read_bytes() == before and not calls
+
+
+def test_out_naming_a_directory_refuses(codex):
+    calls = []
+    buf = io.StringIO()
+    assert tooling.anoint(str(codex / "hymn.lit"), str(codex / "pkg"), out=buf, build=fake_build(calls)) == 1
+    assert buf.getvalue() == f"++ CANNOT ANOINT: {codex / 'pkg'} is a directory ++\n"
+    assert not calls
+
+
+def test_scratch_name_adds_exe_only_on_windows():
+    assert tooling._scratch_name("x", True) == "x.exe"
+    assert tooling._scratch_name("X.EXE", True) == "X.EXE"
+    assert tooling._scratch_name("x", False) == "x"
+
+
+def test_build_gets_an_exe_name_but_dest_keeps_the_users_spelling(codex, tmp_path, monkeypatch):
+    real = tooling._scratch_name
+    monkeypatch.setattr(tooling, "_scratch_name", lambda n, nt: real(n, True))
+    calls = []
+    dest = tmp_path / "x"
+    assert tooling.anoint(str(codex / "hymn.lit"), str(dest), out=io.StringIO(), build=fake_build(calls)) == 0
+    assert calls[0][1].name == "x.exe" and dest.read_bytes() == b"MZ"
