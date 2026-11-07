@@ -345,3 +345,44 @@ def install(seer: Seer, names: Mapping[str, str]) -> None:
 
     sys.excepthook = hook
     threading.excepthook = thread_hook
+
+
+# Key: a staged module's path relative to the staging root, "/"-separated.
+# Value: (litany path to show, {generated line: litany line}, litany lines).
+Tables = dict[str, tuple[str, dict[int, int], list[str]]]
+
+
+def key_for(filename: str, root: str) -> str:
+    rel = os.path.normcase(os.path.relpath(filename, root))
+    return rel.replace(os.sep, "/")
+
+
+class TableSeer:
+    """A Seer that places frames from tables baked in at anoint time."""
+
+    def __init__(self, tables: Tables, root: str) -> None:
+        self.tables = tables
+        self.root = root
+
+    def is_litany(self, filename: str) -> bool:
+        return key_for(filename, self.root) in self.tables
+
+    def is_plumbing(self, frame: traceback.FrameSummary) -> bool:
+        return frame.filename.startswith("<frozen importlib.")
+
+    def _place(self, filename: str, lineno: int | None) -> Placement:
+        path, lines, source = self.tables[key_for(filename, self.root)]
+        lineno = lineno or 0
+        # Nearest mapped line at or above; none above means unmapped.
+        above = [g for g in lines if g <= lineno]
+        if not above:
+            return path, lineno, "", None
+        lit = lines[max(above)]
+        text = source[lit - 1] if 0 < lit <= len(source) else ""
+        return path, lit, text, None
+
+    def place(self, frame: traceback.FrameSummary) -> Placement:
+        return self._place(frame.filename, frame.lineno)
+
+    def place_syntax(self, exc: SyntaxError) -> Placement:
+        return self._place(exc.filename, exc.lineno)
