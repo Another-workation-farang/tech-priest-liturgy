@@ -6,8 +6,14 @@ generated-line -> litany-line table the executable's curses read.
 """
 
 import ast
+import importlib.util
+import pathlib
+import shutil
 
+from . import rubric
 from .compiler import _artifacts
+from .lexicon import INVERSE
+from .transform import split_lines
 
 HOOK_MODULE = "__liturgy_curse"
 
@@ -68,3 +74,38 @@ def render_litany(src: str, filename: str, *, entry: bool = False) -> tuple[str,
         _insert_hook(tree)
     text = ast.unparse(tree) + "\n"
     return text, line_map(tree, text, filename)
+
+
+def bake(tables: rubric.Tables) -> str:
+    """The generated `__liturgy_curse.py`: rubric's source, then the baked tables."""
+    return (
+        pathlib.Path(rubric.__file__).read_text(encoding="utf-8")
+        + f"\n_TABLES = {tables!r}\n_NAMES = {dict(INVERSE)!r}\n"
+        + "install(TableSeer(_TABLES, os.path.dirname(os.path.abspath(__file__))), _NAMES)\n"
+    )
+
+
+def stage(entry: pathlib.Path, files: list[pathlib.Path], staging: pathlib.Path) -> int:
+    """Mirror the project under `staging` as plain Python; returns the litany count."""
+    root = entry.parent
+    tables: rubric.Tables = {}
+    count = 0
+    for path in files:
+        rel = path.relative_to(root)
+        dest = staging / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if path.suffix != ".lit":
+            shutil.copy2(path, dest)
+            continue
+        try:
+            src = importlib.util.decode_source(path.read_bytes())
+            text, lmap = render_litany(src, str(path), entry=path == entry)
+        except (UnicodeDecodeError, ValueError, LookupError) as err:
+            raise UnctionFault(str(path), f"{type(err).__name__}: {err}") from err
+        dest = dest.with_suffix(".py")
+        dest.write_text(text, encoding="utf-8")
+        # Keyed by the staged .py path, which is what a frame's filename names.
+        tables[rel.with_suffix(".py").as_posix()] = (rel.as_posix(), lmap, [l.rstrip("\n") for l in split_lines(src)])
+        count += 1
+    (staging / f"{HOOK_MODULE}.py").write_text(bake(tables), encoding="utf-8")
+    return count

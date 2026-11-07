@@ -1,9 +1,13 @@
 import ast
 import pathlib
+import subprocess
+import sys
 
 import pytest
+from conftest import OMENS, chant_run, normalise
 
 from liturgy import unction
+from liturgy.tooling import _gather
 
 
 def test_hook_follows_docstring_and_future_import():
@@ -39,3 +43,51 @@ def test_multi_line_statement_maps_to_its_first_line():
 def test_a_tree_that_does_not_round_trip_is_refused():
     with pytest.raises(unction.UnctionFault):
         unction.line_map(ast.parse("x = 1"), "x = 2\n")
+
+
+def _staged(codex, tmp_path):
+    files, notes = _gather([str(codex)])
+    assert not notes
+    staging = tmp_path / "staged"
+    n = unction.stage(codex / "hymn.lit", files, staging)
+    return staging, n
+
+
+def _run_staged(staging, omen, cwd):
+    # -S: no site-packages, so Liturgy cannot be imported even by accident
+    return subprocess.run([sys.executable, "-S", str(staging / "hymn.py"), omen],
+                          cwd=cwd, capture_output=True, text=True)
+
+
+@pytest.mark.parametrize("omen", OMENS)
+def test_staged_curse_matches_chant(codex, tmp_path, omen):
+    staging, _ = _staged(codex, tmp_path)
+    expected = normalise(chant_run(codex, omen).stderr, codex)
+    assert _run_staged(staging, omen, tmp_path).stderr == expected
+
+
+def test_staged_clean_run_matches_chant(codex, tmp_path):
+    staging, n = _staged(codex, tmp_path)
+    assert n == 8
+    run = _run_staged(staging, "", tmp_path)
+    assert run.returncode == 0 and run.stdout == chant_run(codex, "").stdout
+
+
+def test_sprawling_statement_reports_its_first_line(codex, tmp_path):
+    staging, _ = _staged(codex, tmp_path)
+    err = _run_staged(staging, "sprawl", tmp_path).stderr
+    assert "hymn.lit, line 28, in rite main" in err and "total = max(" in err
+    assert "line 30" not in err
+
+
+def test_environments_are_neither_staged_nor_fatal(codex, tmp_path):
+    staging, _ = _staged(codex, tmp_path)
+    assert not (staging / "venv").exists()
+
+
+def test_baked_module_imports_nothing_from_liturgy(codex, tmp_path):
+    staging, _ = _staged(codex, tmp_path)
+    tree = ast.parse((staging / "__liturgy_curse.py").read_text(encoding="utf-8"))
+    names = {a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+    names |= {n.module or "" for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
+    assert not any(m.startswith("liturgy") for m in names)
