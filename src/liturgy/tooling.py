@@ -1058,11 +1058,14 @@ def nuitka_available() -> bool:
 
 
 def _nuitka(entry: pathlib.Path, output: pathlib.Path) -> int:
+    output.parent.mkdir(parents=True, exist_ok=True)  # it is Nuitka's cwd
     # Streamed, never captured: Nuitka asks questions and takes minutes.
     return subprocess.run(
-        [sys.executable, "-m", "nuitka", "--mode=onefile", "--follow-imports",
+        [sys.executable, "-m", "nuitka", "--mode=onefile",
          f"--output-dir={output.parent}", f"--output-filename={output.name}", str(entry)],
-        cwd=entry.parent,
+        # Not the staging directory: `python -m` puts the cwd first on sys.path, and a
+        # project module named `glob` or `shutil` would then hijack Nuitka itself.
+        cwd=output.parent,
     ).returncode
 
 
@@ -1099,12 +1102,15 @@ def anoint(path: str, dest: str | None = None, *, out=None, build=None) -> int:
         return refuse(f"{target.parent} does not exist")
     if target.is_dir():
         return refuse(f"{target} is a directory")
+    if not os.access(target.parent, os.W_OK):
+        return refuse(f"{target.parent} cannot be written")
     files, notes = _gather([str(root)])
     if notes:
         for d, message in notes:
             refuse(f"{d} {message}")
         return 1
-    if any(os.path.abspath(f) == str(target) for f in files):
+    # samefile, not a string compare: case-insensitive filesystems and symlinks alias a source.
+    if target.exists() and any(os.path.samefile(f, target) for f in files):
         return refuse(f"{target} is one of the litany's own sources")
     print(f"++ ANOINTING {entry.name} ++", file=out, flush=True)
     with tempfile.TemporaryDirectory(prefix="liturgy-anoint-", ignore_cleanup_errors=True) as t:
@@ -1123,7 +1129,10 @@ def anoint(path: str, dest: str | None = None, *, out=None, build=None) -> int:
         code = build(staging / f"{entry.stem}.py", output)
         if code != 0 or not output.is_file():
             return refuse(f"nuitka failed (exit {code})")
-        target.unlink(missing_ok=True)
-        shutil.move(output, target)
+        try:
+            target.unlink(missing_ok=True)
+            shutil.move(output, target)
+        except OSError as err:
+            return refuse(f"{target} cannot be written: {err.strerror or err}")
     print(f"++ {entry.name} IS ANOINTED: {target} ++", file=out)
     return 0

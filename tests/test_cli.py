@@ -4,8 +4,6 @@ import sys
 
 import pytest
 
-from liturgy import cli
-
 
 @pytest.fixture(autouse=True)
 def isolated_state(tmp_path, monkeypatch):

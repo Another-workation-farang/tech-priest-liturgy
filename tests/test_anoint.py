@@ -6,7 +6,7 @@ import subprocess
 import pytest
 from conftest import OMENS, chant_run, normalise
 
-from liturgy import tooling
+from liturgy import rubric, tooling
 
 EXE = "hymn.exe" if os.name == "nt" else "hymn"
 
@@ -120,6 +120,7 @@ needs_nuitka = pytest.mark.skipif(
 @pytest.mark.slow
 def test_an_anointed_executable_curses_like_chant(codex, tmp_path):
     expected = {o: normalise(chant_run(codex, o).stderr, codex) for o in OMENS}
+    assert all(rubric.BANNER_OPEN in e for e in expected.values())
     clean = chant_run(codex, "").stdout
     shipped = tmp_path / "elsewhere"
     shipped.mkdir()
@@ -141,6 +142,66 @@ def test_out_naming_a_source_refuses_and_spares_it(codex, victim):
     assert tooling.anoint(str(codex / "hymn.lit"), str(dest), out=buf, build=fake_build(calls)) == 1
     assert buf.getvalue() == f"++ CANNOT ANOINT: {dest} is one of the litany's own sources ++\n"
     assert dest.read_bytes() == before and not calls
+
+
+def _refuses_as_source(codex, alias):
+    before = (codex / "hymn.lit").read_bytes()
+    calls = []
+    buf = io.StringIO()
+    assert tooling.anoint(str(codex / "hymn.lit"), str(alias), out=buf, build=fake_build(calls)) == 1
+    assert "is one of the litany's own sources" in buf.getvalue()
+    assert (codex / "hymn.lit").read_bytes() == before and not calls
+
+
+def test_out_naming_a_source_in_other_case_refuses(codex):
+    upper = codex / "HYMN.LIT"
+    if not upper.exists():
+        pytest.skip("case-sensitive filesystem")
+    _refuses_as_source(codex, upper)
+
+
+def test_out_naming_a_source_through_a_symlink_refuses(codex, tmp_path):
+    alias = tmp_path / "alias"
+    try:
+        alias.symlink_to(codex, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("cannot make symlinks")
+    _refuses_as_source(codex, alias / "hymn.lit")
+
+
+@pytest.mark.skipif(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0),
+                    reason="needs POSIX permissions and a non-root user")
+def test_an_unwritable_output_directory_refuses_up_front(codex, tmp_path):
+    ro = tmp_path / "ro"
+    ro.mkdir()
+    ro.chmod(0o555)
+    try:
+        calls = []
+        buf = io.StringIO()
+        assert tooling.anoint(str(codex / "hymn.lit"), str(ro / "x"), out=buf, build=fake_build(calls)) == 1
+        assert buf.getvalue() == f"++ CANNOT ANOINT: {ro} cannot be written ++\n"
+        assert not calls
+    finally:
+        ro.chmod(0o755)
+
+
+def test_a_failing_final_move_refuses_instead_of_tracing_back(codex, monkeypatch):
+    def boom(src, dst):
+        raise OSError(13, "Permission denied")
+    monkeypatch.setattr(tooling.shutil, "move", boom)
+    buf = io.StringIO()
+    assert tooling.anoint(str(codex / "hymn.lit"), out=buf, build=fake_build([])) == 1
+    assert buf.getvalue().splitlines()[-1].startswith("++ CANNOT ANOINT: ") and "Permission denied" in buf.getvalue()
+
+
+def test_nuitka_runs_outside_the_staging_directory(tmp_path, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(tooling.subprocess, "run",
+                        lambda cmd, cwd: seen.update(cmd=cmd, cwd=cwd) or type("R", (), {"returncode": 0})())
+    out = tmp_path / "out" / "x"
+    tooling._nuitka(tmp_path / "staged" / "hymn.py", out)
+    assert seen["cwd"] == out.parent and out.parent.is_dir()
+    assert "--follow-imports" not in seen["cmd"] and "--assume-yes-for-downloads" not in seen["cmd"]
 
 
 def test_out_naming_a_directory_refuses(codex):

@@ -6,7 +6,8 @@ import sys
 
 import pytest
 
-OMENS = ("thread", "chain", "twin")
+# The last three fault on a line `ast.stmt` alone would miss: decorator, `curse`, `wherein`.
+OMENS = ("thread", "chain", "twin", "mantle", "oath", "verdict")
 
 _HYMN = '''"""The entry litany: every shape an anointing must carry."""
 within __future__ invoke annotations
@@ -20,6 +21,10 @@ within reliquary.tally invoke tally
 within sanctum.orison invoke orison
 within helpers.util invoke whisper
 within other.util invoke shout
+
+
+rite fraught(fn: object) -> object:
+    proclaim LostPattern("the mantle is refused")
 
 
 rite main(omen: str) -> Void:
@@ -41,6 +46,19 @@ rite main(omen: str) -> Void:
         )
     lest omen == "twin":
         whisper()
+    lest omen == "mantle":
+        @fraught
+        rite adorned() -> Void:
+            intone("unreachable")
+    lest omen == "oath":
+        attempt:
+            divide(1, 0)
+        curse NoSuchCurse:
+            intone("unreachable")
+    lest omen == "verdict":
+        discern omen:
+            wherein NotAClass():
+                intone("unreachable")
 
 
 introit:

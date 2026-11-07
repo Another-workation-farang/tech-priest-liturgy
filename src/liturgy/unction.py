@@ -27,7 +27,9 @@ class UnctionFault(Exception):
 
 
 def _lockstep(a: ast.AST, b: ast.AST, out: dict[int, int]) -> None:
-    if isinstance(a, ast.stmt) and getattr(a, "lineno", 0):
+    # Every located node, pre-order, first wins: decorators, `except` clauses and
+    # `case` patterns have lines of their own that a statement-only map would miss.
+    if getattr(a, "lineno", 0):
         out.setdefault(b.lineno, a.lineno)
     for (_, va), (_, vb) in zip(ast.iter_fields(a), ast.iter_fields(b)):
         if isinstance(va, list):
@@ -39,7 +41,7 @@ def _lockstep(a: ast.AST, b: ast.AST, out: dict[int, int]) -> None:
 
 
 def line_map(tree: ast.Module, text: str, path: str = "<unknown>") -> dict[int, int]:
-    """{generated statement line: litany statement line}, first wins."""
+    """{generated line: litany line} for every located node, first wins."""
     try:
         again = ast.parse(text)
     except SyntaxError:
@@ -94,8 +96,14 @@ def stage(entry: pathlib.Path, files: list[pathlib.Path], staging: pathlib.Path)
         raise UnctionFault(str(entry), "is not among the gathered litanies")
     tables: rubric.Tables = {}
     count = 0
+    twinned = {os.path.abspath(f.with_suffix("")) for f in files if f.suffix == ".lit"}
     for path in files:
         rel = pathlib.Path(os.path.abspath(path)).relative_to(root)
+        if rel.as_posix() == f"{HOOK_MODULE}.py" or (rel.as_posix() == f"{HOOK_MODULE}.lit"):
+            raise UnctionFault(str(path), f"would overwrite the generated {HOOK_MODULE}.py")
+        # `chant` prefers x.lit to x.py, so the executable must too.
+        if path.suffix == ".py" and os.path.abspath(path.with_suffix("")) in twinned:
+            continue
         dest = staging / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         if path.suffix != ".lit":
@@ -109,7 +117,8 @@ def stage(entry: pathlib.Path, files: list[pathlib.Path], staging: pathlib.Path)
         dest = dest.with_suffix(".py")
         dest.write_text(text, encoding="utf-8")
         # Keyed as the runtime keys a frame's filename: one shared key function.
-        tables[rubric.key_for(str(dest), str(staging))] = (rel.as_posix(), lmap, [l.rstrip("\n") for l in split_lines(src)])
+        lines = [l.rstrip("\n") for l in split_lines(src)]
+        tables[rubric.key_for(str(dest), str(staging))] = (rel.as_posix(), lmap, lines)
         count += 1
     (staging / f"{HOOK_MODULE}.py").write_text(bake(tables), encoding="utf-8")
     return count

@@ -6,7 +6,7 @@ import sys
 import pytest
 from conftest import OMENS, chant_run, normalise
 
-from liturgy import unction
+from liturgy import rubric, unction
 from liturgy.tooling import _gather
 
 
@@ -40,6 +40,15 @@ def test_multi_line_statement_maps_to_its_first_line():
     assert lm == {1: 1}
 
 
+def test_decorator_except_and_case_lines_are_mapped():
+    src = "@dec\nrite f() -> Void:\n    attempt:\n        pass\n    curse X:\n        pass\n"
+    _, lm = unction.render_litany(src, "m.lit")
+    assert {1, 5} <= set(lm.values())
+    src = "discern 1:\n    wherein Foo():\n        pass\n"
+    _, lm = unction.render_litany(src, "m.lit")
+    assert 2 in lm.values()
+
+
 def test_a_tree_that_does_not_round_trip_is_refused():
     with pytest.raises(unction.UnctionFault):
         unction.line_map(ast.parse("x = 1"), "x = 2\n")
@@ -63,6 +72,7 @@ def _run_staged(staging, omen, cwd):
 def test_staged_curse_matches_chant(codex, tmp_path, omen):
     staging, _ = _staged(codex, tmp_path)
     expected = normalise(chant_run(codex, omen).stderr, codex)
+    assert rubric.BANNER_OPEN in expected
     assert _run_staged(staging, omen, tmp_path).stderr == expected
 
 
@@ -76,8 +86,8 @@ def test_staged_clean_run_matches_chant(codex, tmp_path):
 def test_sprawling_statement_reports_its_first_line(codex, tmp_path):
     staging, _ = _staged(codex, tmp_path)
     err = _run_staged(staging, "sprawl", tmp_path).stderr
-    assert "hymn.lit, line 28, in rite main" in err and "total = max(" in err
-    assert "line 30" not in err
+    assert "hymn.lit, line 32, in rite main" in err and "total = max(" in err
+    assert "line 34" not in err
 
 
 def test_environments_are_neither_staged_nor_fatal(codex, tmp_path):
@@ -144,3 +154,23 @@ def test_baked_table_keys_round_trip_through_key_for(tmp_path):
     assert len(tables) == 2
     for key in tables:
         assert rubric.key_for(str(staging / key), str(staging)) == key
+
+
+def test_a_same_stem_py_never_overwrites_the_rendered_litany(codex, tmp_path):
+    (codex / "rites.py").write_text("raise SystemExit('the py twin ran')\n", encoding="utf-8")
+    staging, _ = _staged(codex, tmp_path)
+    assert "SystemExit" not in (staging / "rites.py").read_text(encoding="utf-8")
+    run = _run_staged(staging, "", tmp_path)
+    assert run.returncode == 0 and run.stdout == chant_run(codex, "").stdout
+
+
+def test_a_root_file_that_would_stage_as_the_hook_module_is_refused(codex, tmp_path):
+    for name in ("__liturgy_curse.py", "__liturgy_curse.lit"):
+        clash = codex / name
+        clash.write_text("intone(1)\n", encoding="utf-8")
+        files, _ = _gather([str(codex)])
+        with pytest.raises(unction.UnctionFault) as ei:
+            unction.stage(codex / "hymn.lit", files, tmp_path / "staged")
+        assert ei.value.path == str(clash)
+        assert ei.value.reason == "would overwrite the generated __liturgy_curse.py"
+        clash.unlink()

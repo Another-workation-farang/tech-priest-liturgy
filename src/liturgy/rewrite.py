@@ -69,7 +69,7 @@ class ConstructPass(ast.NodeTransformer):
 
         `node.col_offset` is a UTF-8 *byte* offset into the generated Python
         line, an `ast` quirk. `TechHeresy.offset` is read by
-        `curse._render_syntax_location`, which runs it through
+        `curse._LiveSeer.place_syntax`, which runs it through
         `SourceMap.to_lit` -- and every column the SourceMap knows is a
         *character* offset, because its spans come from `tokenize`. The
         carrier pass in `constructs.py` builds its offsets from
@@ -175,7 +175,7 @@ class ConstructPass(ast.NodeTransformer):
 
         `py_col` is a 0-based **character** column in the generated Python,
         the same coordinate `_heresy` hands over, because
-        `curse._render_syntax_location` maps both `offset` and `end_offset`
+        `curse._LiveSeer.place_syntax` maps both `offset` and `end_offset`
         through `SourceMap.to_lit` before drawing the caret.
         """
         text = self.lines[lineno - 1] if lineno - 1 < len(self.lines) else ""
