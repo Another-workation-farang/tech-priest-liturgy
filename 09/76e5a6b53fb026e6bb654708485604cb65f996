@@ -1,0 +1,22 @@
+tests/test_anoint.py
+  s_28187e8e40d713::t_a3ae5a4f8aee26 133-160,163-166
+  s_28187e8e40d713::t_3f8b6d758f5a99 161-162
+src/liturgy/tooling.py
+  s_28187e8e40d713::t_a3ae5a4f8aee26 1069-1073,1100-1101,1107-1108,1122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0976e5a6b53fb026e6bb654708485604cb65f996",
+  "prompts": {},
+  "sessions": {
+    "s_28187e8e40d713": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f12e5d5a-610b-48a6-9ce0-04f7711d1fc7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
