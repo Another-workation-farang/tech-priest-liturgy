@@ -243,7 +243,10 @@ importing one are different offices. Chapter XI's `prove` is the verb for
 that.
 
 There is deliberately no verb for anointing an environment. `anoint` was the
-obvious name and Chapter IX sets down why it remains unspent.
+obvious name for one, and it was spent elsewhere: it anoints a *litany*,
+rendering it as a native executable (Chapter XI), and says nothing about
+which interpreter finds litanies. Making an environment see them is still a
+`.pth` file and nothing more.
 
 ### The illumination of glyphs
 
@@ -821,25 +824,24 @@ comparisons, and Liturgy already has a perfectly good one: an author who
 wants a different comparison writes `should __name__ == other:`, which is
 Python, which is Liturgy. One expansion, or none.
 
-### The one verb still unwritten
+### How each reserved verb name was spent
 
-Seven verbs are built; Chapter XI sets them down. One name remains reserved
-on the command line, and it is worth recording why it is still a name and
-nothing more, rather than leaving the blank unexplained.
+Every verb name was reserved before it was built, and the last of them has
+now been spent. It is worth recording how each left the list, rather than
+leaving the blank unexplained.
 
-`forge`, `consecrate`, `prove` and `sanctify` were all in this list once.
-Each left it for its own reason, and the reasons are worth keeping: `forge`
-and `consecrate` were words reserved as flavour that turned out to have
-features waiting for them; `prove` was declined for adding a layer and no
-capability, and was built anyway once it was clear that boilerplate every
-project must copy is itself a cost; `sanctify` was declined because a
-formatter done improperly eats your source, and was built only once it could
-check that it had not.
-
-`anoint` is unbuilt because there is still no feature behind it. It is the
-last of the reserved names, held rather than planned, and holding it is the
-point. A name still unspent is worth more than a name spent on something
-trivial. No page is being left blank for it.
+`forge`, `consecrate`, `prove`, `sanctify` and `anoint` were all in this
+list once. Each left it for its own reason, and the reasons are worth
+keeping: `forge` and `consecrate` were words reserved as flavour that turned
+out to have features waiting for them; `prove` was declined for adding a
+layer and no capability, and was built anyway once it was clear that
+boilerplate every project must copy is itself a cost; `sanctify` was
+declined because a formatter done improperly eats your source, and was built
+only once it could check that it had not. `anoint` was held longest, as a
+good word with no feature behind it, and spent only when one arrived: a
+litany rendered as a native executable, which a priest can hand to a machine
+that has never heard of Liturgy. Chapter XI sets it down. No reserved verb
+name remains.
 
 `augur` and `purge` each name two different things in this project. `augur`
 is both Chapter X's source construct (preconditions) and Chapter XI's CLI
@@ -1022,17 +1024,18 @@ rewriting an author's quoting is not. Chapter XI sets the verb down.
 
 ## Chapter XI: The Reading of Omens
 
-*Two verbs chant. Six do not. A seventh chants only what you wrote to be
+*Two verbs chant. Seven do not. An eighth chants only what you wrote to be
 chanted. An adept who only ever chants learns of his errors from the
 machine, at the hour the machine chooses. These are the rites of asking
 first.*
 
-`augur`, `transcribe`, `forge`, `consecrate`, `sanctify`, `prove` and
-`purge` are the built tooling verbs. `augur` reads a litany, `transcribe`
-writes one, `forge` compiles one without chanting it, `consecrate` checks
-the seals across all of them, `sanctify` sets one's form in order, and
-`purge` clears what chanting left behind. `prove` is the exception that
-does run a litany, but only the trials you wrote to be run.
+`augur`, `transcribe`, `forge`, `consecrate`, `sanctify`, `prove`, `purge`
+and `anoint` are the built tooling verbs. `augur` reads a litany,
+`transcribe` writes one, `forge` compiles one without chanting it,
+`consecrate` checks the seals across all of them, `sanctify` sets one's form
+in order, `purge` clears what chanting left behind, and `anoint` renders one
+as a native executable. `prove` is the exception that does run a litany, but
+only the trials you wrote to be run.
 
 ### augur: the omens read before the chant
 
@@ -1693,6 +1696,224 @@ count of what actually went:
 
 The exit status is 0 when everything asked for went, and 1 if the guard
 refused or any single removal failed.
+
+### anoint: a litany rendered in the machine's own tongue
+
+*A litany is how a priest writes to the machine. The machine keeps its own
+tongue, and passes it hand to hand without translation.*
+
+`anoint` renders one litany, and every litany beside it, as a native
+executable: a single file that runs on a machine with no Python and no
+Liturgy installed. It is built with [Nuitka](https://nuitka.net), which
+compiles Python to C. Speed is not the point and none is promised; some code
+may run faster, and nothing here is judged by it.
+
+```
+$ liturgy anoint hymn.lit
+```
+
+It takes exactly one litany, the program's entry point. The executable is
+named after the litany's stem and written beside it (`hymn`; see below for
+Windows). `-o PATH` (`--out PATH`) names another file. The output directory
+must already exist, and an existing file at the output path is replaced. Two
+paths are refused rather than replaced: one that is an existing directory,
+and one that is a litany's own `.lit` or `.py` source.
+
+```
+++ CANNOT ANOINT: /home/adept/hymn/sub is a directory ++
+++ CANNOT ANOINT: /home/adept/hymn/cog.lit is one of the litany's own sources ++
+```
+
+Both lines print the absolute path, shown here as an example one. Exit status is 0 when the executable was made and 1 when
+anything was refused or failed. Nothing else is left behind: Nuitka's build
+folders and the staged Python live in a temporary directory that is removed
+afterwards, whether the build succeeded or failed.
+
+### The extra anoint needs
+
+Nuitka is an optional extra. The core install still has no dependencies.
+
+```
+$ pip install 'liturgy[anoint]'
+```
+
+Without it the verb refuses before doing any work:
+
+```
+++ CANNOT ANOINT: nuitka is not installed ++
+   anointing needs it:  pip install 'liturgy[anoint]'
+```
+
+Nuitka also needs a C compiler. Finding one, or offering to download one, is
+Nuitka's own business: `anoint` never passes `--assume-yes-for-downloads`, so
+any question Nuitka asks about a download reaches you at the terminal.
+
+### A run of anoint
+
+This is a real run, on macOS, of a two-litany program: `hymn.lit`, which
+imports `bless` from a sibling `cog.lit` and then divides by zero on purpose.
+Nuitka's own output streams through between the two banners and is shown
+here abridged, with `...` where lines were cut, the temporary build directory
+shortened, and the absolute path of the output replaced by an example one. The streaming is deliberate: it is not
+captured, so that Nuitka's questions are never swallowed and its warnings
+about imports it could not find, the only early sign of an executable that
+will fail at run time, are not hidden.
+
+```
+$ liturgy anoint hymn.lit
+++ ANOINTING hymn.lit ++
+   2 litanies rendered; the machine tongue is being forged
+Nuitka-Options: Used command line options:
+Nuitka-Options:   --mode=onefile --follow-imports --output-dir=... hymn.py
+Nuitka: Starting Python compilation with:
+Nuitka:   Version '4.3.4' on Python 3.12 (flavor 'CPython Official') commercial grade 'not installed'.
+...
+Nuitka-Scons: Backend C compiler: clang (clang 21.0.0).
+...
+Nuitka-Onefile: Creating single file from dist folder, this may take a while.
+...
+Nuitka: Created binary that runs on macOS 11.0 (arm64) or higher.
+Nuitka: Successfully created '.../hymn'.
+++ hymn.lit IS ANOINTED: /home/adept/hymn/hymn ++
+```
+
+That took about seven seconds, with part of the compiler cache warm; a
+first build is slower.
+The executable can then be run from anywhere, with the sources gone:
+
+```
+$ ./hymn
+Blessed be the machine
+++ MACHINE CURSE ++
+   the rite was broken at the threshold of hymn.lit, line 8
+       main()
+   the rite was broken at hymn.lit, line 5, in rite main
+       intone(1 / 0)
+   DivisionByTheVoid: division by zero
+++ the machine spirit is displeased ++
+```
+
+An anointed executable curses as a litany does. It names the `.lit` file and
+line and the litany's own source line, and gives the ritual name of the
+error, and it does this without importing anything from Liturgy: the curse
+renderer is generated Python, copied into the program at build time, as a
+desugared `litany` is. The rule against a runtime holds.
+
+A litany that does not compile stops the anointing, reported as `forge`
+reports it. This is a real refusal, from a litany whose parameter has no
+archetype:
+
+```
+$ liturgy anoint hymn.lit
+++ ANOINTING hymn.lit ++
+++ CANNOT ANOINT: hymn.lit line 1 TechHeresy: name is unsanctioned; every parameter must declare its archetype ++
+```
+
+### What survives in a curse, and what does not
+
+| In a curse | Under `chant` | In an anointed executable |
+|---|---|---|
+| ritual curse name | yes | yes |
+| `.lit` file | yes, absolute path | yes, relative to the entry litany's directory |
+| `.lit` line | yes | yes; for a statement spanning several lines, its first line |
+| litany source line | yes | yes, from tables baked into the program |
+| chained and grouped curses | yes | yes |
+| curses raised in threads | yes | yes |
+| caret under the failing columns | yes | **no** |
+| frames from non-litany code | yes | yes, as plain `File "...", line N` |
+
+Carets are lost because Nuitka's frames report line numbers and no column
+positions; there is nothing to map them from. That is a property of Nuitka,
+not a choice. The same cause blurs a statement that spans several lines: the
+build writes each statement on one line of Python and, without columns,
+cannot tell its parts apart, so a fault on the third line of a four-line call
+is reported at the call's first line, with that line's source. `chant` would
+name the third.
+
+Paths are shown relative to the entry litany's directory (`hymn.lit`,
+`pkg/cog.lit`), always with `/`. `chant`'s absolute paths would bake the
+builder's home directory and user name into a file meant to be handed to other
+people, and would name files that do not exist on theirs.
+
+The executable always renders machine curses. It does not read
+`LITURGY_PROFANE`, and the `--profane` flag governs the `liturgy` process
+that builds it, not the program it builds: a plain traceback from the
+executable would point at generated lines that match no file the reader has.
+
+### What goes into the executable
+
+Every `.lit` file under the entry litany's directory, recursively, is
+rendered, skipping directories whose names begin with `.` and `__pycache__`.
+Every plain `.py` file under the same directory is copied across, so that the
+mixed packages of the Codices chapter keep both halves. Modules outside that
+directory, the standard library and installed packages, are found by Nuitka
+in the usual way.
+
+Three consequences, each a limit and each deliberate:
+
+- **A litany outside the entry directory is not carried.** One reached
+  through `PYTHONPATH` or an installed package is not gathered, and neither
+  is one imported only dynamically, with a computed name given to
+  `importlib.import_module`. Such an executable still builds, Nuitka warns
+  about the missing module in its streamed output, and the program fails at
+  run time with `ForbiddenLore`. Refusing on Nuitka's warnings was
+  considered and declined: it would refuse every optional import guarded by
+  `try` and `except ImportError` as well.
+- **Every litany in the tree must compile,** whether or not the program
+  imports it. It is the rule `forge` applies to a directory. A project that
+  keeps broken litanies beside its program can move them, or anoint from a
+  subdirectory.
+- **Data files are not bundled.** A single-file executable unpacks itself into
+  a temporary directory when it starts, and a litany that reads files relative
+  to `__file__` will look inside that directory, not beside the executable.
+  Bundling data is not offered.
+
+The source is not hidden. The tables that let a curse quote the failing line
+carry every litany's source lines in the executable, in plain text, and a
+person who wants them can read them out. An executable is a convenience, not
+a seal.
+
+### One operating system per build
+
+Nuitka does not cross-compile. A build is for the machine it ran on and runs
+on machines of the same operating system and architecture, no others: an
+executable anointed on macOS runs on macOS. The build above says as much in
+its own words (`Created binary that runs on macOS 11.0 (arm64) or higher`).
+
+- **macOS.** Gatekeeper quarantines a file that arrives by download, and an
+  executable that has been downloaded, rather than built on the machine
+  that runs it, will be refused until the quarantine mark is removed. The
+  one command that clears it:
+
+  ```
+  $ xattr -d com.apple.quarantine ./hymn
+  ```
+
+  This was checked: with the mark added by
+  `xattr -w com.apple.quarantine "0081;00000000;Safari;" ./hymn`, the
+  command above removed it and the executable ran. Signing and notarization
+  are not offered; they remain the author's business.
+- **Linux.** Nuitka's single-file mode needs `patchelf`. The extra installs
+  it where a wheel makes that possible (`patchelf; sys_platform == 'linux'`);
+  if Nuitka still cannot find it, its own message says so in the streamed
+  output.
+  <!-- confirm against the first CI run: patchelf wheel suffices on ubuntu-latest -->
+- **Windows.** The executable defaults to `hymn.exe`. Nuitka is always handed
+  an output name ending in `.exe`, and the finished file is then moved to the
+  `-o` path exactly as you spelled it, so `-o hymn` on Windows yields a file
+  named `hymn`, with no `.exe`.
+  <!-- confirm against the first CI run: .exe name and move on Windows -->
+  Nuitka uses MSVC when it finds it, and otherwise asks whether to download
+  a MinGW or Zig compiler; that question reaches the terminal because the
+  output is streamed.
+  <!-- confirm against the first CI run: Nuitka's compiler download question on Windows -->
+  A litany line the console cannot encode is printed with replacement
+  characters in a curse, rather than losing the curse to a plain traceback.
+  <!-- confirm against the first CI run: console encoding on Windows -->
+
+Only macOS has been run by hand. Linux and Windows are covered by a GitHub
+Actions workflow that runs `anoint`'s tests, a real build among them, on each;
+the sentences above marked for confirmation wait on its first run.
 
 ---
 

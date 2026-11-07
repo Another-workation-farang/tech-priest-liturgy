@@ -26,10 +26,8 @@ time.
 > around in CPython's import machinery. It is not a serious language and it is
 > not maintained as one.
 >
-> It is **incomplete**: Spec III's CLI surface is seven verbs into eight,
-> the last name is still nothing but a reserved word, and Spec V's reading of
-> whether an archetype is *true* does not follow imports, so it judges one
-> litany at a time.
+> It is **incomplete**: Spec V's reading of whether an archetype is *true*
+> does not follow imports, so it judges one litany at a time.
 >
 > It is **breakable**. Some of it is documented: naming a variable `span` or
 > `measure` (or `discern`, or any of the eleven quiet words) silently shadows
@@ -77,11 +75,14 @@ $ source .venv/bin/activate
 $ pip install -e .
 ```
 
-That installs the `liturgy` console script.
+That installs the `liturgy` console script. Four optional extras exist and the
+core needs none of them: `.[archetypes]` (mypy, for `augur --archetypes`),
+`.[trials]` (pytest, for `prove`), `.[anoint]` (Nuitka, for `anoint`) and
+`.[highlight]` (the Pygments lexer).
 
 ## `chant` and `commune`
 
-These two run litanies; the [seven tooling verbs](#augur-transcribe-forge-consecrate-sanctify-prove-and-purge)
+These two run litanies; the [eight tooling verbs](#augur-transcribe-forge-consecrate-sanctify-prove-purge-and-anoint)
 further down read, translate and tidy them. `chant <file.lit> [args...]`
 executes a Liturgy file the way
 `python file.py` executes a Python one: the file becomes `__main__`,
@@ -148,8 +149,9 @@ Three things to know before you do this:
   from importing. Use [`prove`](#prove-run-a-litanys-trials), or the
   `conftest.py` it replaces.
 
-There is no verb for this. `anoint` was the obvious name and is deliberately
-still unspent; see [What's not built yet](#whats-not-built-yet).
+There is no verb for this. `anoint` was the obvious name, and it was spent
+elsewhere: it anoints a *litany*, rendering it as a native executable (see
+[`anoint`](#anoint-render-a-litany-as-a-native-executable)).
 
 ## Codices: a package of litanies
 
@@ -574,10 +576,11 @@ must be exactly `"0"`; `false`, empty, or anything else still counts as
 impious). Calling a rite by its proper name, `chant` or `commune`, never
 triggers a rebuke in the first place.
 
-## `augur`, `transcribe`, `forge`, `consecrate`, `sanctify`, `prove` and `purge`
+## `augur`, `transcribe`, `forge`, `consecrate`, `sanctify`, `prove`, `purge` and `anoint`
 
-Three tooling verbs are built. They do not run your litany; they read it,
-translate into it, or clean up after it.
+Eight tooling verbs are built. They do not chant your litany; they read it,
+translate into it, compile it, render it as an executable or clean up after it.
+(`prove` runs only the trials you wrote to be run.)
 
 ### `augur`: read a litany for faults without chanting it
 
@@ -1084,6 +1087,117 @@ with a count of what went:
 Exit status is 0 when everything asked for went, and 1 if the guard refused or
 any single removal failed.
 
+### `anoint`: render a litany as a native executable
+
+`anoint` renders a litany, and every litany beside it, as one executable that
+runs on a machine with no Python and no Liturgy installed. It is built with
+[Nuitka](https://nuitka.net), which compiles Python to C. Speed is not the
+point and none is promised.
+
+```
+$ pip install 'liturgy[anoint]'
+$ liturgy anoint hymn.lit
+```
+
+The executable is named after the litany (`hymn`) and written beside it;
+`-o PATH` names another file. The output directory must already exist, and an
+existing file at the output path is replaced, except that a directory, or one
+of the litany's own `.lit` or `.py` files, is refused. Exit status is 0 when
+the executable was made and 1 otherwise. Without the extra the verb refuses
+before doing anything:
+
+```
+++ CANNOT ANOINT: nuitka is not installed ++
+   anointing needs it:  pip install 'liturgy[anoint]'
+```
+
+A real run, on macOS, of a two-litany program (`hymn.lit` imports `bless` from
+`cog.lit`, then divides by zero on purpose). Nuitka's own output streams
+through, so its questions and its warnings reach you; it is shown here
+abridged, with `...` where lines were cut, the temporary build directory
+shortened, and the output's absolute path replaced by an example one:
+
+```
+$ liturgy anoint hymn.lit
+++ ANOINTING hymn.lit ++
+   2 litanies rendered; the machine tongue is being forged
+Nuitka-Options: Used command line options:
+Nuitka-Options:   --mode=onefile --follow-imports --output-dir=... hymn.py
+Nuitka: Starting Python compilation with:
+Nuitka:   Version '4.3.4' on Python 3.12 (flavor 'CPython Official') commercial grade 'not installed'.
+...
+Nuitka-Scons: Backend C compiler: clang (clang 21.0.0).
+...
+Nuitka-Onefile: Creating single file from dist folder, this may take a while.
+...
+Nuitka: Created binary that runs on macOS 11.0 (arm64) or higher.
+Nuitka: Successfully created '.../hymn'.
+++ hymn.lit IS ANOINTED: /home/adept/hymn/hymn ++
+$ ./hymn
+Blessed be the machine
+++ MACHINE CURSE ++
+   the rite was broken at the threshold of hymn.lit, line 8
+       main()
+   the rite was broken at hymn.lit, line 5, in rite main
+       intone(1 / 0)
+   DivisionByTheVoid: division by zero
+++ the machine spirit is displeased ++
+```
+
+The executable curses as a litany does, and imports nothing from Liturgy to do
+it: the renderer is generated Python copied into the program at build time.
+Compared with `chant`:
+
+| In a curse | Under `chant` | In an anointed executable |
+|---|---|---|
+| ritual curse name | yes | yes |
+| `.lit` file | yes, absolute path | yes, relative to the entry litany's directory |
+| `.lit` line | yes | yes; for a statement spanning several lines, its first line |
+| litany source line | yes | yes, from tables baked into the program |
+| chained and grouped curses | yes | yes |
+| curses raised in threads | yes | yes |
+| caret under the failing columns | yes | **no** |
+| frames from non-litany code | yes | yes, as plain `File "...", line N` |
+
+Nuitka's frames carry no column positions, so there is nothing to draw a caret
+from, and a fault inside a multi-line statement is reported at its first line.
+Paths are relative (`hymn.lit`, `pkg/cog.lit`) so the build machine's home
+directory is not baked into a file meant to be handed on. The executable
+always renders machine curses; `LITURGY_PROFANE` does not reach it.
+
+What to know before handing one on:
+
+- **One operating system per build.** Nuitka does not cross-compile: a macOS
+  executable runs on macOS, and an executable runs only on machines of its own
+  operating system and architecture.
+- **Gatekeeper (macOS).** A downloaded executable is quarantined until the mark
+  is removed: `xattr -d com.apple.quarantine ./hymn`. This was checked on a
+  built executable. Signing and notarization are not offered.
+- **`patchelf` (Linux).** Nuitka's single-file mode needs it; the extra installs
+  it where a wheel exists, and Nuitka's own message says so if it is still
+  missing.
+<!-- confirm against the first CI run: patchelf wheel suffices on ubuntu-latest -->
+- **`.exe` (Windows).** The default is `hymn.exe`. Nuitka is always handed an
+  output name ending in `.exe`, and the file is then moved to the `-o` path
+  exactly as spelled. Nuitka uses MSVC if it finds it, and otherwise asks
+  whether to download a MinGW or Zig compiler; the question reaches you
+  because the output streams.
+<!-- confirm against the first CI run: .exe name, move, and the compiler download question on Windows -->
+- **Litanies outside the entry directory are not carried.** Every `.lit` file
+  under the entry litany's directory is rendered (and every `.py` copied), so
+  all of them must compile. A litany reached through `PYTHONPATH`, an
+  installed package or a computed `importlib.import_module` name is not
+  gathered; the build still succeeds, Nuitka warns in its output, and the
+  program fails at run time with `ForbiddenLore`.
+- **Data files are not bundled.** A single-file executable unpacks itself into
+  a temporary directory, so a litany reading files relative to `__file__`
+  looks in there, not beside the executable.
+- **The source is not private.** The tables that let a curse quote the failing
+  line hold every litany's source lines in the executable, in plain text.
+
+Chapter XI of the [Liber Liturgiae](docs/LIBER-LITURGIAE.md) sets all of this
+down in full.
+
 ## Syntax highlighting
 
 Two highlighters ship with the repository, one exact and one approximate.
@@ -1180,21 +1294,17 @@ requires Python >= 3.12.
 
 Spec I gets you alias-only Liturgy: writing, running, and debugging `.lit`
 files with an honest import hook and honest tracebacks. Spec II adds the three
-constructs above. Spec III is the CLI verb surface, and seven of its eight
+constructs above. Spec III is the CLI verb surface, and all eight of its
 verbs (`augur`, `transcribe`, `forge`, `consecrate`, `sanctify`, `prove`,
-`purge`) are built and documented above. Spec IV requires archetypes to be
-declared, and Spec V reads whether they are true.
+`purge`, and `anoint`, spent by Spec VI) are built and documented above.
+Spec IV requires archetypes to be declared, and Spec V reads whether they are
+true.
 
-One name is still nothing but a name the command line refuses to hand to
-anything else:
-
-- **`anoint`**: reserved as flavour. There is still no feature behind it,
-  only a good word nobody wanted a later contributor to spend on something
-  trivial. It is held, not planned, and holding it is the point: an unspent
-  name is worth more than one spent on something trivial. `forge` and
-  `consecrate` were reserved the same way until features turned up for them,
-  and `prove` and `sanctify` were each declined on their merits before being
-  built on better terms.
+No reserved verb name remains. `anoint` was held longest, as a good word with
+no feature behind it, and was spent when one arrived. `forge` and `consecrate`
+were reserved the same way until features turned up for them, and `prove` and
+`sanctify` were each declined on their merits before being built on better
+terms.
 
 Spec V reads whether a written archetype is *true*, by delegating to mypy and
 translating the diagnostics back: `augur --archetypes`, the third check and

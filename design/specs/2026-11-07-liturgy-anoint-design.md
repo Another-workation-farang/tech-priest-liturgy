@@ -42,6 +42,17 @@ $ ./hymn
 - **Nothing else is left behind.** Nuitka's build folders and the staged
   Python live in a temporary directory that is removed afterwards, whether the
   build succeeded or failed.
+
+*(Correction, post-review: the output path is checked more strictly than
+"replaces an existing file". `-o` naming an existing directory is refused
+(`++ CANNOT ANOINT: {dest} is a directory ++`), `-o` naming one of the
+litany's own gathered `.lit` or `.py` sources is refused
+(`++ CANNOT ANOINT: {dest} is one of the litany's own sources ++`), and an
+output directory that does not exist is refused (`{dir} does not exist`).
+Each refusal happens before anything is built, so nothing is destroyed. The
+status lines as built also differ from the sketch above in two details: the
+second reads `2 litanies rendered; the machine tongue is being forged`, with
+a semicolon, and the last prints the output's absolute path, not `./hymn`.)*
 - The exact wording of the status lines is the builder's call, in the house
   style of the other verbs (`++ ... ++` banners, `CANNOT ANOINT` on refusal).
 - **Nuitka's own output streams through, between anoint's banners.** It is
@@ -107,6 +118,10 @@ the user from ever seeing its numbers.
 Each rendered file is written into the temporary staging directory at the
 same relative path, with a `.py` suffix (`pkg/cog.lit` becomes
 `pkg/cog.py`, `pkg/__init__.lit` becomes `pkg/__init__.py`).
+
+*(Correction, post-review: `stage` refuses an entry litany that is not among
+the gathered files, with `UnctionFault`, rather than staging a tree whose entry
+module does not exist. `anoint` reports it as one `CANNOT ANOINT` line.)*
 
 Every plain `.py` file under the same directory, with the same skip rule, is
 copied into the staging directory at its relative path. The staging
@@ -279,6 +294,11 @@ What each platform adds:
   to the console's encoding: a litany line the console cannot encode is
   printed with replacement characters rather than falling back to a plain
   traceback.
+  *(Correction, post-review: on Windows Nuitka is always handed an output name
+  ending in `.exe`, whatever `-o` says, and the finished file is then moved to
+  the `-o` path exactly as spelled, so `-o hymn` yields a file named `hymn`.
+  This was built after the draft above and is unverified until the CI matrix
+  runs.)*
 - **Linux.** Nuitka's single-file mode needs `patchelf`. The extra installs it
   on Linux where a wheel makes that possible
   (`patchelf; sys_platform == "linux"`); if Nuitka still cannot find it, its

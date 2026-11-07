@@ -120,7 +120,7 @@
 
 <pre>
 <span class="dim">:status:</span>     <span class="ok">SPEC I (CORE) AND SPEC II (CONSTRUCTS) OPERATIONAL</span>
-             <span class="ok">SPEC III (TOOLING): SEVEN VERBS OF EIGHT</span>
+             <span class="ok">SPEC III (TOOLING): ALL EIGHT VERBS BUILT</span>
              <span class="ok">SPEC IV (SANCTION): ARCHETYPES DECLARED AT COMPILE TIME</span>
              <span class="ok">SPEC V (ARCHETYPE TRUTH): READ ON REQUEST, ONE LITANY AT A TIME</span>
 <span class="dim">:requires:</span>   <span class="amber">PYTHON &gt;= 3.12 (PEP 701, SANCTIFIED F-STRING TOKENIZATION)</span>
@@ -131,8 +131,7 @@
 <pre><b>++ DO NOT USE THIS IN PRODUCTION ++</b></pre>
 <p>LITURGY IS A TOY, BUILT FOR FUN AND FOR THE EXCUSE IT GAVE TO GO RUMMAGING
 AROUND IN CPYTHON'S IMPORT MACHINERY. IT IS NOT A SERIOUS LANGUAGE AND IT IS
-NOT MAINTAINED AS ONE. IT IS INCOMPLETE: ONE OF THE THIRD SPEC'S EIGHT VERBS
-IS NOTHING BUT A RESERVED NAME, AND THE READING OF ARCHETYPES DOES NOT FOLLOW
+NOT MAINTAINED AS ONE. IT IS INCOMPLETE: THE READING OF ARCHETYPES DOES NOT FOLLOW
 IMPORTS, SO IT JUDGES ONE LITANY AT A TIME. IT IS BREAKABLE, IN WAYS
 PART DOCUMENTED AND PART NOT: WRITTEN IN A FEW DAYS BY ONE PERSON AND REVIEWED
 BY NOBODY WHO HAS TO LIVE WITH IT. RUN IT ON PRAYERS YOU WOULD NOT MIND
@@ -194,19 +193,21 @@ quiet.lit:1:1: span is reserved; it becomes range -- silently
 
 <p>THE HOOK IS INSTALLED BY <span class="lower amber">chant</span>,
 <span class="lower amber">commune</span> AND <span class="lower amber">prove</span>, AND BY NOTHING ELSE:
-A PLAIN <span class="lower amber">python -c "import mymod"</span> CANNOT SEE A LITANY. TO ANOINT A WHOLE
-ENVIRONMENT, DROP A <span class="lower amber">.pth</span> INTO SITE-PACKAGES; CHAPTER II SETS DOWN THE
+A PLAIN <span class="lower amber">python -c "import mymod"</span> CANNOT SEE A LITANY. TO MAKE A WHOLE
+ENVIRONMENT SEE LITANIES, DROP A <span class="lower amber">.pth</span> INTO SITE-PACKAGES; CHAPTER II SETS DOWN THE
 LINE, AND ITS THREE COSTS.</p>
 
 <p>THE GLYPHS CAN BE ILLUMINATED: <span class="lower amber">pip install -e ".[highlight]"</span>
 ADDS A PYGMENTS LEXER DRIVEN BY THE COMPILER'S OWN TOKEN PASSES, SO THE THREE
 PROHIBITIONS HOLD IN THE COLOURS TOO, AND
 <span class="lower amber">editors/vscode-liturgy</span> CARRIES A TEXTMATE GRAMMAR
-FOR VS CODE. TWO MORE EXTRAS EXIST AND THE CORE NEEDS NEITHER:
+FOR VS CODE. THREE MORE EXTRAS EXIST AND THE CORE NEEDS NONE OF THEM:
 <span class="lower amber">.[archetypes]</span> ADDS THE MYPY THAT
 <span class="lower amber">augur --archetypes</span> DELEGATES TO, AND
 <span class="lower amber">.[trials]</span> THE PYTEST THAT
-<span class="lower amber">prove</span> RUNS.</p>
+<span class="lower amber">prove</span> RUNS, AND
+<span class="lower amber">.[anoint]</span> THE NUITKA THAT
+<span class="lower amber">anoint</span> USES TO RENDER A LITANY AS A NATIVE EXECUTABLE.</p>
 
 <p>TWO VERBS RUN LITANIES. <span class="lower amber">chant</span> EXECUTES A LITANY WITH
 <span class="lower amber">__main__</span> SEMANTICS; <span class="lower amber">commune</span>
@@ -350,12 +351,13 @@ WIDTH. THE SOURCE SHOWN IS WHAT ACTUALLY RAN, NOT WHATEVER THE FILE CONTAINS NOW
 <a href="liber-liturgiae.html">LIBER LITURGIAE</a>      <span class="dim">THE FULL LANGUAGE REFERENCE: TWELVE CHAPTERS AND A
                      CONCORDANCE OF ALL SIXTY-FOUR RESERVED WORDS.</span>
 
-<a href="liber-liturgiae.html#ch11">THE READING OF OMENS</a> <span class="dim">CHAPTER XI: THE SEVEN TOOLING VERBS. augur READS A
+<a href="liber-liturgiae.html#ch11">THE READING OF OMENS</a> <span class="dim">CHAPTER XI: THE EIGHT TOOLING VERBS. augur READS A
                      LITANY FOR FAULTS, transcribe RENDERS PYTHON INTO
                      LITURGY, forge COMPILES A LITANY WITHOUT CHANTING IT,
                      consecrate CHECKS THE SEALS, sanctify SETS A LITANY'S
                      FORM IN ORDER, prove RUNS THE TRIALS, purge CLEARS
-                     THE RELICS.</span>
+                     THE RELICS, anoint RENDERS A LITANY AS A NATIVE
+                     EXECUTABLE.</span>
 
 <a href="liturgy-data-slate.html">DATA-SLATE</a>           <span class="dim">THE SHORT OVERVIEW, IN THE FORM OF A COGITATOR
                      MANUAL PAGE.</span>
