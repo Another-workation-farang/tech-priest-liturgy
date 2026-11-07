@@ -7,6 +7,7 @@ generated-line -> litany-line table the executable's curses read.
 
 import ast
 import importlib.util
+import os
 import pathlib
 import shutil
 
@@ -87,11 +88,14 @@ def bake(tables: rubric.Tables) -> str:
 
 def stage(entry: pathlib.Path, files: list[pathlib.Path], staging: pathlib.Path) -> int:
     """Mirror the project under `staging` as plain Python; returns the litany count."""
-    root = entry.parent
+    root = pathlib.Path(os.path.abspath(entry.parent))
+    entry_abs = os.path.abspath(entry)
+    if not any(f.suffix == ".lit" and os.path.abspath(f) == entry_abs for f in files):
+        raise UnctionFault(str(entry), "is not among the gathered litanies")
     tables: rubric.Tables = {}
     count = 0
     for path in files:
-        rel = path.relative_to(root)
+        rel = pathlib.Path(os.path.abspath(path)).relative_to(root)
         dest = staging / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         if path.suffix != ".lit":
@@ -99,13 +103,13 @@ def stage(entry: pathlib.Path, files: list[pathlib.Path], staging: pathlib.Path)
             continue
         try:
             src = importlib.util.decode_source(path.read_bytes())
-            text, lmap = render_litany(src, str(path), entry=path == entry)
+            text, lmap = render_litany(src, str(path), entry=os.path.abspath(path) == entry_abs)
         except (UnicodeDecodeError, ValueError, LookupError) as err:
             raise UnctionFault(str(path), f"{type(err).__name__}: {err}") from err
         dest = dest.with_suffix(".py")
         dest.write_text(text, encoding="utf-8")
-        # Keyed by the staged .py path, which is what a frame's filename names.
-        tables[rel.with_suffix(".py").as_posix()] = (rel.as_posix(), lmap, [l.rstrip("\n") for l in split_lines(src)])
+        # Keyed as the runtime keys a frame's filename: one shared key function.
+        tables[rubric.key_for(str(dest), str(staging))] = (rel.as_posix(), lmap, [l.rstrip("\n") for l in split_lines(src)])
         count += 1
     (staging / f"{HOOK_MODULE}.py").write_text(bake(tables), encoding="utf-8")
     return count

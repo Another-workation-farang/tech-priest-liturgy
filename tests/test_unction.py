@@ -91,3 +91,56 @@ def test_baked_module_imports_nothing_from_liturgy(codex, tmp_path):
     names = {a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
     names |= {n.module or "" for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
     assert not any(m.startswith("liturgy") for m in names)
+
+
+def test_undecodable_litany_is_an_unction_fault(codex, tmp_path):
+    bad = codex / "bad.lit"
+    # Bad bytes on line 3: the first two lines are encoding-sniffed, and fail as SyntaxError.
+    bad.write_bytes(b"intone(1)\n\n\xff\n")
+    files, _ = _gather([str(codex)])
+    with pytest.raises(unction.UnctionFault) as ei:
+        unction.stage(codex / "hymn.lit", files, tmp_path / "staged")
+    assert ei.value.path == str(bad)
+    assert ei.value.reason.startswith("UnicodeDecodeError:")
+
+
+def test_uncompilable_litany_propagates_syntax_error(codex, tmp_path):
+    bad = codex / "bad.lit"
+    bad.write_text("rite (:\n", encoding="utf-8")
+    files, _ = _gather([str(codex)])
+    with pytest.raises(SyntaxError) as ei:
+        unction.stage(codex / "hymn.lit", files, tmp_path / "staged")
+    assert not isinstance(ei.value, unction.UnctionFault)
+    assert str(bad) in str(ei.value.filename)
+
+
+def test_relative_entry_spelling_still_gets_the_hook(codex, tmp_path, monkeypatch):
+    files, _ = _gather([str(codex)])
+    monkeypatch.chdir(codex.parent)
+    unction.stage(pathlib.Path("codex") / "hymn.lit", files, tmp_path / "staged")
+    assert "import __liturgy_curse" in (tmp_path / "staged" / "hymn.py").read_text(encoding="utf-8")
+
+
+def test_entry_outside_the_gathered_files_is_refused(codex, tmp_path):
+    files, _ = _gather([str(codex)])
+    with pytest.raises(unction.UnctionFault) as ei:
+        unction.stage(codex / "nowhere.lit", files, tmp_path / "staged")
+    assert ei.value.reason == "is not among the gathered litanies"
+
+
+def test_baked_table_keys_round_trip_through_key_for(tmp_path):
+    from liturgy import rubric
+
+    root = tmp_path / "tree"
+    (root / "pkg").mkdir(parents=True)
+    (root / "main.lit").write_text("intone(1)\n", encoding="utf-8")
+    (root / "pkg" / "Cog2.lit").write_text("intone(2)\n", encoding="utf-8")
+    files, _ = _gather([str(root)])
+    staging = tmp_path / "staged"
+    unction.stage(root / "main.lit", files, staging)
+    tree = ast.parse((staging / "__liturgy_curse.py").read_text(encoding="utf-8"))
+    tables = next(ast.literal_eval(n.value) for n in tree.body
+                  if isinstance(n, ast.Assign) and n.targets[0].id == "_TABLES")
+    assert len(tables) == 2
+    for key in tables:
+        assert rubric.key_for(str(staging / key), str(staging)) == key
