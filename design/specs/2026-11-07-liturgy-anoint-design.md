@@ -184,6 +184,17 @@ generated names.
 Nuitka is then run in single-file mode on the staged entry module, following
 imports, and its executable is moved to the output path.
 
+*(Correction, final review: line maps record every located node, not only
+statements, so a fault on a decorator, an `except` clause or a `case` pattern
+reports its own line. `stage` skips a `.py` whose same-directory `.lit` twin was
+gathered, since `chant`'s loader prefers the `.lit`, and refuses a root file that
+would stage as `__liturgy_curse.py`. The `-o` source guard compares with
+`os.path.samefile`, not path strings, so case and symlink aliases are caught.
+Nuitka runs with the output directory as its cwd, so a project module named
+`glob` or `shutil` cannot shadow Nuitka's own imports, and `--follow-imports` is
+dropped as onefile's default. An unwritable output directory is refused up
+front, and a failed final move is a refusal, not a traceback.)*
+
 ## The curse in the executable
 
 ### One renderer, not two

@@ -1962,9 +1962,13 @@ may run faster, and nothing here is judged by it.</p>
 <p>It takes exactly one litany, the program's entry point. The executable is
 named after the litany's stem and written beside it (<code>hymn</code>; see below for
 Windows). <code>-o PATH</code> (<code>--out PATH</code>) names another file. The output directory
-must already exist, and an existing file at the output path is replaced. Two
-paths are refused rather than replaced: one that is an existing directory,
-and one that is a litany's own <code>.lit</code> or <code>.py</code> source.</p>
+must already exist and be writable, and an existing file at the output path
+is replaced. Two paths are refused rather than replaced: one that is an
+existing directory, and one that is a litany's own <code>.lit</code> or <code>.py</code> source.
+The source check compares files, not spellings, so a differently cased name on
+a case-insensitive filesystem, or a path through a symlink, is refused as well.
+An output directory that cannot be written is refused before anything is built:
+<code>++ CANNOT ANOINT: DIR cannot be written ++</code>.</p>
 
 <div class="warning"><pre>++ CANNOT ANOINT: /home/adept/hymn/sub is a directory ++
 ++ CANNOT ANOINT: /home/adept/hymn/cog.lit is one of the litany's own sources ++</pre></div>
@@ -2004,7 +2008,7 @@ will fail at run time, are not hidden.</p>
 ++ ANOINTING hymn.lit ++
    2 litanies rendered; the machine tongue is being forged
 Nuitka-Options: Used command line options:
-Nuitka-Options:   --mode=onefile --follow-imports --output-dir=... hymn.py
+Nuitka-Options:   --mode=onefile --output-dir=... --output-filename=hymn .../hymn.py
 Nuitka: Starting Python compilation with:
 Nuitka:   Version '4.3.4' on Python 3.12 (flavor 'CPython Official') commercial grade 'not installed'.
 ...
@@ -2081,9 +2085,20 @@ executable would point at generated lines that match no file the reader has.</p>
 <h3>What goes into the executable</h3>
 
 <p>Every <code>.lit</code> file under the entry litany's directory, recursively, is
-rendered, skipping directories whose names begin with <code>.</code> and <code>__pycache__</code>.
+rendered, skipping, without a word, directories whose names begin with <code>.</code>,
+<code>__pycache__</code>, and any directory holding a <code>pyvenv.cfg</code>, so a vendored
+virtual environment is left alone. Two things are not skipped quietly but
+refused, because an executable that silently lacks a litany is worse than no
+executable: a symlinked directory (<code>symlinked directory: not descended into,
+not scanned</code>) and a hidden source file such as <code>.draft.lit</code> (<code>hidden: not
+read</code>). Each is reported as its own <code>++ CANNOT ANOINT: PATH reason ++</code> line.
 Every plain <code>.py</code> file under the same directory is copied across, so that the
-mixed packages of the Codices chapter keep both halves. Modules outside that
+mixed packages of the Codices chapter keep both halves. Where a <code>.py</code> and a
+<code>.lit</code> of the same stem share a directory, the litany is the one carried and
+the <code>.py</code> is not copied: that is the choice <code>chant</code> makes, so the executable
+runs what <code>chant</code> runs. A file at the root of the entry directory that would
+become the generated <code>__liturgy_curse.py</code>, whether named <code>__liturgy_curse.py</code>
+or <code>__liturgy_curse.lit</code>, is refused. Modules outside that
 directory, the standard library and installed packages, are found by Nuitka
 in the usual way.</p>
 
@@ -2108,7 +2123,7 @@ executable anointed on macOS runs on macOS. The build above says as much in
 its own words (<code>Created binary that runs on macOS 11.0 (arm64) or higher</code>).</p>
 
 <ul>
-<li><b>macOS.</b> Gatekeeper quarantines a file that arrives by download, and an executable that has been downloaded, rather than built on the machine that runs it, will be refused until the quarantine mark is removed. The one command that clears it:
+<li><b>macOS.</b> Gatekeeper quarantines a file that arrives by download, and an executable that has been downloaded, rather than built on the machine that runs it, may be refused by macOS until the quarantine mark is removed. The one command that clears it:
 
 <pre class="shell"><span class="prompt">$</span> xattr -d com.apple.quarantine ./hymn</pre>
 
@@ -2119,8 +2134,7 @@ This was checked: with the mark added by <code>xattr -w com.apple.quarantine "00
 <!-- confirm against the first CI run: .exe name and move on Windows -->
 Nuitka uses MSVC when it finds it, and otherwise asks whether to download a MinGW or Zig compiler; that question reaches the terminal because the output is streamed.
 <!-- confirm against the first CI run: Nuitka's compiler download question on Windows -->
-A litany line the console cannot encode is printed with replacement characters in a curse, rather than losing the curse to a plain traceback.
-<!-- confirm against the first CI run: console encoding on Windows --></li>
+The curse is never lost to the console's encoding: a character the console cannot encode comes out escaped (<code>\u2699</code> for the gear) or, on a stream with no such handling, replaced. Run on macOS with <code>PYTHONIOENCODING=ascii</code> on a staged program, the gear in a quoted source line printed as <code>\u2699</code>.</li>
 </ul>
 
 <p>Only macOS has been run by hand. Linux and Windows are covered by a GitHub

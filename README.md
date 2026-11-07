@@ -1100,9 +1100,11 @@ $ liturgy anoint hymn.lit
 ```
 
 The executable is named after the litany (`hymn`) and written beside it;
-`-o PATH` names another file. The output directory must already exist, and an
-existing file at the output path is replaced, except that a directory, or one
-of the litany's own `.lit` or `.py` files, is refused. Exit status is 0 when
+`-o PATH` names another file. The output directory must already exist and be
+writable, and an existing file at the output path is replaced, except that a
+directory, or one of the litany's own `.lit` or `.py` files, is refused; the
+check compares files, so a differently cased name or a symlink to a source is
+refused too. Exit status is 0 when
 the executable was made and 1 otherwise. Without the extra the verb refuses
 before doing anything:
 
@@ -1122,7 +1124,7 @@ $ liturgy anoint hymn.lit
 ++ ANOINTING hymn.lit ++
    2 litanies rendered; the machine tongue is being forged
 Nuitka-Options: Used command line options:
-Nuitka-Options:   --mode=onefile --follow-imports --output-dir=... hymn.py
+Nuitka-Options:   --mode=onefile --output-dir=... --output-filename=hymn .../hymn.py
 Nuitka: Starting Python compilation with:
 Nuitka:   Version '4.3.4' on Python 3.12 (flavor 'CPython Official') commercial grade 'not installed'.
 ...
@@ -1170,8 +1172,8 @@ What to know before handing one on:
 - **One operating system per build.** Nuitka does not cross-compile: a macOS
   executable runs on macOS, and an executable runs only on machines of its own
   operating system and architecture.
-- **Gatekeeper (macOS).** A downloaded executable is quarantined until the mark
-  is removed: `xattr -d com.apple.quarantine ./hymn`. This was checked on a
+- **Gatekeeper (macOS).** macOS may refuse to open a downloaded executable until
+  the quarantine mark is removed: `xattr -d com.apple.quarantine ./hymn`. This was checked on a
   built executable. Signing and notarization are not offered.
 - **`patchelf` (Linux).** Nuitka's single-file mode needs it; the extra installs
   it where a wheel exists, and Nuitka's own message says so if it is still
@@ -1184,8 +1186,11 @@ What to know before handing one on:
   because the output streams.
 <!-- confirm against the first CI run: .exe name, move, and the compiler download question on Windows -->
 - **Litanies outside the entry directory are not carried.** Every `.lit` file
-  under the entry litany's directory is rendered (and every `.py` copied), so
-  all of them must compile. A litany reached through `PYTHONPATH`, an
+  under the entry litany's directory is rendered (and every `.py` copied, except
+  one beside a `.lit` of the same stem, which `chant` would not load either), so
+  all of them must compile. Dot-directories, `__pycache__` and any directory
+  holding a `pyvenv.cfg` are skipped; a symlinked directory or a hidden source
+  file is refused, not skipped. A litany reached through `PYTHONPATH`, an
   installed package or a computed `importlib.import_module` name is not
   gathered; the build still succeeds, Nuitka warns in its output, and the
   program fails at run time with `ForbiddenLore`.

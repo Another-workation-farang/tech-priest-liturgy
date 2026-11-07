@@ -1715,9 +1715,13 @@ $ liturgy anoint hymn.lit
 It takes exactly one litany, the program's entry point. The executable is
 named after the litany's stem and written beside it (`hymn`; see below for
 Windows). `-o PATH` (`--out PATH`) names another file. The output directory
-must already exist, and an existing file at the output path is replaced. Two
-paths are refused rather than replaced: one that is an existing directory,
-and one that is a litany's own `.lit` or `.py` source.
+must already exist and be writable, and an existing file at the output path
+is replaced. Two paths are refused rather than replaced: one that is an
+existing directory, and one that is a litany's own `.lit` or `.py` source.
+The source check compares files, not spellings, so a differently cased name on
+a case-insensitive filesystem, or a path through a symlink, is refused as well.
+An output directory that cannot be written is refused before anything is built:
+`++ CANNOT ANOINT: DIR cannot be written ++`.
 
 ```
 ++ CANNOT ANOINT: /home/adept/hymn/sub is a directory ++
@@ -1764,7 +1768,7 @@ $ liturgy anoint hymn.lit
 ++ ANOINTING hymn.lit ++
    2 litanies rendered; the machine tongue is being forged
 Nuitka-Options: Used command line options:
-Nuitka-Options:   --mode=onefile --follow-imports --output-dir=... hymn.py
+Nuitka-Options:   --mode=onefile --output-dir=... --output-filename=hymn .../hymn.py
 Nuitka: Starting Python compilation with:
 Nuitka:   Version '4.3.4' on Python 3.12 (flavor 'CPython Official') commercial grade 'not installed'.
 ...
@@ -1843,9 +1847,20 @@ executable would point at generated lines that match no file the reader has.
 ### What goes into the executable
 
 Every `.lit` file under the entry litany's directory, recursively, is
-rendered, skipping directories whose names begin with `.` and `__pycache__`.
+rendered, skipping, without a word, directories whose names begin with `.`,
+`__pycache__`, and any directory holding a `pyvenv.cfg`, so a vendored
+virtual environment is left alone. Two things are not skipped quietly but
+refused, because an executable that silently lacks a litany is worse than no
+executable: a symlinked directory (`symlinked directory: not descended into,
+not scanned`) and a hidden source file such as `.draft.lit` (`hidden: not
+read`). Each is reported as its own `++ CANNOT ANOINT: PATH reason ++` line.
 Every plain `.py` file under the same directory is copied across, so that the
-mixed packages of the Codices chapter keep both halves. Modules outside that
+mixed packages of the Codices chapter keep both halves. Where a `.py` and a
+`.lit` of the same stem share a directory, the litany is the one carried and
+the `.py` is not copied: that is the choice `chant` makes, so the executable
+runs what `chant` runs. A file at the root of the entry directory that would
+become the generated `__liturgy_curse.py`, whether named `__liturgy_curse.py`
+or `__liturgy_curse.lit`, is refused. Modules outside that
 directory, the standard library and installed packages, are found by Nuitka
 in the usual way.
 
@@ -1882,8 +1897,8 @@ its own words (`Created binary that runs on macOS 11.0 (arm64) or higher`).
 
 - **macOS.** Gatekeeper quarantines a file that arrives by download, and an
   executable that has been downloaded, rather than built on the machine
-  that runs it, will be refused until the quarantine mark is removed. The
-  one command that clears it:
+  that runs it, may be refused by macOS until the quarantine mark is removed.
+  The one command that clears it:
 
   ```
   $ xattr -d com.apple.quarantine ./hymn
@@ -1907,9 +1922,10 @@ its own words (`Created binary that runs on macOS 11.0 (arm64) or higher`).
   a MinGW or Zig compiler; that question reaches the terminal because the
   output is streamed.
   <!-- confirm against the first CI run: Nuitka's compiler download question on Windows -->
-  A litany line the console cannot encode is printed with replacement
-  characters in a curse, rather than losing the curse to a plain traceback.
-  <!-- confirm against the first CI run: console encoding on Windows -->
+  The curse is never lost to the console's encoding: a character the console
+  cannot encode comes out escaped (`\u2699` for the gear) or, on a stream with
+  no such handling, replaced. Run on macOS with `PYTHONIOENCODING=ascii` on a
+  staged program, the gear in a quoted source line printed as `\u2699`.
 
 Only macOS has been run by hand. Linux and Windows are covered by a GitHub
 Actions workflow that runs `anoint`'s tests, a real build among them, on each;
