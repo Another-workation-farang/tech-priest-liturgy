@@ -1,0 +1,19 @@
+tests/test_rubric.py
+  s_28187e8e40d713::t_6891f6bbf6eaa3 96-99,101,105-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "efedae36ecad0376e509271d51c11626bf8e5a66",
+  "prompts": {},
+  "sessions": {
+    "s_28187e8e40d713": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f12e5d5a-610b-48a6-9ce0-04f7711d1fc7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
