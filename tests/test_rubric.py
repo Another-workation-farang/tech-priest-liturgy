@@ -93,17 +93,17 @@ def test_render_keeps_litany_frame_when_relpath_raises_for_another_frame(tmp_pat
         return real(path, *a, **k)
 
     monkeypatch.setattr(os.path, "relpath", relpath)
-    seer = rubric.TableSeer(TABLES, str(tmp_path))
-    tb = None
+    ns = {}
+    exec(compile("def boom():\n    1/0", "Z:/foreign.py", "exec"), ns)
+    # hymn.py line 4 maps to hymn.lit line 9; it calls into the foreign frame.
+    code = compile("\n\n\nns['boom']()", str(tmp_path / "hymn.py"), "exec")
     try:
-        exec(compile("\n\n\n1/0", str(tmp_path / "hymn.py"), "exec"))
+        exec(code, {"ns": ns})
     except ZeroDivisionError as e:
-        tb = e.__traceback__
         exc = e
-    # Append a frame from another "drive" ahead of the litany frame's callee.
-    foreign = traceback.FrameSummary("Z:/foreign.py", 1, "f", lookup_line=False)
-    assert not seer.is_litany(foreign.filename)
     out = io.StringIO()
-    rubric.render(type(exc), exc, tb, seer=seer, names={}, file=out)
-    assert "hymn.lit, line 9" in out.getvalue()
-    assert "MACHINE CURSE" in out.getvalue()
+    rubric.render(type(exc), exc, exc.__traceback__, seer=rubric.TableSeer(TABLES, str(tmp_path)), names={}, file=out)
+    text = out.getvalue()
+    assert "Z:/foreign.py" in text
+    assert "hymn.lit, line 9" in text
+    assert "MACHINE CURSE" in text
