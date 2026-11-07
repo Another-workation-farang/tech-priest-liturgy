@@ -1,0 +1,24 @@
+tests/conftest.py
+  s_28187e8e40d713::t_1598d2e126cd65 1-99
+tests/test_unction.py
+  s_28187e8e40d713::t_1598d2e126cd65 3-4,7,10,46-93
+src/liturgy/unction.py
+  s_28187e8e40d713::t_b2ef31fe6058f6 105-108
+  s_28187e8e40d713::t_0102e2402bb1ed 9-11,13,15-16,77-104,109-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ba17658d8d38951994535c7cbb2c668031c9624c",
+  "prompts": {},
+  "sessions": {
+    "s_28187e8e40d713": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f12e5d5a-610b-48a6-9ce0-04f7711d1fc7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
