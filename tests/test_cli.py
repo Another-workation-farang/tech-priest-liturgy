@@ -87,23 +87,12 @@ def test_profane_env_var_also_gives_a_plain_traceback(tmp_path):
     assert "ZeroDivisionError" in out.stderr
 
 
-def test_reserved_verbs_are_declared():
-    # Spec III owns these; Core must not hand the names to anything else.
-    # All but one have since graduated to real subparsers. `anoint` is the
-    # last name still held, and holding it is the point -- see Chapter IX.
-    assert cli.RESERVED_VERBS == {"anoint"}
-    built = (
-        "augur", "transcribe", "purge", "forge",
-        "consecrate", "prove", "sanctify",
-    )
-    for verb in built:
-        assert verb not in cli.RESERVED_VERBS
+def test_anoint_is_a_verb():
+    assert run_cli(["anoint", "--help"]).returncode == 0
 
 
 def test_an_unknown_verb_is_rejected(prayer):
-    # RESERVED_VERBS reserves nothing mechanically; argparse does the work.
-    # `anoint` is the last reserved, unbuilt name, so it is the live example.
-    out = run_cli(["anoint", str(prayer)])
+    out = run_cli(["exorcise", str(prayer)])
     assert out.returncode != 0
     assert "invalid choice" in out.stderr
 

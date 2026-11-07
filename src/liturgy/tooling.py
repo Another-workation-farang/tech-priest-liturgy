@@ -8,7 +8,9 @@ import io
 import os
 import pathlib
 import shutil
+import subprocess
 import sys
+import tempfile
 import tokenize
 
 from .archetypes import ArchetypesUnread, check, mypy_available
@@ -20,6 +22,7 @@ from .reverse import to_liturgy
 from .form import UnsanctifiableLitany, sanctify_text
 from .seals import find_breaches, find_seals
 from .transform import UnfinishedLitany, split_lines, transform
+from .unction import UnctionFault, stage
 
 _SOURCES = (".lit", ".py")
 
@@ -1048,3 +1051,70 @@ def sanctify(paths: list[str], *, check: bool = False, out=None) -> int:
 
     print(f"++ {changed} sanctified, {clean} already in order ++", file=out)
     return 1 if failed else 0
+
+
+def nuitka_available() -> bool:
+    return importlib.util.find_spec("nuitka") is not None
+
+
+def _nuitka(entry: pathlib.Path, output: pathlib.Path) -> int:
+    # Streamed, never captured: Nuitka asks questions and takes minutes.
+    return subprocess.run(
+        [sys.executable, "-m", "nuitka", "--mode=onefile", "--follow-imports",
+         f"--output-dir={output.parent}", f"--output-filename={output.name}", str(entry)],
+        cwd=entry.parent,
+    ).returncode
+
+
+def anoint(path: str, dest: str | None = None, *, out=None, build=None) -> int:
+    """Render a litany and everything it imports as one native executable."""
+    out = out if out is not None else sys.stdout
+
+    def refuse(message: str) -> int:
+        print(f"++ CANNOT ANOINT: {message} ++", file=out)
+        return 1
+
+    if build is None:
+        if not nuitka_available():
+            print("++ CANNOT ANOINT: nuitka is not installed ++", file=out)
+            print("   anointing needs it:  pip install 'liturgy[anoint]'", file=out)
+            return 1
+        build = _nuitka
+    entry = pathlib.Path(os.path.abspath(path))
+    if not entry.is_file():
+        return refuse(f"{path} does not exist")
+    if entry.suffix != ".lit":
+        return refuse(f"{path} is not a litany")
+    root = entry.parent
+    target = (
+        pathlib.Path(os.path.abspath(dest)) if dest is not None
+        else entry.with_name(entry.stem + (".exe" if os.name == "nt" else ""))
+    )
+    if not target.parent.is_dir():
+        return refuse(f"{target.parent} does not exist")
+    files, notes = _gather([str(root)])
+    if notes:
+        for d, message in notes:
+            refuse(f"{d} {message}")
+        return 1
+    print(f"++ ANOINTING {entry.name} ++", file=out, flush=True)
+    with tempfile.TemporaryDirectory(prefix="liturgy-anoint-", ignore_cleanup_errors=True) as t:
+        tmp = pathlib.Path(t)
+        staging = tmp / "staged"
+        try:
+            n = stage(entry, files, staging)
+        except SyntaxError as err:
+            where = os.path.relpath(err.filename, root) if err.filename else "<unknown>"
+            return refuse(f"{where} line {err.lineno} {type(err).__name__}: {err.msg}")
+        except UnctionFault as fault:
+            return refuse(f"{os.path.relpath(fault.path, root)} {fault}")
+        print(f"   {n} litan{'y' if n == 1 else 'ies'} rendered; the machine tongue is being forged",
+              file=out, flush=True)
+        output = tmp / "out" / target.name
+        code = build(staging / f"{entry.stem}.py", output)
+        if code != 0 or not output.is_file():
+            return refuse(f"nuitka failed (exit {code})")
+        target.unlink(missing_ok=True)
+        shutil.move(output, target)
+    print(f"++ {entry.name} IS ANOINTED: {target} ++", file=out)
+    return 0

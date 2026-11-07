@@ -11,15 +11,6 @@ from .loader import chant as _chant
 
 HERETICAL: dict[str, str] = {"run": "chant", "repl": "commune"}
 
-# Owned by Spec III. Declared here so Core never reuses the names. This
-# reserves nothing mechanically -- nothing consults the set at parse time --
-# and nothing needs to: argparse rejects any verb it has no subparser for.
-RESERVED_VERBS = frozenset(
-    {
-        "anoint",
-    }
-)
-
 
 def _add_global_flags(parser: argparse.ArgumentParser, *, default) -> None:
     """`--absolved`/`--profane`, accepted before or after the verb.
@@ -80,6 +71,11 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_global_flags(p_trans, default=argparse.SUPPRESS)
     p_trans.add_argument("source")
     p_trans.add_argument("-o", "--out", dest="dest", default=None)
+
+    p_anoint = verbs.add_parser("anoint", help="render a litany as a native executable")
+    _add_global_flags(p_anoint, default=argparse.SUPPRESS)
+    p_anoint.add_argument("file")
+    p_anoint.add_argument("-o", "--out", dest="dest", default=None)
 
     p_forge = verbs.add_parser("forge", help="compile litanies to bytecode")
     _add_global_flags(p_forge, default=argparse.SUPPRESS)
@@ -176,6 +172,11 @@ def main(argv: list[str] | None = None) -> int:
         from .tooling import transcribe
 
         return transcribe(args.source, args.dest)
+
+    if args.verb == "anoint":
+        from .tooling import anoint
+
+        return anoint(args.file, args.dest)
 
     if args.verb == "forge":
         from .tooling import forge
