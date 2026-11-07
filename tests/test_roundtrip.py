@@ -1,3 +1,4 @@
+import ast
 import io
 import math
 import pathlib
@@ -12,8 +13,17 @@ from liturgy.reverse import to_liturgy
 
 from liturgy.constructs import carrier_pass
 from liturgy.lexicon import RESERVED
-from liturgy.compiler import _PASSES
+from liturgy import unction
+from liturgy.compiler import _PASSES, _artifacts
 from liturgy.transform import transform
+
+
+def _parses(src: str) -> bool:
+    try:
+        ast.parse(src)
+    except SyntaxError:
+        return False
+    return True
 
 
 def _has_word(text: str, word: str) -> bool:
@@ -382,7 +392,13 @@ def test_real_python_files_round_trip_through_liturgy(capsys):
             if carried.subs or carried.facts:
                 failures.append(f"{path}: carrier_pass produced {carried!r}")
                 continue
-            back = transform(to_liturgy(src), _PASSES).python
+            lit = to_liturgy(src)
+            back = transform(lit, _PASSES).python
+            # Spec VI backstop: the rewritten tree must survive ast.unparse.
+            # Python 2 fixtures (lib2to3 data) have no tree to render.
+            if _parses(src):
+                tree = _artifacts(lit, str(path), sanction=False)[0]
+                unction.line_map(tree, ast.unparse(tree))
         except Exception as exc:  # noqa: BLE001 - report, do not mask
             failures.append(f"{path}: {type(exc).__name__}: {exc}")
             continue
