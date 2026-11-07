@@ -353,7 +353,10 @@ Tables = dict[str, tuple[str, dict[int, int], list[str]]]
 
 
 def key_for(filename: str, root: str) -> str:
-    rel = os.path.normcase(os.path.relpath(filename, root))
+    try:
+        rel = os.path.normcase(os.path.relpath(filename, root))
+    except ValueError:  # other drive, or empty name: never a table key
+        return filename
     return rel.replace(os.sep, "/")
 
 

@@ -1,5 +1,6 @@
 import ast
 import io
+import os
 import pathlib
 import traceback
 
@@ -76,3 +77,33 @@ def test_syntax_errors_and_plumbing(tmp_path):
     assert seer.place_syntax(exc) == ("hymn.lit", 7, "rite main() -> Void:", None)
     assert seer.is_plumbing(_frame("<frozen importlib._bootstrap>", 1))
     assert not seer.is_plumbing(_frame(str(tmp_path / "hymn.py"), 1))
+
+
+def test_key_for_survives_names_relpath_rejects(tmp_path):
+    assert rubric.key_for("", str(tmp_path)) == ""
+    assert not rubric.TableSeer(TABLES, str(tmp_path)).is_litany("")
+
+
+def test_render_keeps_litany_frame_when_relpath_raises_for_another_frame(tmp_path, monkeypatch):
+    real = os.path.relpath
+
+    def relpath(path, *a, **k):
+        if path == "Z:/foreign.py":
+            raise ValueError("path is on mount 'Z:'")
+        return real(path, *a, **k)
+
+    monkeypatch.setattr(os.path, "relpath", relpath)
+    seer = rubric.TableSeer(TABLES, str(tmp_path))
+    tb = None
+    try:
+        exec(compile("\n\n\n1/0", str(tmp_path / "hymn.py"), "exec"))
+    except ZeroDivisionError as e:
+        tb = e.__traceback__
+        exc = e
+    # Append a frame from another "drive" ahead of the litany frame's callee.
+    foreign = traceback.FrameSummary("Z:/foreign.py", 1, "f", lookup_line=False)
+    assert not seer.is_litany(foreign.filename)
+    out = io.StringIO()
+    rubric.render(type(exc), exc, tb, seer=seer, names={}, file=out)
+    assert "hymn.lit, line 9" in out.getvalue()
+    assert "MACHINE CURSE" in out.getvalue()
