@@ -1,0 +1,26 @@
+src/liturgy/archetypes.py
+  s_a231e56b4a596b::t_f47d66823a9b7e 202-210,213
+  s_a231e56b4a596b::t_a05bd530e03219 260-261,267,272
+  s_a231e56b4a596b::t_159ce2a831b7b3 216-219
+  s_a231e56b4a596b::t_4e1406efd247b1 253
+  s_a231e56b4a596b::t_aaeaea92a46ae1 254-259,262-266
+tests/test_archetypes.py
+  s_a231e56b4a596b::t_62bb1f267cf3ea 1040-1047
+  s_a231e56b4a596b::t_3dac41ee2bbd13 1039
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4e5ef3d72e99da1930009786cf82ee9069a73a5d",
+  "prompts": {},
+  "sessions": {
+    "s_a231e56b4a596b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "92072f55-8d8a-4251-ab06-e4b41776a0c5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
