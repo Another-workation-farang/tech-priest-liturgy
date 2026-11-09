@@ -1,0 +1,28 @@
+README.md
+  s_28187e8e40d713::t_2bba82bdb37872 1186-1188
+docs/LIBER-LITURGIAE.md
+  s_28187e8e40d713::t_ac10d30e583f38 1919-1922
+design/specs/2026-11-07-liturgy-anoint-design.md
+  s_28187e8e40d713::t_48917c635ad7d9 321-326
+docs/liber-liturgiae.html
+  s_28187e8e40d713::t_13173bcd28b584 2132
+tests/test_anoint.py
+  s_28187e8e40d713::t_1c124545bbaf0c 124-125
+  s_28187e8e40d713::t_0aed0b99be59d8 133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "46758276e85f7497757a9c9142d1db6af187a1ef",
+  "prompts": {},
+  "sessions": {
+    "s_28187e8e40d713": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f12e5d5a-610b-48a6-9ce0-04f7711d1fc7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
