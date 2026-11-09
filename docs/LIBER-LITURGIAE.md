@@ -1916,8 +1916,10 @@ its own words (`Created binary that runs on macOS 11.0 (arm64) or higher`).
 - **Windows.** The executable defaults to `hymn.exe`. Nuitka is always handed
   an output name ending in `.exe`, and the finished file is then moved to the
   `-o` path exactly as you spelled it, so `-o hymn` on Windows yields a file
-  named `hymn`, with no `.exe`.
-  <!-- confirm against the first CI run: .exe name and move on Windows -->
+  named `hymn`, with no `.exe`. Nuitka's single-file launcher on Windows
+  drops empty arguments: `hymn.exe ""` reaches the litany with no argument
+  at all, where `chant` would hand it an empty string. A litany that reads
+  an argument which may be empty should not rely on its position.
   Nuitka uses MSVC when it finds it, and otherwise asks whether to download
   a MinGW or Zig compiler; that question reaches the terminal because the
   output is streamed.

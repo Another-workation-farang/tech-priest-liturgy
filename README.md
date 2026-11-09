@@ -1183,8 +1183,9 @@ What to know before handing one on:
   output name ending in `.exe`, and the file is then moved to the `-o` path
   exactly as spelled. Nuitka uses MSVC if it finds it, and otherwise asks
   whether to download a MinGW or Zig compiler; the question reaches you
-  because the output streams.
-<!-- confirm against the next CI run: .exe name and move on Windows; MinGW/Zig unobserved (CI runners have MSVC) -->
+  because the output streams. Nuitka's single-file launcher on Windows drops
+  empty arguments: `hymn.exe ""` reaches the litany with no argument at all.
+<!-- MinGW/Zig question unobserved: CI runners have MSVC -->
 - **Dependency Walker (Windows).** On its first single-file build Nuitka asks
   to download it, and cannot build one on Windows without it. Answer yes once
   and it is cached. Where nothing can answer (a CI job, a piped shell) the

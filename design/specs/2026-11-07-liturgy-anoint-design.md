@@ -318,7 +318,12 @@ What each platform adds:
   Windows without dependency walker.` `anoint` still never pre-consents; the
   workflow warms Nuitka's cache with one `--assume-yes-for-downloads` build of
   a trivial script on Windows runners, and the docs tell users the same.
-  On Linux the `patchelf` wheel sufficed on `ubuntu-latest`.)*
+  On Linux the `patchelf` wheel sufficed on `ubuntu-latest`. The second run
+  built and ran `hymn.exe` on Windows, and every curse matched `chant`, but
+  showed that Nuitka's single-file launcher there drops empty arguments:
+  `hymn.exe ""` reached the litany with no `sys.argv[1]`. The e2e test's
+  clean run now passes a non-empty omen, and the docs record the
+  limitation.)*
 - **Linux.** Nuitka's single-file mode needs `patchelf`. The extra installs it
   on Linux where a wheel makes that possible
   (`patchelf; sys_platform == "linux"`); if Nuitka still cannot find it, its

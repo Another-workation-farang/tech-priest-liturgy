@@ -121,7 +121,8 @@ needs_nuitka = pytest.mark.skipif(
 def test_an_anointed_executable_curses_like_chant(codex, tmp_path):
     expected = {o: normalise(chant_run(codex, o).stderr, codex) for o in OMENS}
     assert all(rubric.BANNER_OPEN in e for e in expected.values())
-    clean = chant_run(codex, "").stdout
+    # Not "": Nuitka's single-file launcher on Windows drops empty arguments.
+    clean = chant_run(codex, "calm").stdout
     shipped = tmp_path / "elsewhere"
     shipped.mkdir()
     dest = shipped / EXE
@@ -129,7 +130,7 @@ def test_an_anointed_executable_curses_like_chant(codex, tmp_path):
     shutil.rmtree(codex)  # the sources are gone; only the executable remains
     for omen in OMENS:
         assert subprocess.run([str(dest), omen], cwd=shipped, capture_output=True, text=True).stderr == expected[omen]
-    run = subprocess.run([str(dest), ""], cwd=shipped, capture_output=True, text=True)
+    run = subprocess.run([str(dest), "calm"], cwd=shipped, capture_output=True, text=True)
     assert run.returncode == 0 and run.stdout == clean
 
 
