@@ -1,0 +1,21 @@
+design/specs/2026-11-09-liturgy-binharic-design.md
+  s_49e18097f452e4::t_7faf1f2d4ec000 1-50
+design/specs/2026-11-09-liturgy-binharic-docs.md
+  s_49e18097f452e4::t_7a77524e7f8b4c 1-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3eebca63c30c5ef3cd921145c1cd5bc7a46096bb",
+  "prompts": {},
+  "sessions": {
+    "s_49e18097f452e4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2043ac96-7a33-4d9c-9222-78f216fd20d9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
