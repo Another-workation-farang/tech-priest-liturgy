@@ -1911,8 +1911,8 @@ its own words (`Created binary that runs on macOS 11.0 (arm64) or higher`).
 - **Linux.** Nuitka's single-file mode needs `patchelf`. The extra installs
   it where a wheel makes that possible (`patchelf; sys_platform == 'linux'`);
   if Nuitka still cannot find it, its own message says so in the streamed
-  output.
-  <!-- confirm against the first CI run: patchelf wheel suffices on ubuntu-latest -->
+  output. The wheel suffices on `ubuntu-latest`, where CI builds and runs an
+  executable on every push.
 - **Windows.** The executable defaults to `hymn.exe`. Nuitka is always handed
   an output name ending in `.exe`, and the finished file is then moved to the
   `-o` path exactly as you spelled it, so `-o hymn` on Windows yields a file
@@ -1921,7 +1921,17 @@ its own words (`Created binary that runs on macOS 11.0 (arm64) or higher`).
   Nuitka uses MSVC when it finds it, and otherwise asks whether to download
   a MinGW or Zig compiler; that question reaches the terminal because the
   output is streamed.
-  <!-- confirm against the first CI run: Nuitka's compiler download question on Windows -->
+  <!-- confirm when a machine without MSVC is at hand: CI runners have it -->
+  On its first single-file build, Nuitka also asks to download Dependency
+  Walker, without which it cannot build one on Windows at all:
+  `Fully automatic, cached. Proceed and download? [Yes]/No`. Answer yes once
+  and it is kept for every later build. Where nothing can answer, as in a CI
+  job or a piped shell, the answer defaults to no, Nuitka stops with
+  `FATAL: Nuitka does not work in '--mode=standalone' or '--mode=onefile' on Windows without dependency walker.`,
+  and `anoint` refuses with `nuitka failed (exit 1)`. Building any small
+  script once with `python -m nuitka --mode=onefile --assume-yes-for-downloads`
+  fills the same cache without the question; `anoint` itself never answers
+  for you.
   The curse is never lost to the console's encoding: a character the console
   cannot encode comes out escaped (`\u2699` for the gear) or, on a stream with
   no such handling, replaced. Run on macOS with `PYTHONIOENCODING=ascii` on a

@@ -310,6 +310,15 @@ What each platform adds:
   the `-o` path exactly as spelled, so `-o hymn` yields a file named `hymn`.
   This was built after the draft above and is unverified until the CI matrix
   runs.)*
+  *(Correction, post-CI: the first CI run showed that the download question
+  that matters on Windows is not a compiler but Dependency Walker, which
+  Nuitka cannot build a single-file executable without. Its prompt defaults
+  to no where nothing can answer, so the first Windows jobs failed with
+  `FATAL: Nuitka does not work in '--mode=standalone' or '--mode=onefile' on
+  Windows without dependency walker.` `anoint` still never pre-consents; the
+  workflow warms Nuitka's cache with one `--assume-yes-for-downloads` build of
+  a trivial script on Windows runners, and the docs tell users the same.
+  On Linux the `patchelf` wheel sufficed on `ubuntu-latest`.)*
 - **Linux.** Nuitka's single-file mode needs `patchelf`. The extra installs it
   on Linux where a wheel makes that possible
   (`patchelf; sys_platform == "linux"`); if Nuitka still cannot find it, its

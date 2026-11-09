@@ -1177,14 +1177,21 @@ What to know before handing one on:
   built executable. Signing and notarization are not offered.
 - **`patchelf` (Linux).** Nuitka's single-file mode needs it; the extra installs
   it where a wheel exists, and Nuitka's own message says so if it is still
-  missing.
-<!-- confirm against the first CI run: patchelf wheel suffices on ubuntu-latest -->
+  missing. The wheel suffices on `ubuntu-latest`, where CI builds and runs an
+  executable on every push.
 - **`.exe` (Windows).** The default is `hymn.exe`. Nuitka is always handed an
   output name ending in `.exe`, and the file is then moved to the `-o` path
   exactly as spelled. Nuitka uses MSVC if it finds it, and otherwise asks
   whether to download a MinGW or Zig compiler; the question reaches you
   because the output streams.
-<!-- confirm against the first CI run: .exe name, move, and the compiler download question on Windows -->
+<!-- confirm against the next CI run: .exe name and move on Windows; MinGW/Zig unobserved (CI runners have MSVC) -->
+- **Dependency Walker (Windows).** On its first single-file build Nuitka asks
+  to download it, and cannot build one on Windows without it. Answer yes once
+  and it is cached. Where nothing can answer (a CI job, a piped shell) the
+  answer defaults to no and `anoint` refuses with `nuitka failed (exit 1)`;
+  building any small script once with
+  `python -m nuitka --mode=onefile --assume-yes-for-downloads` fills the
+  cache without the question.
 - **Litanies outside the entry directory are not carried.** Every `.lit` file
   under the entry litany's directory is rendered (and every `.py` copied, except
   one beside a `.lit` of the same stem, which `chant` would not load either), so

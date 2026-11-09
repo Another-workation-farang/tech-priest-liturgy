@@ -20,6 +20,16 @@ jobs:
           python-version: ${{ matrix.python }}
           allow-prereleases: true
       - run: python -m pip install -e ".[anoint]" pytest
+      # Nuitka asks once before downloading Dependency Walker, which it needs
+      # for single-file builds on Windows; CI has no terminal to answer, so the
+      # answer defaults to no. anoint itself never pre-consents, so warm
+      # Nuitka's user cache here instead.
+      - name: Pre-approve Nuitka's one-time Windows download
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "print('warm')" > "$RUNNER_TEMP/warm.py"
+          python -m nuitka --mode=onefile --assume-yes-for-downloads --output-dir="$RUNNER_TEMP/warm" "$RUNNER_TEMP/warm.py"
       - run: python -m pytest tests/test_rubric.py tests/test_unction.py tests/test_anoint.py -v -rs
         env:
           LITURGY_REQUIRE_NUITKA: "1"
