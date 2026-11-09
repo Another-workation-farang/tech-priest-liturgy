@@ -8,6 +8,7 @@ license-files = ["LICENSE"]
 dependencies = []
 
 [project.optional-dependencies]
+anoint = ["nuitka>=4.3", "patchelf; sys_platform == 'linux'"]
 archetypes = ["mypy>=1.8"]
 highlight = ["Pygments>=2.14"]
 trials = ["pytest>=7"]
@@ -27,3 +28,4 @@ packages = ["src/liturgy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["slow: builds a native executable with Nuitka"]

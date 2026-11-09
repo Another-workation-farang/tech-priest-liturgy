@@ -8,7 +8,9 @@ import io
 import os
 import pathlib
 import shutil
+import subprocess
 import sys
+import tempfile
 import tokenize
 
 from .archetypes import ArchetypesUnread, check, mypy_available
@@ -20,6 +22,7 @@ from .reverse import to_liturgy
 from .form import UnsanctifiableLitany, sanctify_text
 from .seals import find_breaches, find_seals
 from .transform import UnfinishedLitany, split_lines, transform
+from .unction import UnctionFault, stage
 
 _SOURCES = (".lit", ".py")
 
@@ -1048,3 +1051,88 @@ def sanctify(paths: list[str], *, check: bool = False, out=None) -> int:
 
     print(f"++ {changed} sanctified, {clean} already in order ++", file=out)
     return 1 if failed else 0
+
+
+def nuitka_available() -> bool:
+    return importlib.util.find_spec("nuitka") is not None
+
+
+def _nuitka(entry: pathlib.Path, output: pathlib.Path) -> int:
+    output.parent.mkdir(parents=True, exist_ok=True)  # it is Nuitka's cwd
+    # Streamed, never captured: Nuitka asks questions and takes minutes.
+    return subprocess.run(
+        [sys.executable, "-m", "nuitka", "--mode=onefile",
+         f"--output-dir={output.parent}", f"--output-filename={output.name}", str(entry)],
+        # Not the staging directory: `python -m` puts the cwd first on sys.path, and a
+        # project module named `glob` or `shutil` would then hijack Nuitka itself.
+        cwd=output.parent,
+    ).returncode
+
+
+def _scratch_name(name: str, nt: bool) -> str:
+    # Nuitka may append .exe on Windows; hand it a name that already has one.
+    return name + ".exe" if nt and not name.lower().endswith(".exe") else name
+
+
+def anoint(path: str, dest: str | None = None, *, out=None, build=None) -> int:
+    """Render a litany and everything it imports as one native executable."""
+    out = out if out is not None else sys.stdout
+
+    def refuse(message: str) -> int:
+        print(f"++ CANNOT ANOINT: {message} ++", file=out)
+        return 1
+
+    if build is None:
+        if not nuitka_available():
+            print("++ CANNOT ANOINT: nuitka is not installed ++", file=out)
+            print("   anointing needs it:  pip install 'liturgy[anoint]'", file=out)
+            return 1
+        build = _nuitka
+    entry = pathlib.Path(os.path.abspath(path))
+    if not entry.is_file():
+        return refuse(f"{path} does not exist")
+    if entry.suffix != ".lit":
+        return refuse(f"{path} is not a litany")
+    root = entry.parent
+    target = (
+        pathlib.Path(os.path.abspath(dest)) if dest is not None
+        else entry.with_name(entry.stem + (".exe" if os.name == "nt" else ""))
+    )
+    if not target.parent.is_dir():
+        return refuse(f"{target.parent} does not exist")
+    if target.is_dir():
+        return refuse(f"{target} is a directory")
+    if not os.access(target.parent, os.W_OK):
+        return refuse(f"{target.parent} cannot be written")
+    files, notes = _gather([str(root)])
+    if notes:
+        for d, message in notes:
+            refuse(f"{d} {message}")
+        return 1
+    # samefile, not a string compare: case-insensitive filesystems and symlinks alias a source.
+    if target.exists() and any(os.path.samefile(f, target) for f in files):
+        return refuse(f"{target} is one of the litany's own sources")
+    print(f"++ ANOINTING {entry.name} ++", file=out, flush=True)
+    with tempfile.TemporaryDirectory(prefix="liturgy-anoint-", ignore_cleanup_errors=True) as t:
+        tmp = pathlib.Path(t)
+        staging = tmp / "staged"
+        try:
+            n = stage(entry, files, staging)
+        except SyntaxError as err:
+            where = os.path.relpath(err.filename, root) if err.filename else "<unknown>"
+            return refuse(f"{where} line {err.lineno} {type(err).__name__}: {err.msg}")
+        except UnctionFault as fault:
+            return refuse(f"{os.path.relpath(fault.path, root)} {fault}")
+        print(f"   {n} litan{'y' if n == 1 else 'ies'} rendered; the machine tongue is being forged",
+              file=out, flush=True)
+        output = tmp / "out" / _scratch_name(target.name, os.name == "nt")
+        code = build(staging / f"{entry.stem}.py", output)
+        if code != 0 or not output.is_file():
+            return refuse(f"nuitka failed (exit {code})")
+        try:
+            target.unlink(missing_ok=True)
+            shutil.move(output, target)
+        except OSError as err:
+            return refuse(f"{target} cannot be written: {err.strerror or err}")
+    print(f"++ {entry.name} IS ANOINTED: {target} ++", file=out)
+    return 0

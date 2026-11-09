@@ -16,7 +16,10 @@ back to Python spellings, and compile as ordinary Python.
   follow `docs/STYLE-COGITATOR.md`.
 - **`src/liturgy/`**: the implementation. Module dependency order is
   `lexicon` -> `sourcemap` -> `transform` -> `constructs` -> `rewrite` ->
-  `compiler` -> `loader`/`curse` -> `cli`. Nothing imports later than itself.
+  `compiler` -> `unction` -> `loader`/`curse` -> `cli`. Nothing imports later than itself.
+  `rubric` is a leaf that imports nothing from Liturgy: it is the curse
+  renderer, copied verbatim into every executable `anoint` builds. `unction`
+  sits after `compiler`: it stages a litany tree as Python for `anoint`.
   `highlight` is a leaf off `constructs` that nothing in the core imports:
   it is the one module allowed to touch Pygments (the optional
   `[highlight]` extra), loaded only through the `pygments.lexers` entry

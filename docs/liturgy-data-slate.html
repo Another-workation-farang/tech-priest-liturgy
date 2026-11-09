@@ -496,14 +496,15 @@ REBUKE.</p>
 <h2><pre>[VII] THE READING OF OMENS: TOOLING VERBS</pre></h2>
 <pre class="rule">--------------------------------------------------------------------------------</pre>
 
-<p class="desc">SEVEN TOOLING VERBS ARE BUILT.
+<p class="desc">EIGHT TOOLING VERBS ARE BUILT.
 <span class="lower amber">augur</span> READS A LITANY, <span class="lower amber">transcribe</span> WRITES
 ONE, <span class="lower amber">forge</span> COMPILES ONE WITHOUT CHANTING IT,
 <span class="lower amber">consecrate</span> CHECKS THE SEALS ACROSS ALL OF THEM,
 <span class="lower amber">sanctify</span> SETS ONE'S FORM IN ORDER,
-<span class="lower amber">prove</span> RUNS THE TRIALS, AND
-<span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND. ONE NAME,
-<span class="lower amber">anoint</span>, REMAINS RESERVED AND UNBUILT.</p>
+<span class="lower amber">prove</span> RUNS THE TRIALS,
+<span class="lower amber">purge</span> CLEARS WHAT CHANTING LEFT BEHIND, AND
+<span class="lower amber">anoint</span> RENDERS A LITANY AS A NATIVE EXECUTABLE.
+NO RESERVED VERB NAME REMAINS.</p>
 
 <div class="directive">
 <pre><span class="dim">.. function::</span> <span class="sig">liturgy augur PATH... [--plain] [--archetypes]</span>
@@ -768,6 +769,58 @@ THE GUARD SPEAKS INSTEAD AND NOTHING IS TOUCHED:</p>
 <pre>
 <span class="alert">   no .lit file found; refusing to delete anything</span>
 </pre>
+</section>
+
+<section>
+<pre class="rule">--------------------------------------------------------------------------------</pre>
+
+<div class="directive">
+<pre><span class="dim">.. function::</span> <span class="sig">liturgy anoint FILE.lit [-o PATH]</span>
+
+   <span class="ok">RENDERS A LITANY, AND EVERY LITANY BESIDE IT, AS ONE NATIVE EXECUTABLE
+   THAT RUNS WITH NO PYTHON AND NO LITURGY INSTALLED. BUILT WITH NUITKA,
+   WHICH COMPILES PYTHON TO C. SPEED IS NOT PROMISED.</span>
+
+   <span class="field">:option <b>-o, --out PATH</b>:</span> THE OUTPUT FILE. DEFAULT: THE LITANY'S STEM, BESIDE IT.
+   <span class="field">:requires:</span> NUITKA, AN OPTIONAL EXTRA: pip install 'liturgy[anoint]'.
+              WITHOUT IT THE VERB REFUSES BEFORE DOING ANY WORK.
+   <span class="field">:streams:</span> NUITKA'S OWN OUTPUT, UNCAPTURED, SO ITS QUESTIONS AND ITS
+             WARNINGS REACH THE TERMINAL.
+   <span class="alert">:refuses:</span> A -o THAT NAMES A DIRECTORY, AN UNWRITABLE DIRECTORY, OR
+            ONE OF THE LITANY'S OWN SOURCES (BY FILE, NOT SPELLING), A
+            SYMLINKED DIRECTORY OR HIDDEN SOURCE IN THE TREE, AND ANY
+            LITANY IN THE TREE THAT DOES NOT COMPILE.
+   <span class="alert">:curse:</span> THE EXECUTABLE CURSES AS A LITANY DOES: .LIT FILE (RELATIVE),
+          .LIT LINE, SOURCE LINE, RITUAL NAME. NO CARET; A MULTI-LINE
+          STATEMENT IS REPORTED AT ITS FIRST LINE.
+   <span class="alert">:limits:</span> ONE OPERATING SYSTEM PER BUILD; NO CROSS-COMPILING. LITANIES
+           OUTSIDE THE ENTRY DIRECTORY ARE NOT CARRIED. DATA FILES ARE NOT
+           BUNDLED. A .PY BESIDE A SAME-STEM .LIT IS NOT CARRIED.
+           THE SOURCE LINES ARE IN THE EXECUTABLE IN PLAIN TEXT.
+   <span class="field">:returns:</span> 0 IF ANOINTED, 1 IF REFUSED OR FAILED.</pre>
+</div>
+
+<pre>
+<span class="dim">$</span> liturgy anoint hymn.lit
+++ ANOINTING hymn.lit ++
+   2 litanies rendered; the machine tongue is being forged
+...
+++ hymn.lit IS ANOINTED: /home/adept/hymn/hymn ++
+<span class="dim">$</span> ./hymn
+Blessed be the machine
+<span class="alert">++ MACHINE CURSE ++
+   the rite was broken at the threshold of hymn.lit, line 8
+       main()
+   the rite was broken at hymn.lit, line 5, in rite main
+       intone(1 / 0)
+   DivisionByTheVoid: division by zero
+++ the machine spirit is displeased ++</span>
+</pre>
+
+<p class="desc">NUITKA'S OUTPUT IS ABRIDGED AT THE ELLIPSIS, AND THE OUTPUT PATH IS AN
+EXAMPLE. ON MACOS A DOWNLOADED EXECUTABLE MAY BE REFUSED UNTIL
+<span class="lower amber">xattr -d com.apple.quarantine ./hymn</span> REMOVES THE
+MARK. CHAPTER XI OF THE LIBER SETS DOWN THE LINUX AND WINDOWS NOTES.</p>
 </section>
 
 <section>

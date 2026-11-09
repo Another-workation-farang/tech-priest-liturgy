@@ -93,7 +93,7 @@ class SourceMap:
 
         The inverse of `to_lit`, and needed by anything holding a Liturgy
         column that must reach a reader who will map it back -- a
-        `TechHeresy`'s offset is read by `curse._render_syntax_location`,
+        `TechHeresy`'s offset is read by `curse._LiveSeer.place_syntax`,
         which runs every offset through `to_lit`. A diagnostic raised from
         Liturgy coordinates has to come the other way through here first or
         the caret is mapped twice and lands nowhere near the fault.
