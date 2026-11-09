@@ -1940,8 +1940,10 @@ its own words (`Created binary that runs on macOS 11.0 (arm64) or higher`).
   staged program, the gear in a quoted source line printed as `\u2699`.
 
 Only macOS has been run by hand. Linux and Windows are covered by a GitHub
-Actions workflow that runs `anoint`'s tests, a real build among them, on each;
-the sentences above marked for confirmation wait on its first run.
+Actions workflow that runs `anoint`'s tests, a real build among them, on each,
+under Python 3.12 and 3.14, and it passes on both. One claim above is still
+unobserved: the compiler question Nuitka asks on Windows when it finds no
+MSVC. The CI runners have MSVC, so it never comes up there.
 
 ---
 
