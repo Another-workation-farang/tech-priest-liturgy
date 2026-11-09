@@ -1,0 +1,21 @@
+docs/LIBER-LITURGIAE.md
+  s_49e18097f452e4::t_fa7353eb8ff469 1943-1946
+docs/liber-liturgiae.html
+  s_49e18097f452e4::t_178b020f9502b9 2140-2143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "94b6ceb0c83e472e6b7fbb9f0d63061bddb11463",
+  "prompts": {},
+  "sessions": {
+    "s_49e18097f452e4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2043ac96-7a33-4d9c-9222-78f216fd20d9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Andreas Werner <andreas.werner@messagematrix.io>"
+    }
+  }
+}
